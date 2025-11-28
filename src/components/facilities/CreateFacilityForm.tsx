@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateFacility } from '../../hooks/useFacilities';
 import { createFacilitySchema, type CreateFacilityFormData } from '../../utils/validationSchemas';
+import { Building2, Phone, Mail, MapPin, Loader2, Plus } from 'lucide-react';
 
 interface CreateFacilityFormProps {
   onSuccess?: () => void;
@@ -38,121 +39,152 @@ export const CreateFacilityForm: React.FC<CreateFacilityFormProps> = ({ onSucces
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-6">Create Facility</h2>
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Facility Name */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Facility Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Building2 className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  {...register('facility_name')}
+                  placeholder="e.g., City General Hospital"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.facility_name
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.facility_name && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.facility_name.message}
+                </p>
+              )}
+            </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Facility Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Facility Name *
-          </label>
-          <input
-            type="text"
-            {...register('facility_name')}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.facility_name
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.facility_name && (
-            <p className="mt-1 text-sm text-red-600">{errors.facility_name.message}</p>
-          )}
-        </div>
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Phone <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="tel"
+                  {...register('phone')}
+                  placeholder="+1 (555) 123-4567"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.phone
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.phone && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.phone.message}
+                </p>
+              )}
+            </div>
 
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone *
-          </label>
-          <input
-            type="tel"
-            {...register('phone')}
-            placeholder="+1 (555) 123-4567"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.phone
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.phone && (
-            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-          )}
-        </div>
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  {...register('email')}
+                  placeholder="facility@example.com"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.email
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email *
-          </label>
-          <input
-            type="email"
-            {...register('email')}
-            placeholder="facility@example.com"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.email
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-          )}
-        </div>
+            {/* Address */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Address <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute top-3 left-3 pointer-events-none">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                </div>
+                <textarea
+                  {...register('address')}
+                  rows={3}
+                  placeholder="123 Main St, City, State, ZIP"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all resize-none ${errors.address
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.address && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.address.message}
+                </p>
+              )}
+            </div>
+          </div>
 
-        {/* Address */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Address *
-          </label>
-          <textarea
-            {...register('address')}
-            rows={3}
-            placeholder="123 Main St, City, State, ZIP"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.address
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.address && (
-            <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={isSubmitting || createMutation.isLoading}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {isSubmitting || createMutation.isLoading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Creating...
-              </span>
-            ) : (
-              'Create Facility'
-            )}
-          </button>
-
-          {onCancel && (
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
             <button
-              type="button"
-              onClick={onCancel}
+              type="submit"
               disabled={isSubmitting || createMutation.isLoading}
-              className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none transition-colors font-medium disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white py-2.5 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
             >
-              Cancel
+              {isSubmitting || createMutation.isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Create Facility
+                </>
+              )}
             </button>
-          )}
-        </div>
-      </form>
+
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isSubmitting || createMutation.isLoading}
+                className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

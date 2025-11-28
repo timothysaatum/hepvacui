@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateUser, useCreateStaff } from '../../hooks/useUsers';
 import { createUserSchema, type CreateUserFormData } from '../../utils/validationSchemas';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Loader2, Plus, Info } from 'lucide-react';
 
 interface CreateUserFormProps {
   onSuccess?: () => void;
@@ -10,14 +11,17 @@ interface CreateUserFormProps {
   isStaff?: boolean;
 }
 
-export const CreateUserForm: React.FC<CreateUserFormProps> = ({ 
-  onSuccess, 
+export const CreateUserForm: React.FC<CreateUserFormProps> = ({
+  onSuccess,
   onCancel,
-  isStaff = false 
+  isStaff = false
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const createUserMutation = useCreateUser();
   const createStaffMutation = useCreateStaff();
-  
+
   const mutation = isStaff ? createStaffMutation : createUserMutation;
 
   const {
@@ -48,163 +52,224 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-2xl font-bold mb-6">
-        {isStaff ? 'Create Staff User' : 'Create User'}
-      </h2>
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Username */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Username <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  {...register('username')}
+                  placeholder="johndoe"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.username
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.username && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.username.message}
+                </p>
+              )}
+            </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Username */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Username *
-          </label>
-          <input
-            type="text"
-            {...register('username')}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.username 
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.username && (
-            <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
-          )}
-        </div>
+            {/* Full Name */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  {...register('full_name')}
+                  placeholder="John Doe"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.full_name
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.full_name && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.full_name.message}
+                </p>
+              )}
+            </div>
 
-        {/* Full Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name *
-          </label>
-          <input
-            type="text"
-            {...register('full_name')}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.full_name 
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.full_name && (
-            <p className="mt-1 text-sm text-red-600">{errors.full_name.message}</p>
-          )}
-        </div>
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Phone <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="tel"
+                  {...register('phone')}
+                  placeholder="+1 (555) 123-4567"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.phone
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.phone && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.phone.message}
+                </p>
+              )}
+            </div>
 
-        {/* Phone */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Phone *
-          </label>
-          <input
-            type="tel"
-            {...register('phone')}
-            placeholder="+1 (555) 123-4567"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.phone 
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.phone && (
-            <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-          )}
-        </div>
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type="email"
+                  {...register('email')}
+                  placeholder="user@example.com"
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.email
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+              </div>
+              {errors.email && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email *
-          </label>
-          <input
-            type="email"
-            {...register('email')}
-            placeholder="user@example.com"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.email 
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-          )}
-        </div>
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  placeholder="••••••••"
+                  className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.password
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.password.message}
+                </p>
+              )}
+              <p className="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                Must be at least 8 characters with uppercase, lowercase, and number
+              </p>
+            </div>
 
-        {/* Password */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Password *
-          </label>
-          <input
-            type="password"
-            {...register('password')}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.password 
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.password && (
-            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-          )}
-          <p className="mt-1 text-xs text-gray-500">
-            Must be at least 8 characters with uppercase, lowercase, and number
-          </p>
-        </div>
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="w-4 h-4 text-gray-400" />
+                </div>
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  {...register('password_confirm')}
+                  placeholder="••••••••"
+                  className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.password_confirm
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 focus:ring-black focus:border-black'
+                    }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password_confirm && (
+                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {errors.password_confirm.message}
+                </p>
+              )}
+            </div>
+          </div>
 
-        {/* Confirm Password */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Confirm Password *
-          </label>
-          <input
-            type="password"
-            {...register('password_confirm')}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.password_confirm 
-                ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-            }`}
-          />
-          {errors.password_confirm && (
-            <p className="mt-1 text-sm text-red-600">{errors.password_confirm.message}</p>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={isSubmitting || mutation.isLoading}
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            {isSubmitting || mutation.isLoading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Creating...
-              </span>
-            ) : (
-              'Create User'
-            )}
-          </button>
-          
-          {onCancel && (
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4">
             <button
-              type="button"
-              onClick={onCancel}
+              type="submit"
               disabled={isSubmitting || mutation.isLoading}
-              className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none transition-colors font-medium disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white py-2.5 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
             >
-              Cancel
+              {isSubmitting || mutation.isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Create User
+                </>
+              )}
             </button>
-          )}
-        </div>
-      </form>
+
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isSubmitting || mutation.isLoading}
+                className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

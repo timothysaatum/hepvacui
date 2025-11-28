@@ -3,6 +3,23 @@ import type { Patient, PatientType, PatientStatus } from '../../types/patient';
 import { usePatients, useDeletePatient } from '../../hooks/usePatients';
 import { useConfirm } from '../common/ConfirmDialog';
 import { formatDate } from '../../utils/formatters';
+import {
+  User,
+  Baby,
+  Phone,
+  Calendar,
+  Eye,
+  Edit2,
+  Trash2,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  Users,
+  Filter,
+  X,
+  AlertTriangle,
+  Loader2
+} from 'lucide-react';
 
 interface PatientListProps {
   onEdit?: (patient: Patient) => void;
@@ -21,94 +38,134 @@ const PatientRow = memo<{
   const getPatientTypeDisplay = () => {
     if (patient.patient_type === 'pregnant') {
       return {
-        icon: '🤰',
+        icon: Baby,
         label: 'Pregnant',
-        className: 'bg-pink-100 text-pink-800',
+        className: 'bg-pink-50 text-pink-700 border border-pink-200',
+        iconColor: 'text-pink-600',
+        bgColor: 'bg-gradient-to-br from-pink-500 to-pink-600'
       };
     }
     return {
-      icon: '👤',
+      icon: User,
       label: 'Regular',
-      className: 'bg-blue-100 text-blue-800',
+      className: 'bg-blue-50 text-blue-700 border border-blue-200',
+      iconColor: 'text-blue-600',
+      bgColor: 'bg-gradient-to-br from-blue-500 to-blue-600'
     };
   };
 
   const getStatusDisplay = () => {
     switch (patient.status) {
       case 'active':
-        return { text: 'Active', className: 'bg-green-100 text-green-800' };
+        return {
+          text: 'Active',
+          className: 'bg-green-50 text-green-700 border border-green-200',
+          icon: CheckCircle2,
+          iconColor: 'text-green-600'
+        };
       case 'inactive':
-        return { text: 'Inactive', className: 'bg-gray-100 text-gray-800' };
+        return {
+          text: 'Inactive',
+          className: 'bg-gray-50 text-gray-700 border border-gray-200',
+          icon: XCircle,
+          iconColor: 'text-gray-600'
+        };
       case 'converted':
-        return { text: 'Converted', className: 'bg-purple-100 text-purple-800' };
+        return {
+          text: 'Converted',
+          className: 'bg-purple-50 text-purple-700 border border-purple-200',
+          icon: RefreshCw,
+          iconColor: 'text-purple-600'
+        };
       default:
-        return { text: patient.status, className: 'bg-gray-100 text-gray-800' };
+        return {
+          text: patient.status,
+          className: 'bg-gray-50 text-gray-700 border border-gray-200',
+          icon: XCircle,
+          iconColor: 'text-gray-600'
+        };
     }
   };
 
   const typeDisplay = getPatientTypeDisplay();
   const statusDisplay = getStatusDisplay();
+  const TypeIcon = typeDisplay.icon;
+  const StatusIcon = statusDisplay.icon;
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-semibold mr-3">
-            {typeDisplay.icon}
+    <tr className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-lg ${typeDisplay.bgColor} flex items-center justify-center flex-shrink-0`}>
+            <TypeIcon className="w-5 h-5 text-white" />
           </div>
-          <div>
-            <div className="text-sm font-medium text-gray-900">{patient.name}</div>
-            <div className="text-xs text-gray-500">{patient.phone}</div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-gray-900 truncate">
+              {patient.name}
+            </div>
+            <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+              <Phone className="w-3 h-3" />
+              {patient.phone}
+            </div>
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${typeDisplay.className}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md ${typeDisplay.className}`}>
+          <TypeIcon className={`w-3 h-3 ${typeDisplay.iconColor}`} />
           {typeDisplay.label}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-        {patient.age} years
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="text-sm font-medium text-gray-900">
+          {patient.age} years
+        </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusDisplay.className}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md ${statusDisplay.className}`}>
+          <StatusIcon className={`w-3 h-3 ${statusDisplay.iconColor}`} />
           {statusDisplay.text}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-        {formatDate(patient.created_at)}
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+          <Calendar className="w-3.5 h-3.5" />
+          {formatDate(patient.created_at)}
+        </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-        <div className="flex items-center gap-2">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center gap-1">
           {onViewDetails && (
             <button
               onClick={() => onViewDetails(patient)}
-              className="text-indigo-600 hover:text-indigo-900 transition-colors"
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
               title="View Details"
             >
-              👁️
+              <Eye className="w-4 h-4" />
             </button>
           )}
           {patient.patient_type === 'pregnant' && patient.status === 'active' && onConvert && (
             <button
               onClick={() => onConvert(patient)}
-              className="text-purple-600 hover:text-purple-900 transition-colors"
+              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
               title="Convert to Regular"
             >
-              🔄
+              <RefreshCw className="w-4 h-4" />
             </button>
           )}
           <button
             onClick={() => onEdit(patient)}
-            className="text-blue-600 hover:text-blue-900 transition-colors"
+            className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Edit"
           >
-            Edit
+            <Edit2 className="w-4 h-4" />
           </button>
           <button
             onClick={() => onDelete(patient.id, patient.name)}
-            className="text-red-600 hover:text-red-900 transition-colors"
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            title="Delete"
           >
-            Delete
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </td>
@@ -118,17 +175,16 @@ const PatientRow = memo<{
 
 PatientRow.displayName = 'PatientRow';
 
-export const PatientList: React.FC<PatientListProps> = ({ 
-  onEdit, 
-  onViewDetails, 
-  onConvert 
+export const PatientList: React.FC<PatientListProps> = ({
+  onEdit,
+  onViewDetails,
+  onConvert
 }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [patientType, setPatientType] = useState<PatientType | ''>('');
   const [patientStatus, setPatientStatus] = useState<PatientStatus | ''>('');
   const { confirm } = useConfirm();
 
-  // Use React Query hook
   const { data, isLoading, error, isFetching } = usePatients({
     page: currentPage,
     page_size: 10,
@@ -151,61 +207,72 @@ export const PatientList: React.FC<PatientListProps> = ({
     deleteMutation.mutate(patientId);
   };
 
-  // Loading state
+  const hasActiveFilters = patientType || patientStatus;
+
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-          <p className="text-gray-500">Loading patients...</p>
+      <div className="bg-white rounded-lg border border-gray-200 p-12">
+        <div className="flex flex-col items-center justify-center">
+          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mb-4" />
+          <p className="text-sm text-gray-500 font-medium">Loading patients...</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-600 p-4 rounded-lg">
-        <div className="flex items-center">
-          <span className="text-xl mr-2">⚠️</span>
-          <span>Failed to load patients. Please try again.</span>
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-red-900">Failed to load patients</h3>
+            <p className="text-sm text-red-700 mt-0.5">Please try again later</p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Empty state
   if (!data || data.items.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-12 text-center">
-        <div className="text-6xl mb-4">👥</div>
-        <h3 className="text-xl font-medium text-gray-900 mb-2">
-          {patientType || patientStatus ? 'No patients found' : 'No patients yet'}
-        </h3>
-        <p className="text-gray-500">
-          {patientType || patientStatus
-            ? 'No patients match the selected filters'
-            : 'Get started by adding your first patient.'}
-        </p>
+      <div className="bg-white rounded-lg border border-gray-200 p-12">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Users className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            {hasActiveFilters ? 'No patients found' : 'No patients yet'}
+          </h3>
+          <p className="text-sm text-gray-500 max-w-sm mx-auto">
+            {hasActiveFilters
+              ? 'No patients match the selected filters'
+              : 'Get started by adding your first patient to the system'}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow relative">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       {/* Filters */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="text-sm font-medium text-gray-700">Filters:</div>
-          
+      <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+            <Filter className="w-4 h-4" />
+            Filters:
+          </div>
+
           <select
             value={patientType}
             onChange={(e) => {
               setPatientType(e.target.value as PatientType | '');
               setCurrentPage(1);
             }}
-            className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
           >
             <option value="">All Types</option>
             <option value="pregnant">Pregnant</option>
@@ -218,7 +285,7 @@ export const PatientList: React.FC<PatientListProps> = ({
               setPatientStatus(e.target.value as PatientStatus | '');
               setCurrentPage(1);
             }}
-            className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
           >
             <option value="">All Statuses</option>
             <option value="active">Active</option>
@@ -226,52 +293,53 @@ export const PatientList: React.FC<PatientListProps> = ({
             <option value="converted">Converted</option>
           </select>
 
-          {(patientType || patientStatus) && (
+          {hasActiveFilters && (
             <button
               onClick={() => {
                 setPatientType('');
                 setPatientStatus('');
                 setCurrentPage(1);
               }}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
+              <X className="w-3 h-3" />
               Clear Filters
             </button>
           )}
 
           {isFetching && (
             <div className="ml-auto">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600"></div>
+              <Loader2 className="w-5 h-5 text-black animate-spin" />
             </div>
           )}
         </div>
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        <table className="min-w-full">
+          <thead>
+            <tr className="border-b border-gray-200 bg-gray-50">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Patient Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Age
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Created
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white">
             {data.items.map((patient) => (
               <PatientRow
                 key={patient.id}
@@ -287,25 +355,25 @@ export const PatientList: React.FC<PatientListProps> = ({
       </div>
 
       {/* Pagination */}
-      <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
-        <div className="text-sm text-gray-700">
-          Page <span className="font-medium">{data.page_info.current_page}</span> of{' '}
-          <span className="font-medium">{data.page_info.total_pages}</span>
+      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Page <span className="font-semibold text-gray-900">{data.page_info.current_page}</span> of{' '}
+          <span className="font-semibold text-gray-900">{data.page_info.total_pages}</span>
           {' • '}
-          <span className="font-medium">{data.page_info.total_items}</span> total patients
+          <span className="font-semibold text-gray-900">{data.page_info.total_items}</span> total patients
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setCurrentPage(data.page_info.previous_page!)}
             disabled={!data.page_info.has_previous || isFetching}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
           <button
             onClick={() => setCurrentPage(data.page_info.next_page!)}
             disabled={!data.page_info.has_next || isFetching}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next
           </button>

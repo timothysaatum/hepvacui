@@ -2,22 +2,19 @@ import React, { useState } from 'react';
 import { FacilityList } from '../../components/facilities/FacilityList';
 import { CreateFacilityForm } from '../../components/facilities/CreateFacilityForm';
 import { EditFacilityForm } from '../../components/facilities/EditFacilityForm';
-import { FacilityStaffModal } from '../../components/facilities/FacilityStaffModal';
 import type { Facility } from '../../types/facility';
+import { Plus, X } from 'lucide-react';
 
 export const FacilitiesPage: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);
-  const [viewingStaffFacility, setViewingStaffFacility] = useState<Facility | null>(null);
 
   const handleCreateSuccess = () => {
     setShowCreateForm(false);
-    // No need for refreshKey - React Query handles cache invalidation
   };
 
   const handleEditSuccess = () => {
     setEditingFacilityId(null);
-    // No need for refreshKey - React Query handles cache invalidation
   };
 
   const handleEdit = (facility: Facility) => {
@@ -25,64 +22,64 @@ export const FacilitiesPage: React.FC = () => {
     setShowCreateForm(false);
   };
 
-  const handleViewStaff = (facility: Facility) => {
-    setViewingStaffFacility(facility);
-  };
-
-  const handleCloseStaffModal = () => {
-    setViewingStaffFacility(null);
-  };
-
   return (
-    <div>
-      <div className="mb-6 flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Facility Management</h1>
-          {/* <p className="text-sm text-gray-600 mt-1">Manage healthcare facilities and their staff</p> */}
+          <h1 className="text-2xl font-bold text-gray-900">
+            {showCreateForm ? 'Add New Facility' : editingFacilityId ? 'Edit Facility' : 'Facility Management'}
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            {showCreateForm ? 'Create a new healthcare facility' : editingFacilityId ? 'Update facility information' : 'Manage healthcare facilities and their staff'}
+          </p>
         </div>
-        
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              setShowCreateForm(!showCreateForm);
-              setEditingFacilityId(null);
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm font-medium transition-colors"
-          >
-            {showCreateForm ? '✕ Cancel' : '+ Add Facility'}
-          </button>
-        </div>
+
+        <button
+          onClick={() => {
+            setShowCreateForm(!showCreateForm);
+            setEditingFacilityId(null);
+          }}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-medium transition-all shadow-sm ${showCreateForm
+              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500'
+              : 'bg-black text-white hover:bg-gray-900 focus:ring-black hover:scale-105'
+            }`}
+        >
+          {showCreateForm ? (
+            <>
+              <X className="w-4 h-4" />
+              Cancel
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              Add Facility
+            </>
+          )}
+        </button>
       </div>
 
+      {/* Create Form */}
       {showCreateForm && (
-        <div className="mb-6">
-          <CreateFacilityForm
-            onSuccess={handleCreateSuccess}
-            onCancel={() => setShowCreateForm(false)}
-          />
-        </div>
+        <CreateFacilityForm
+          onSuccess={handleCreateSuccess}
+          onCancel={() => setShowCreateForm(false)}
+        />
       )}
 
+      {/* Edit Form */}
       {editingFacilityId && (
-        <div className="mb-6">
-          <EditFacilityForm
-            facilityId={editingFacilityId}
-            onSuccess={handleEditSuccess}
-            onCancel={() => setEditingFacilityId(null)}
-          />
-        </div>
+        <EditFacilityForm
+          facilityId={editingFacilityId}
+          onSuccess={handleEditSuccess}
+          onCancel={() => setEditingFacilityId(null)}
+        />
       )}
 
-      <FacilityList 
-        onEdit={handleEdit}
-        onViewStaff={handleViewStaff}
-      />
-
-      {/* Staff Modal */}
-      {viewingStaffFacility && (
-        <FacilityStaffModal
-          facility={viewingStaffFacility}
-          onClose={handleCloseStaffModal}
+      {/* Facility List - Only show when not creating or editing */}
+      {!showCreateForm && !editingFacilityId && (
+        <FacilityList
+          onEdit={handleEdit}
         />
       )}
     </div>

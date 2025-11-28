@@ -14,10 +14,10 @@ interface PaymentPanelProps {
   onSuccess?: () => void;
 }
 
-export const PaymentPanel: React.FC<PaymentPanelProps> = ({ 
-  purchase, 
-  onClose, 
-  onSuccess 
+export const PaymentPanel: React.FC<PaymentPanelProps> = ({
+  purchase,
+  onClose,
+  onSuccess
 }) => {
   const { user } = useAuth();
   const createPaymentMutation = useCreatePayment();
@@ -34,6 +34,7 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
     defaultValues: {
       amount: 0,
       payment_method: 'cash',
+      payment_date: new Date().toISOString().split('T')[0],
       reference_number: '',
     },
   });
@@ -106,11 +107,10 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
             step="0.01"
             {...register('amount', { valueAsNumber: true })}
             placeholder="0.00"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.amount
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.amount
                 ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                 : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-            }`}
+              }`}
           />
           {errors.amount && (
             <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
@@ -148,6 +148,24 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
           </div>
         )}
 
+        {/* Payment Date */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Payment Date *
+          </label>
+          <input
+            type="date"
+            {...register('payment_date')}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.payment_date
+                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+              }`}
+          />
+          {errors.payment_date && (
+            <p className="mt-1 text-sm text-red-600">{errors.payment_date.message}</p>
+          )}
+        </div>
+
         {/* Payment Method */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -155,11 +173,10 @@ export const PaymentPanel: React.FC<PaymentPanelProps> = ({
           </label>
           <select
             {...register('payment_method')}
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-              errors.payment_method
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.payment_method
                 ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                 : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-            }`}
+              }`}
           >
             <option value="cash">Cash</option>
             <option value="mobile_money">Mobile Money</option>

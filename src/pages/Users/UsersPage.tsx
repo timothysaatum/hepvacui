@@ -3,6 +3,7 @@ import { UserList } from '../../components/users/UserList';
 import { CreateUserForm } from '../../components/users/CreateUserForm';
 import { EditUserForm } from '../../components/users/EditUserForm';
 import type { User } from '../../types/user';
+import { Plus, X } from 'lucide-react';
 
 export const UsersPage: React.FC = () => {
   const [showStaffForm, setShowStaffForm] = useState(false);
@@ -10,12 +11,10 @@ export const UsersPage: React.FC = () => {
 
   const handleCreateSuccess = () => {
     setShowStaffForm(false);
-    // No need for refreshKey - React Query handles cache invalidation
   };
 
   const handleEditSuccess = () => {
     setEditingUserId(null);
-    // No need for refreshKey - React Query handles cache invalidation
   };
 
   const handleEdit = (user: User) => {
@@ -24,47 +23,64 @@ export const UsersPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <div className="mb-6 flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Staff Management</h1>
-          {/* <p className="text-sm text-gray-600 mt-1">Manage staff members and user accounts</p> */}
+          <h1 className="text-2xl font-bold text-gray-900">
+            {showStaffForm ? 'Add New Staff' : editingUserId ? 'Edit Staff' : 'Staff Management'}
+          </h1>
+          <p className="text-sm text-gray-600 mt-1">
+            {showStaffForm ? 'Create a new staff member account' : editingUserId ? 'Update staff member information' : 'Manage staff members and user accounts'}
+          </p>
         </div>
-        
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              setShowStaffForm(!showStaffForm);
-              setEditingUserId(null);
-            }}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-sm font-medium transition-colors"
-          >
-            {showStaffForm ? '✕ Cancel' : '+ Add Staff'}
-          </button>
-        </div>
+
+        <button
+          onClick={() => {
+            setShowStaffForm(!showStaffForm);
+            setEditingUserId(null);
+          }}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 font-medium transition-all shadow-sm ${showStaffForm
+              ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500'
+              : 'bg-black text-white hover:bg-gray-900 focus:ring-black hover:scale-105'
+            }`}
+        >
+          {showStaffForm ? (
+            <>
+              <X className="w-4 h-4" />
+              Cancel
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4" />
+              Add Staff
+            </>
+          )}
+        </button>
       </div>
 
+      {/* Create Form */}
       {showStaffForm && (
-        <div className="mb-6">
-          <CreateUserForm
-            isStaff={true}
-            onSuccess={handleCreateSuccess}
-            onCancel={() => setShowStaffForm(false)}
-          />
-        </div>
+        <CreateUserForm
+          isStaff={true}
+          onSuccess={handleCreateSuccess}
+          onCancel={() => setShowStaffForm(false)}
+        />
       )}
 
+      {/* Edit Form */}
       {editingUserId && (
-        <div className="mb-6">
-          <EditUserForm
-            userId={editingUserId}
-            onSuccess={handleEditSuccess}
-            onCancel={() => setEditingUserId(null)}
-          />
-        </div>
+        <EditUserForm
+          userId={editingUserId}
+          onSuccess={handleEditSuccess}
+          onCancel={() => setEditingUserId(null)}
+        />
       )}
 
-      <UserList onEdit={handleEdit} />
+      {/* User List - Only show when not creating or editing */}
+      {!showStaffForm && !editingUserId && (
+        <UserList onEdit={handleEdit} />
+      )}
     </div>
   );
 };
