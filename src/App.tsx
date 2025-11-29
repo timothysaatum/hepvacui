@@ -6,6 +6,8 @@ import { ToastProvider } from './context/ToastContext';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
 import { LoginForm } from './components/auth/LoginForm';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { SearchPage } from './pages/Search/SearchPage';
+import { DashboardPage } from './pages/Dashboard/DashboardPage';
 import { UsersPage } from './pages/Users/UsersPage';
 import { DevicesPage } from './pages/Devices/DevicesPage';
 import { FacilitiesPage } from './pages/Facilities/FacilitiesPage';
@@ -46,12 +48,13 @@ function App() {
                       <Layout>
                         <Routes>
                           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                          <Route path="/dashboard" element={<DashboardPlaceholder />} />
+                          <Route path="/dashboard" element={<DashboardPage />} />
                           <Route path="/patients" element={<PatientsPage />} />
                           <Route path="/patients/:patientId" element={<PatientDetailPage />} />
-                          <Route path="/vaccinations" element={<VaccinationsPlaceholder />} />
+                          {/* <Route path="/vaccinations" element={<VaccinationsPlaceholder />} /> */}
                           <Route path="/vaccines" element={<VaccinesPage />} />
-                          <Route path="/payments" element={<PaymentsPlaceholder />} />
+                          {/* <Route path="/payments" element={<PaymentsPlaceholder />} /> */}
+                          <Route path="/records" element={<SearchPage />} />
                           <Route path="/facilities" element={<FacilitiesPage />} />
                           <Route path="/staff" element={<UsersPage />} />
                           <Route path="/devices" element={<DevicesPage />} />
@@ -71,42 +74,6 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-// Placeholder components
-const DashboardPlaceholder = () => (
-  <div className="bg-white rounded-lg shadow p-8">
-    <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
-    <p className="text-gray-600">Dashboard analytics and overview coming soon...</p>
-  </div>
-);
-
-const PatientsPlaceholder = () => (
-  <div className="bg-white rounded-lg shadow p-8">
-    <h2 className="text-2xl font-bold mb-4">Patients</h2>
-    <p className="text-gray-600">Patient management system coming soon...</p>
-  </div>
-);
-
-const VaccinationsPlaceholder = () => (
-  <div className="bg-white rounded-lg shadow p-8">
-    <h2 className="text-2xl font-bold mb-4">Vaccinations</h2>
-    <p className="text-gray-600">Vaccination records coming soon...</p>
-  </div>
-);
-
-const VaccinesPlaceholder = () => (
-  <div className="bg-white rounded-lg shadow p-8">
-    <h2 className="text-2xl font-bold mb-4">Vaccines</h2>
-    <p className="text-gray-600">Vaccine inventory management coming soon...</p>
-  </div>
-);
-
-const PaymentsPlaceholder = () => (
-  <div className="bg-white rounded-lg shadow p-8">
-    <h2 className="text-2xl font-bold mb-4">Payments</h2>
-    <p className="text-gray-600">Payment tracking coming soon...</p>
-  </div>
-);
 
 const SettingsPlaceholder = () => (
   <div className="bg-white rounded-lg shadow p-8">

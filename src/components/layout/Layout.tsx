@@ -4,9 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard,
   Users,
-  Syringe,
+  // Syringe,
   Pill,
-  CreditCard,
+  // CreditCard,
   Building2,
   UserCog,
   Monitor,
@@ -16,7 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  Search
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -42,9 +43,10 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems: NavItem[] = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Patients', path: '/patients', icon: Users },
-    { name: 'Vaccinations', path: '/vaccinations', icon: Syringe },
+    // { name: 'Vaccinations', path: '/vaccinations', icon: Syringe },
     { name: 'Vaccines', path: '/vaccines', icon: Pill },
-    { name: 'Payments', path: '/payments', icon: CreditCard },
+    {name: 'Records', path: '/records', icon: Search },
+    // { name: 'Payments', path: '/payments', icon: CreditCard },
     { name: 'Facilities', path: '/facilities', icon: Building2, adminOnly: true },
     { name: 'Staff', path: '/staff', icon: UserCog, adminOnly: true },
     { name: 'Devices', path: '/devices', icon: Monitor, adminOnly: true },
