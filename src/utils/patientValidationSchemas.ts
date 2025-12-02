@@ -22,7 +22,7 @@ export const updatePregnantPatientSchema = z.object({
 export const createRegularPatientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Phone number is too long'),
-  sex: z.enum(['male', 'female'], { required_error: 'Sex is required' }),
+  sex: z.enum(['male', 'female'], {errorMap: () => ({ message: 'Gender is required' }) }),
   age: z.number().min(0, 'Age must be positive').max(120, 'Age must be less than 120'),
   diagnosis_date: z.string().optional(),
   viral_load: z.string().max(50).optional(),

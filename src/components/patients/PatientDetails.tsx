@@ -394,18 +394,25 @@ const InfoRow: React.FC<{
 const StatCard: React.FC<{
   title: string;
   value: string;
-  icon: React.ReactElement;
+  icon: React.ReactNode;
 }> = ({ title, value, icon }) => (
   <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 hover:shadow-md transition-all hover:scale-105">
     <div className="flex items-center justify-between mb-3">
-      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
-        {React.cloneElement(icon, { className: 'w-6 h-6 text-black' })}
+      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-black">
+        {icon}
       </div>
     </div>
     <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
     <p className="text-3xl font-bold text-black">{value}</p>
   </div>
 );
+
+// Then update the usage to add className directly:
+<StatCard
+  title="Total Paid"
+  value={formatCurrency(totalSpent)}
+  icon={<CreditCard className="w-6 h-6" />}
+/>
 
 const PurchaseCard: React.FC<{
   purchase: VaccinePurchase;

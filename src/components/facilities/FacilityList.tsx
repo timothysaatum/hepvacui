@@ -17,8 +17,7 @@ import {
   Search,
   AlertTriangle,
   Loader2,
-  ChevronDown,
-  ChevronRight
+  ChevronDown
 } from 'lucide-react';
 
 interface FacilityListProps {
