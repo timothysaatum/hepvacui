@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, X, Filter } from 'lucide-react';
 
 interface FilterField {
@@ -9,23 +8,23 @@ interface FilterField {
     placeholder?: string;
 }
 
-interface SearchFiltersProps {
-    filters: Record<string, any>;
-    onFilterChange: (name: string, value: any) => void;
+interface SearchFiltersProps<T extends Record<string, any>> {
+    filters: T;
+    onFilterChange: <K extends keyof T>(name: K, value: T[K]) => void;
     onClear: () => void;
     onSearch: () => void;
     fields: FilterField[];
-    isLoading?: boolean;
+    isPending?: boolean;
 }
 
-export const SearchFilters: React.FC<SearchFiltersProps> = ({
+export function SearchFilters<T extends Record<string, any>>({
     filters,
     onFilterChange,
     onClear,
     onSearch,
     fields,
-    isLoading = false,
-}) => {
+    isPending = false,
+}: SearchFiltersProps<T>) {
     const hasActiveFilters = Object.values(filters).some(
         (value) => value !== undefined && value !== null && value !== ''
     );
@@ -56,8 +55,8 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                         </label>
                         {field.type === 'select' ? (
                             <select
-                                value={filters[field.name] || ''}
-                                onChange={(e) => onFilterChange(field.name, e.target.value)}
+                                value={String(filters[field.name as keyof T] || '')}
+                                onChange={(e) => onFilterChange(field.name as keyof T, e.target.value as T[keyof T])}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
                             >
                                 <option value="">All</option>
@@ -70,11 +69,11 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
                         ) : (
                             <input
                                 type={field.type}
-                                value={filters[field.name] || ''}
+                                value={String(filters[field.name as keyof T] || '')}
                                 onChange={(e) =>
                                     onFilterChange(
-                                        field.name,
-                                        field.type === 'number' ? Number(e.target.value) : e.target.value
+                                        field.name as keyof T,
+                                        (field.type === 'number' ? Number(e.target.value) : e.target.value) as T[keyof T]
                                     )
                                 }
                                 placeholder={field.placeholder}
@@ -88,10 +87,10 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
             <div className="flex gap-3 mt-6">
                 <button
                     onClick={onSearch}
-                    disabled={isLoading}
+                    disabled={isPending}
                     className="flex-1 px-6 py-2.5 bg-black text-white rounded-xl font-medium hover:bg-gray-900 transition-all hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isLoading ? (
+                    {isPending ? (
                         <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                             Searching...
@@ -106,4 +105,4 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
             </div>
         </div>
     );
-};
+}

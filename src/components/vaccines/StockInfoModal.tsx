@@ -18,7 +18,7 @@ interface StockInfoModalProps {
 }
 
 export const StockInfoModal: React.FC<StockInfoModalProps> = ({ vaccine, onClose }) => {
-  const { data: stockInfo, isLoading, error } = useVaccineStock(vaccine.id);
+  const { data: stockInfo, isPending, error } = useVaccineStock(vaccine.id);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -38,7 +38,7 @@ export const StockInfoModal: React.FC<StockInfoModalProps> = ({ vaccine, onClose
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-linear-to-r from-purple-50 to-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Package className="w-5 h-5 text-purple-600" />
@@ -58,7 +58,7 @@ export const StockInfoModal: React.FC<StockInfoModalProps> = ({ vaccine, onClose
 
         {/* Content */}
         <div className="p-6">
-          {isLoading ? (
+          {isPending ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Loader2 className="w-12 h-12 text-purple-600 animate-spin mb-4" />
               <p className="text-sm text-gray-500 font-medium">Loading stock information...</p>
@@ -66,7 +66,7 @@ export const StockInfoModal: React.FC<StockInfoModalProps> = ({ vaccine, onClose
           ) : error ? (
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
                   <AlertTriangle className="w-5 h-5 text-red-600" />
                 </div>
                 <div>
@@ -84,11 +84,11 @@ export const StockInfoModal: React.FC<StockInfoModalProps> = ({ vaccine, onClose
                 }`}>
                 <div className="flex items-center gap-3">
                   {stockInfo.is_low_stock ? (
-                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
                       <AlertTriangle className="w-5 h-5 text-amber-600" />
                     </div>
                   ) : (
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
                       <CheckCircle2 className="w-5 h-5 text-green-600" />
                     </div>
                   )}

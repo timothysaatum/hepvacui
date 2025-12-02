@@ -4,7 +4,8 @@ import { useVaccinationSearch } from '../../hooks/useSearch';
 import type { VaccinationSearchFilters, VaccinationSearchResult } from '../../types/search';
 import { SearchFilters } from '../../components/search/SearchFilters';
 import { formatDate, formatCurrency } from '../../utils/formatters';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
 
 const FILTER_FIELDS = [
     { name: 'patient_name', label: 'Patient Name', type: 'text' as const, placeholder: 'Search patient...' },
@@ -30,18 +31,23 @@ export const VaccinationSearchTab: React.FC = () => {
     const [filters, setFilters] = useState<VaccinationSearchFilters>({
         page: 1,
         page_size: 10,
-        facility_id: user?.facility_id,
+        facility_id: user?.facility?.id,
     });
 
     const [searchTrigger, setSearchTrigger] = useState(0);
-    const { data, isLoading, error } = useVaccinationSearch(filters, searchTrigger > 0);
+    const { data, isFetching, error } = useVaccinationSearch(filters, searchTrigger > 0);
 
-    const handleFilterChange = (name: string, value: any) => {
-        setFilters((prev) => ({ ...prev, [name]: value, page: 1 }));
+    const handleFilterChange = <
+      K extends keyof VaccinationSearchFilters
+    >(
+      name: K,
+      value: VaccinationSearchFilters[K]
+    ) => {
+      setFilters((prev) => ({ ...prev, [name]: value, page: 1 }));
     };
 
     const handleClearFilters = () => {
-        setFilters({ page: 1, page_size: 10, facility_id: user?.facility_id });
+        setFilters({ page: 1, page_size: 10, facility_id: user?.facility?.id });
         setSearchTrigger(0);
     };
 
@@ -60,12 +66,12 @@ export const VaccinationSearchTab: React.FC = () => {
                 onClear={handleClearFilters}
                 onSearch={handleSearch}
                 fields={FILTER_FIELDS}
-                isLoading={isLoading}
+                isPending={isFetching}
             />
 
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                     <div>
                         <h3 className="font-semibold text-red-900 mb-1">Search Error</h3>
                         <p className="text-sm text-red-700">Failed to search vaccinations. Please try again.</p>
@@ -81,7 +87,7 @@ export const VaccinationSearchTab: React.FC = () => {
                 </div>
             )}
 
-            {searchTrigger > 0 && !isLoading && !error && data && (
+            {searchTrigger > 0 && !isFetching && !error && data && (
                 <>
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">

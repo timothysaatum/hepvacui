@@ -16,7 +16,7 @@ export const EditVaccineForm: React.FC<EditVaccineFormProps> = ({
   onSuccess,
   onCancel,
 }) => {
-  const { data: vaccine, isLoading: fetchLoading, error: fetchError } = useVaccine(vaccineId);
+  const { data: vaccine, isPending: fetchLoading, error: fetchError } = useVaccine(vaccineId);
   const updateMutation = useUpdateVaccine();
 
   const {
@@ -191,7 +191,7 @@ export const EditVaccineForm: React.FC<EditVaccineFormProps> = ({
               )}
               <div className="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
                 <p className="text-xs text-amber-700 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 flex-shrink-0" />
+                  <Info className="w-3.5 h-3.5 shrink-0" />
                   To add stock, use the "Add Stock" button from the vaccine list instead
                 </p>
               </div>
@@ -223,7 +223,7 @@ export const EditVaccineForm: React.FC<EditVaccineFormProps> = ({
             {isPublished && (
               <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="flex gap-2">
-                  <Info className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                  <Info className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
                   <p className="text-xs text-green-700">
                     This vaccine is currently published and visible to all users.
                   </p>
@@ -236,10 +236,10 @@ export const EditVaccineForm: React.FC<EditVaccineFormProps> = ({
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || updateMutation.isLoading}
+              disabled={isSubmitting || updateMutation.isPending}
               className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white py-2.5 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
             >
-              {isSubmitting || updateMutation.isLoading ? (
+              {isSubmitting || updateMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Updating...
@@ -256,7 +256,7 @@ export const EditVaccineForm: React.FC<EditVaccineFormProps> = ({
               <button
                 type="button"
                 onClick={onCancel}
-                disabled={isSubmitting || updateMutation.isLoading}
+                disabled={isSubmitting || updateMutation.isPending}
                 className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium disabled:opacity-50"
               >
                 Cancel

@@ -23,7 +23,7 @@ export const FacilityStaffRow: React.FC<FacilityStaffRowProps> = ({ facilityId, 
     const [currentPage, setCurrentPage] = useState(1);
     const { confirm } = useConfirm();
 
-    const { data: staffData, isLoading, error } = useFacilityStaff(facilityId, currentPage);
+    const { data: staffData, isPending, error } = useFacilityStaff(facilityId, currentPage);
     const removeStaffMutation = useRemoveStaff(facilityId);
 
     const handleRemoveStaff = async (userId: string, userName: string) => {
@@ -40,7 +40,7 @@ export const FacilityStaffRow: React.FC<FacilityStaffRowProps> = ({ facilityId, 
         removeStaffMutation.mutate(userId);
     };
 
-    if (isLoading) {
+    if (isPending) {
         return (
             <div className="px-6 py-8 flex items-center justify-center">
                 <div className="flex items-center gap-3">
@@ -163,11 +163,11 @@ export const FacilityStaffRow: React.FC<FacilityStaffRowProps> = ({ facilityId, 
                             {/* Remove Button */}
                             <button
                                 onClick={() => handleRemoveStaff(staff.id, staff.full_name)}
-                                disabled={removeStaffMutation.isLoading}
+                                disabled={removeStaffMutation.isPending}
                                 className="flex-shrink-0 p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 title="Remove"
                             >
-                                {removeStaffMutation.isLoading ? (
+                                {removeStaffMutation.isPending ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                 ) : (
                                     <UserX className="w-4 h-4" />

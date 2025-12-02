@@ -1,9 +1,20 @@
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useFacility, useUpdateFacility } from '../../hooks/useFacilities';
-import { updateFacilitySchema, type UpdateFacilityFormData } from '../../utils/validationSchemas';
-import { Building2, Phone, Mail, MapPin, Loader2, Save, AlertTriangle } from 'lucide-react';
+import React, { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useFacility, useUpdateFacility } from "../../hooks/useFacilities";
+import {
+  updateFacilitySchema,
+  type UpdateFacilityFormData,
+} from "../../utils/validationSchemas";
+import {
+  Building2,
+  Phone,
+  Mail,
+  MapPin,
+  Loader2,
+  Save,
+  AlertTriangle,
+} from "lucide-react";
 
 interface EditFacilityFormProps {
   facilityId: string;
@@ -14,9 +25,13 @@ interface EditFacilityFormProps {
 export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
   facilityId,
   onSuccess,
-  onCancel
+  onCancel,
 }) => {
-  const { data: facility, isLoading: fetchLoading, error: fetchError } = useFacility(facilityId);
+  const {
+    data: facility,
+    isPending: fetchLoading,
+    error: fetchError,
+  } = useFacility(facilityId);
   const updateMutation = useUpdateFacility();
 
   const {
@@ -44,7 +59,7 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
       await updateMutation.mutateAsync({ facilityId, data });
       if (onSuccess) onSuccess();
     } catch (error) {
-      console.error('Form submission error:', error);
+      console.error("Form submission error:", error);
     }
   };
 
@@ -53,7 +68,9 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
       <div className="bg-white rounded-lg border border-gray-200 p-12">
         <div className="flex flex-col items-center justify-center">
           <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
-          <p className="text-sm text-gray-500 font-medium">Loading facility data...</p>
+          <p className="text-sm text-gray-500 font-medium">
+            Loading facility data...
+          </p>
         </div>
       </div>
     );
@@ -68,8 +85,12 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
               <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-red-900">Failed to load facility data</h3>
-              <p className="text-sm text-red-700 mt-0.5">Please try again later</p>
+              <h3 className="text-sm font-semibold text-red-900">
+                Failed to load facility data
+              </h3>
+              <p className="text-sm text-red-700 mt-0.5">
+                Please try again later
+              </p>
             </div>
           </div>
         </div>
@@ -93,11 +114,12 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
                 </div>
                 <input
                   type="text"
-                  {...register('facility_name')}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.facility_name
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-black focus:border-black'
-                    }`}
+                  {...register("facility_name")}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                    errors.facility_name
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:ring-black focus:border-black"
+                  }`}
                 />
               </div>
               {errors.facility_name && (
@@ -119,11 +141,12 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
                 </div>
                 <input
                   type="tel"
-                  {...register('phone')}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.phone
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-black focus:border-black'
-                    }`}
+                  {...register("phone")}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                    errors.phone
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:ring-black focus:border-black"
+                  }`}
                 />
               </div>
               {errors.phone && (
@@ -145,11 +168,12 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
                 </div>
                 <input
                   type="email"
-                  {...register('email')}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.email
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-black focus:border-black'
-                    }`}
+                  {...register("email")}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                    errors.email
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:ring-black focus:border-black"
+                  }`}
                 />
               </div>
               {errors.email && (
@@ -170,12 +194,13 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
                   <MapPin className="w-4 h-4 text-gray-400" />
                 </div>
                 <textarea
-                  {...register('address')}
+                  {...register("address")}
                   rows={3}
-                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all resize-none ${errors.address
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                      : 'border-gray-300 focus:ring-black focus:border-black'
-                    }`}
+                  className={`w-full pl-10 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all resize-none ${
+                    errors.address
+                      ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                      : "border-gray-300 focus:ring-black focus:border-black"
+                  }`}
                 />
               </div>
               {errors.address && (
@@ -191,10 +216,10 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || updateMutation.isLoading}
+              disabled={isSubmitting || updateMutation.isPending}
               className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white py-2.5 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
             >
-              {isSubmitting || updateMutation.isLoading ? (
+              {isSubmitting || updateMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Updating...
@@ -211,7 +236,7 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
               <button
                 type="button"
                 onClick={onCancel}
-                disabled={isSubmitting || updateMutation.isLoading}
+                disabled={isSubmitting || updateMutation.isPending}
                 className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium disabled:opacity-50"
               >
                 Cancel

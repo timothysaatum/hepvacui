@@ -44,7 +44,7 @@ const VaccineRow = memo<{
     <tr className="hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0">
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-linear-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
             <Pill className="w-5 h-5 text-white" />
           </div>
           <div className="min-w-0">
@@ -166,7 +166,7 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const { confirm } = useConfirm();
 
-  const { data, isLoading, error, isFetching } = useVaccines(
+  const { data, isPending, error, isFetching } = useVaccines(
     currentPage,
     10,
     publishedOnly,
@@ -209,7 +209,7 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
 
   const hasActiveFilters = publishedOnly || lowStockOnly;
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12">
         <div className="flex flex-col items-center justify-center">
@@ -224,7 +224,7 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
             <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
           <div>

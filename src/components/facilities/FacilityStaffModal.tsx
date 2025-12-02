@@ -24,7 +24,7 @@ export const FacilityStaffModal: React.FC<FacilityStaffModalProps> = ({ facility
   const [currentPage, setCurrentPage] = useState(1);
   const { confirm } = useConfirm();
 
-  const { data: staffData, isLoading, error } = useFacilityStaff(facility.id, currentPage);
+  const { data: staffData, isPending, error } = useFacilityStaff(facility.id, currentPage);
   const removeStaffMutation = useRemoveStaff(facility.id);
 
   const handleRemoveStaff = async (userId: string, userName: string) => {
@@ -83,7 +83,7 @@ export const FacilityStaffModal: React.FC<FacilityStaffModalProps> = ({ facility
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {isLoading ? (
+          {isPending ? (
             <div className="flex flex-col items-center justify-center h-64">
               <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
               <p className="text-sm text-gray-500 font-medium">Loading staff members...</p>
@@ -168,10 +168,10 @@ export const FacilityStaffModal: React.FC<FacilityStaffModalProps> = ({ facility
                     <div className="flex-shrink-0">
                       <button
                         onClick={() => handleRemoveStaff(staff.id, staff.full_name)}
-                        disabled={removeStaffMutation.isLoading}
+                        disabled={removeStaffMutation.isPending}
                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border border-red-200 hover:border-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {removeStaffMutation.isLoading ? (
+                        {removeStaffMutation.isPending ? (
                           <>
                             <Loader2 className="w-4 h-4 animate-spin" />
                             Removing...

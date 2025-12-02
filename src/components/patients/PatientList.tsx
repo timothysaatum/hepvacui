@@ -185,7 +185,7 @@ export const PatientList: React.FC<PatientListProps> = ({
   const [patientStatus, setPatientStatus] = useState<PatientStatus | ''>('');
   const { confirm } = useConfirm();
 
-  const { data, isLoading, error, isFetching } = usePatients({
+  const { data, isPending, error, isFetching } = usePatients({
     page: currentPage,
     page_size: 10,
     patient_type: patientType || undefined,
@@ -209,7 +209,7 @@ export const PatientList: React.FC<PatientListProps> = ({
 
   const hasActiveFilters = patientType || patientStatus;
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12">
         <div className="flex flex-col items-center justify-center">

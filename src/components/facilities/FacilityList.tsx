@@ -125,7 +125,7 @@ export const FacilityList: React.FC<FacilityListProps> = ({ onEdit }) => {
   const debouncedSearch = useDebounce(searchTerm, 500);
   const { confirm } = useConfirm();
 
-  const { data, isLoading, error, isFetching } = useFacilities(currentPage, 10, debouncedSearch);
+  const { data, isPending, error, isFetching } = useFacilities(currentPage, 10, debouncedSearch);
   const deleteMutation = useDeleteFacility();
 
   React.useEffect(() => {
@@ -150,7 +150,7 @@ export const FacilityList: React.FC<FacilityListProps> = ({ onEdit }) => {
     setExpandedFacilityId(expandedFacilityId === facilityId ? null : facilityId);
   };
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12">
         <div className="flex flex-col items-center justify-center">

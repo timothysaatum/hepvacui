@@ -15,13 +15,15 @@ import { Layout } from './components/layout/Layout';
 import { VaccinesPage } from './pages/Vaccines/VaccinesPage';
 import { PatientsPage } from './pages/Patients/PatientsPage';
 import { PatientDetailPage } from './pages/Patients/PatientDetailPage';
+import { SettingsPage } from './pages/Settings/SettingsPage';
+
 
 // Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 1000 * 60 * 5,
       refetchOnWindowFocus: false,
       retry: 1,
     },
@@ -51,14 +53,12 @@ function App() {
                           <Route path="/dashboard" element={<DashboardPage />} />
                           <Route path="/patients" element={<PatientsPage />} />
                           <Route path="/patients/:patientId" element={<PatientDetailPage />} />
-                          {/* <Route path="/vaccinations" element={<VaccinationsPlaceholder />} /> */}
                           <Route path="/vaccines" element={<VaccinesPage />} />
-                          {/* <Route path="/payments" element={<PaymentsPlaceholder />} /> */}
                           <Route path="/records" element={<SearchPage />} />
                           <Route path="/facilities" element={<FacilitiesPage />} />
                           <Route path="/staff" element={<UsersPage />} />
                           <Route path="/devices" element={<DevicesPage />} />
-                          <Route path="/settings" element={<SettingsPlaceholder />} />
+                          <Route path="/settings" element={<SettingsPage />} />
                         </Routes>
                       </Layout>
                     </ProtectedRoute>
@@ -70,16 +70,9 @@ function App() {
         </ToastProvider>
       </AuthProvider>
       
-      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+      <ReactQueryDevtools initialIsOpen={false} position="bottom" />
     </QueryClientProvider>
   );
 }
-
-const SettingsPlaceholder = () => (
-  <div className="bg-white rounded-lg shadow p-8">
-    <h2 className="text-2xl font-bold mb-4">Settings</h2>
-    <p className="text-gray-600">Application settings coming soon...</p>
-  </div>
-);
 
 export default App;

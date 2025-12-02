@@ -4,7 +4,6 @@ import { CreateFacilityForm } from '../../components/facilities/CreateFacilityFo
 import { EditFacilityForm } from '../../components/facilities/EditFacilityForm';
 import type { Facility } from '../../types/facility';
 import { Plus, X } from 'lucide-react';
-
 export const FacilitiesPage: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);

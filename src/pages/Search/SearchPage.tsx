@@ -1,5 +1,3 @@
-// src/pages/Search/SearchPage.tsx
-
 import React, { useState } from 'react';
 import { Users, Syringe, CreditCard, Search } from 'lucide-react';
 import { PatientSearchTab } from './PatientSearchTab';

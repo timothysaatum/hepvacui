@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { VaccinePurchase } from '../../types/vaccinePurchase';
 import { useAdministerVaccination, useCheckEligibility } from '../../hooks/useVaccinePurchases';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
 import { createVaccinationSchema, type CreateVaccinationFormData } from '../../utils/vaccinePurchaseValidationSchemas';
 import { formatCurrency } from '../../utils/formatters';
 import { SlideOverPanel } from './SlideOverPanel';
@@ -21,7 +21,7 @@ export const AdministerVaccinationPanel: React.FC<AdministerVaccinationPanelProp
 }) => {
   const { user } = useAuth();
   const administerMutation = useAdministerVaccination();
-  const { data: eligibility, isLoading: eligibilityLoading } = useCheckEligibility(purchase?.id || '');
+  const { data: eligibility, isPending: eligibilityLoading } = useCheckEligibility(purchase?.id || '');
 
   const {
     register,
@@ -190,10 +190,10 @@ export const AdministerVaccinationPanel: React.FC<AdministerVaccinationPanelProp
                 <div className="flex gap-3">
                   <button
                     type="submit"
-                    disabled={isSubmitting || administerMutation.isLoading}
+                    disabled={isSubmitting || administerMutation.isPending}
                     className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                   >
-                    {isSubmitting || administerMutation.isLoading ? (
+                    {isSubmitting || administerMutation.isPending ? (
                       <span className="flex items-center justify-center">
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -209,7 +209,7 @@ export const AdministerVaccinationPanel: React.FC<AdministerVaccinationPanelProp
                   <button
                     type="button"
                     onClick={onClose}
-                    disabled={isSubmitting || administerMutation.isLoading}
+                    disabled={isSubmitting || administerMutation.isPending}
                     className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none transition-colors font-medium disabled:opacity-50"
                   >
                     Cancel

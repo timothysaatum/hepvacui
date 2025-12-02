@@ -35,11 +35,11 @@ export const PatientDetailPage: React.FC = () => {
   const [administerPurchase, setAdministerPurchase] = useState<VaccinePurchase | null>(null);
 
   // Fetch patient data - try both types
-  const { data: pregnantData, isLoading: pregnantLoading } = usePregnantPatient(patientId || null);
-  const { data: regularData, isLoading: regularLoading } = useRegularPatient(patientId || null);
-  const { data: purchases, isLoading: purchasesLoading } = usePatientPurchases(patientId || '', false);
+  const { data: pregnantData, isPending: pregnantLoading } = usePregnantPatient(patientId || null);
+  const { data: regularData, isPending: regularLoading } = useRegularPatient(patientId || null);
+  const { data: purchases, isPending: purchasesLoading } = usePatientPurchases(patientId || '', false);
 
-  const isLoading = pregnantLoading || regularLoading;
+  const isPending = pregnantLoading || regularLoading;
   const patient = pregnantData || regularData;
   const isPregnant = patient?.patient_type === 'pregnant';
 
@@ -72,7 +72,7 @@ export const PatientDetailPage: React.FC = () => {
   const totalBalance = purchases?.reduce((sum, p) => sum + Number(p.balance), 0) || 0;
   const totalDoses = purchases?.reduce((sum, p) => sum + p.doses_administered, 0) || 0;
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex justify-center items-center h-96">
         <div className="text-center">

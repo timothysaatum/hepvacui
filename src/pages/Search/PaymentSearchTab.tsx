@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { CreditCard, ChevronLeft, ChevronRight, AlertCircle, DollarSign, Calendar as CalendarIcon } from 'lucide-react';
+import { CreditCard, ChevronLeft, ChevronRight, AlertCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { usePaymentSearch } from '../../hooks/useSearch';
 import type { PaymentSearchFilters, PaymentSearchResult } from '../../types/search';
 import { SearchFilters } from '../../components/search/SearchFilters';
 import { formatDate, formatCurrency } from '../../utils/formatters';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
+
 
 const PAYMENT_FILTER_FIELDS = [
     { name: 'patient_name', label: 'Patient Name', type: 'text' as const, placeholder: 'Search patient...' },
@@ -33,18 +35,21 @@ export const PaymentSearchTab: React.FC = () => {
     const [filters, setFilters] = useState<PaymentSearchFilters>({
         page: 1,
         page_size: 10,
-        facility_id: user?.facility_id,
+        facility_id: user?.facility?.id,
     });
 
     const [searchTrigger, setSearchTrigger] = useState(0);
-    const { data, isLoading, error } = usePaymentSearch(filters, searchTrigger > 0);
+    const { data, isFetching, error } = usePaymentSearch(filters, searchTrigger > 0);
 
-    const handleFilterChange = (name: string, value: any) => {
-        setFilters((prev) => ({ ...prev, [name]: value, page: 1 }));
+    const handleFilterChange = <K extends keyof PaymentSearchFilters>(
+      name: K,
+      value: PaymentSearchFilters[K]
+    ) => {
+      setFilters((prev) => ({ ...prev, [name]: value, page: 1 }));
     };
 
     const handleClearFilters = () => {
-        setFilters({ page: 1, page_size: 10, facility_id: user?.facility_id });
+        setFilters({ page: 1, page_size: 10, facility_id: user?.facility?.id });
         setSearchTrigger(0);
     };
 
@@ -63,7 +68,7 @@ export const PaymentSearchTab: React.FC = () => {
                 onClear={handleClearFilters}
                 onSearch={handleSearch}
                 fields={PAYMENT_FILTER_FIELDS}
-                isLoading={isLoading}
+                isPending={isFetching}
             />
 
             {error && (
@@ -84,7 +89,7 @@ export const PaymentSearchTab: React.FC = () => {
                 </div>
             )}
 
-            {searchTrigger > 0 && !isLoading && !error && data && (
+            {searchTrigger > 0 && !isFetching && !error && data && (
                 <>
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">

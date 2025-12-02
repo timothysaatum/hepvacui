@@ -82,7 +82,7 @@ const UserRow = memo<{
       </td>
       <td className="px-6 py-4">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Mail className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           <a href={`mailto:${user.email}`} className="hover:text-blue-600 hover:underline truncate">
             {user.email}
           </a>
@@ -90,7 +90,7 @@ const UserRow = memo<{
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+          <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
           {user.phone}
         </div>
       </td>
@@ -103,7 +103,7 @@ const UserRow = memo<{
       <td className="px-6 py-4 whitespace-nowrap">
         {user.facility ? (
           <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Building2 className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+            <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
             <span className="truncate max-w-[150px]" title={user.facility.facility_name}>
               {user.facility.facility_name}
             </span>
@@ -146,7 +146,7 @@ export const UserList: React.FC<UserListProps> = ({ onEdit }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const { confirm } = useConfirm();
 
-  const { data, isLoading, error, isFetching } = useUsers(currentPage, 10);
+  const { data, isPending, error, isFetching } = useUsers(currentPage, 10);
   const deleteMutation = useDeleteUser();
 
   const handleDelete = async (userId: string, userName: string) => {
@@ -163,7 +163,7 @@ export const UserList: React.FC<UserListProps> = ({ onEdit }) => {
     deleteMutation.mutate(userId);
   };
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12">
         <div className="flex flex-col items-center justify-center">
@@ -178,7 +178,7 @@ export const UserList: React.FC<UserListProps> = ({ onEdit }) => {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
             <AlertTriangle className="w-5 h-5 text-red-600" />
           </div>
           <div>
@@ -207,7 +207,7 @@ export const UserList: React.FC<UserListProps> = ({ onEdit }) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden relative">
       {/* Loading overlay */}
-      {isFetching && !isLoading && (
+      {isFetching && !isPending && (
         <div className="absolute top-4 right-4 z-10">
           <Loader2 className="w-5 h-5 text-black animate-spin" />
         </div>

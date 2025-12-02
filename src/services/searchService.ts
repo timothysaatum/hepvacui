@@ -1,5 +1,3 @@
-// src/services/searchService.ts
-
 import api from './api';
 import type {
     PatientSearchFilters,

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { facilityService } from '../services/facilityService';
 import type { CreateFacilityPayload, UpdateFacilityPayload } from '../types/facility';
 import { useToast } from '../context/ToastContext';
+import { keepPreviousData } from '@tanstack/react-query';
 
 // Query Keys
 export const facilityKeys = {
@@ -20,7 +21,7 @@ export const useFacilities = (page: number = 1, pageSize: number = 10, search?: 
     queryKey: facilityKeys.list(page, pageSize, search),
     queryFn: () => facilityService.getFacilities(page, pageSize, search),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -41,7 +42,7 @@ export const useFacilityStaff = (facilityId: string, page: number = 1) => {
     queryFn: () => facilityService.getFacilityStaff(facilityId, page, 10),
     enabled: !!facilityId,
     staleTime: 3 * 60 * 1000, // 3 minutes
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -53,7 +54,9 @@ export const useCreateFacility = () => {
   return useMutation({
     mutationFn: (data: CreateFacilityPayload) => facilityService.createFacility(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(facilityKeys.lists());
+      queryClient.invalidateQueries({
+        queryKey: ['facilities', 'list']
+      });
       showSuccess('Facility created successfully');
     },
     onError: (error: any) => {
@@ -72,8 +75,11 @@ export const useUpdateFacility = () => {
     mutationFn: ({ facilityId, data }: { facilityId: string; data: UpdateFacilityPayload }) => 
       facilityService.updateFacility(facilityId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(facilityKeys.lists());
-      queryClient.invalidateQueries(facilityKeys.detail(variables.facilityId));
+      queryClient.invalidateQueries({
+        queryKey: ['facilities', 'list']
+      });
+      // queryClient.invalidateQueries(facilityKeys.detail(variables.facilityId));
+      queryClient.invalidateQueries({ queryKey: facilityKeys.detail(variables.facilityId) });
       showSuccess('Facility updated successfully');
     },
     onError: (error: any) => {
@@ -91,7 +97,10 @@ export const useDeleteFacility = () => {
   return useMutation({
     mutationFn: (facilityId: string) => facilityService.deleteFacility(facilityId),
     onSuccess: () => {
-      queryClient.invalidateQueries(facilityKeys.lists());
+      // queryClient.invalidateQueries(facilityKeys.lists());
+      queryClient.invalidateQueries({
+        queryKey: ['facilities', 'list']
+      });
       showSuccess('Facility deleted successfully');
     },
     onError: (error: any) => {
@@ -109,7 +118,8 @@ export const useRemoveStaff = (facilityId: string) => {
   return useMutation({
     mutationFn: (userId: string) => facilityService.removeStaff(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries(facilityKeys.staff(facilityId, 1));
+      // queryClient.invalidateQueries(facilityKeys.staff(facilityId, 1));
+      queryClient.invalidateQueries({ queryKey: facilityKeys.staff(facilityId, 1) });
       showSuccess('Staff member removed successfully');
     },
     onError: (error: any) => {

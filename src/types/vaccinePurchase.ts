@@ -9,9 +9,9 @@ export interface VaccinePurchase {
   price_per_dose: number;
   batch_number: string;
   total_doses: number;
-  total_package_price: number | string;
-  amount_paid: number | string;
-  balance: number | string;
+  total_package_price: number;
+  amount_paid: number;
+  balance: number;
   payment_status: PaymentStatus;
   doses_administered: number;
   purchase_date: string;

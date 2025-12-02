@@ -1,12 +1,12 @@
-// src/pages/Search/PatientSearchTab.tsx
-
 import React, { useState } from 'react';
 import { Users, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { usePatientSearch } from '../../hooks/useSearch';
 import type { PatientSearchFilters } from '../../types/search';
 import { SearchFilters } from '../../components/search/SearchFilters';
 import { PatientSearchCard } from '../../components/search/PatientSearchCard';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
+
 
 const FILTER_FIELDS = [
     { name: 'name', label: 'Patient Name', type: 'text' as const, placeholder: 'Search by name...' },
@@ -52,26 +52,25 @@ export const PatientSearchTab: React.FC = () => {
     const [filters, setFilters] = useState<PatientSearchFilters>({
         page: 1,
         page_size: 10,
-        facility_id: user?.facility_id,
+        facility_id: user?.facility?.id,
     });
 
     const [searchTrigger, setSearchTrigger] = useState(0);
 
-    const { data, isLoading, error } = usePatientSearch(filters, searchTrigger > 0);
+    const { data, isFetching, error } = usePatientSearch(filters, searchTrigger > 0);
 
-    const handleFilterChange = (name: string, value: any) => {
-        setFilters((prev) => ({
-            ...prev,
-            [name]: value,
-            page: 1, // Reset to first page when filters change
-        }));
+    const handleFilterChange = <K extends keyof PatientSearchFilters>(
+      name: K,
+      value: PatientSearchFilters[K]
+    ) => {
+      setFilters((prev) => ({ ...prev, [name]: value, page: 1 }));
     };
 
     const handleClearFilters = () => {
         setFilters({
             page: 1,
             page_size: 10,
-            facility_id: user?.facility_id,
+            facility_id: user?.facility?.id,
         });
         setSearchTrigger(0);
     };
@@ -93,13 +92,13 @@ export const PatientSearchTab: React.FC = () => {
                 onClear={handleClearFilters}
                 onSearch={handleSearch}
                 fields={FILTER_FIELDS}
-                isLoading={isLoading}
+                isPending={isFetching}
             />
 
             {/* Results */}
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-6 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                     <div>
                         <h3 className="font-semibold text-red-900 mb-1">Search Error</h3>
                         <p className="text-sm text-red-700">
@@ -119,7 +118,7 @@ export const PatientSearchTab: React.FC = () => {
                 </div>
             )}
 
-            {searchTrigger > 0 && !isLoading && !error && data && (
+            {searchTrigger > 0 && !isFetching && !error && data && (
                 <>
                     {/* Results Header */}
                     <div className="flex items-center justify-between mb-6">

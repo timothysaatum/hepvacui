@@ -21,9 +21,9 @@ export const ExpandablePurchaseCard: React.FC<ExpandablePurchaseCardProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'payments' | 'vaccinations'>('overview');
 
-  const { data: purchase, isLoading: purchaseLoading } = useVaccinePurchase(purchaseId);
-  const { data: payments, isLoading: paymentsLoading } = usePurchasePayments(purchaseId);
-  const { data: vaccinations, isLoading: vaccinationsLoading } = usePurchaseVaccinations(purchaseId);
+  const { data: purchase, isPending: purchaseLoading } = useVaccinePurchase(purchaseId);
+  const { data: payments, isPending: paymentsLoading } = usePurchasePayments(purchaseId);
+  const { data: vaccinations, isPending: vaccinationsLoading } = usePurchaseVaccinations(purchaseId);
 
   const getPaymentStatusDisplay = (status: string) => {
     switch (status) {

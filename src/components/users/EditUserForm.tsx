@@ -16,7 +16,7 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const { data: user, isLoading: fetchLoading, error: fetchError } = useUser(userId);
+  const { data: user, isPending: fetchLoading, error: fetchError } = useUser(userId);
   const updateMutation = useUpdateUser();
 
   const {
@@ -66,7 +66,7 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5 text-red-600" />
             </div>
             <div>
@@ -233,10 +233,10 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || updateMutation.isLoading}
+              disabled={isSubmitting || updateMutation.isPending}
               className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white py-2.5 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
             >
-              {isSubmitting || updateMutation.isLoading ? (
+              {isSubmitting || updateMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Updating...
@@ -253,7 +253,7 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
               <button
                 type="button"
                 onClick={onCancel}
-                disabled={isSubmitting || updateMutation.isLoading}
+                disabled={isSubmitting || updateMutation.isPending}
                 className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium disabled:opacity-50"
               >
                 Cancel

@@ -156,10 +156,10 @@ export const CreateFacilityForm: React.FC<CreateFacilityFormProps> = ({ onSucces
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || createMutation.isLoading}
+              disabled={isSubmitting || createMutation.isPending}
               className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white py-2.5 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
             >
-              {isSubmitting || createMutation.isLoading ? (
+              {isSubmitting || createMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Creating...
@@ -176,7 +176,7 @@ export const CreateFacilityForm: React.FC<CreateFacilityFormProps> = ({ onSucces
               <button
                 type="button"
                 onClick={onCancel}
-                disabled={isSubmitting || createMutation.isLoading}
+                disabled={isSubmitting || createMutation.isPending}
                 className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium disabled:opacity-50"
               >
                 Cancel

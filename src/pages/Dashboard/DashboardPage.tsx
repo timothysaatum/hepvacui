@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 import {
-    TrendingUp,
     Users,
     Syringe,
-    DollarSign,
     Building2,
     Monitor,
-    Calendar,
     Activity,
     ArrowUp,
     ArrowDown,
     Pill,
     AlertCircle,
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
 import {
     useDashboardOverview,
     useVaccineUsage,
@@ -32,11 +30,11 @@ export const DashboardPage: React.FC = () => {
     const currentYear = new Date().getFullYear();
     const [filters, setFilters] = useState<DashboardFilters>({
         year: currentYear,
-        facility_id: user?.facility_id,
+        facility_id: user?.facility?.id,
     });
 
     // Fetch all dashboard data
-    const { data: overview, isLoading: overviewLoading } = useDashboardOverview(filters.facility_id);
+    const { data: overview, isPending: overviewLoading } = useDashboardOverview(filters.facility_id);
     const { data: vaccineUsage } = useVaccineUsage(filters);
     const { data: revenue } = useRevenueAnalytics(filters);
     const { data: facilities } = useFacilityPerformance();

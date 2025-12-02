@@ -8,7 +8,9 @@ import {
   useUpdatePregnantPatient,
   useUpdateRegularPatient,
 } from '../../hooks/usePatients';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
+
 import {
   updatePregnantPatientSchema,
   updateRegularPatientSchema,
@@ -30,10 +32,10 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
   const { user } = useAuth();
   const isPregnant = patient.patient_type === 'pregnant';
 
-  const { data: pregnantData, isLoading: pregnantLoading } = usePregnantPatient(
+  const { data: pregnantData, isPending: pregnantLoading } = usePregnantPatient(
     isPregnant ? patient.id : null
   );
-  const { data: regularData, isLoading: regularLoading } = useRegularPatient(
+  const { data: regularData, isPending: regularLoading } = useRegularPatient(
     !isPregnant ? patient.id : null
   );
 
@@ -121,11 +123,11 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
     }
   };
 
-  const isLoading = pregnantLoading || regularLoading;
+  const isPending = pregnantLoading || regularLoading;
   const isSubmitting = isSubmittingPregnant || isSubmittingRegular;
-  const isMutating = updatePregnantMutation.isLoading || updateRegularMutation.isLoading;
+  const isMutating = updatePregnantMutation.isPending || updateRegularMutation.isPending;
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="bg-white p-6 rounded-lg shadow">
         <div className="flex justify-center items-center py-8">

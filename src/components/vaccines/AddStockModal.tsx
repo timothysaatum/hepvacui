@@ -64,7 +64,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ vaccine, onClose, 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-linear-to-r from-purple-50 to-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
               <Plus className="w-5 h-5 text-purple-600" />
@@ -147,10 +147,10 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ vaccine, onClose, 
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              disabled={isSubmitting || addStockMutation.isLoading || !quantityToAdd}
+              disabled={isSubmitting || addStockMutation.isPending || !quantityToAdd}
               className="flex-1 inline-flex items-center justify-center gap-2 bg-black text-white py-2.5 px-4 rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
             >
-              {isSubmitting || addStockMutation.isLoading ? (
+              {isSubmitting || addStockMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Adding...
@@ -166,7 +166,7 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ vaccine, onClose, 
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting || addStockMutation.isLoading}
+              disabled={isSubmitting || addStockMutation.isPending}
               className="flex-1 bg-gray-100 text-gray-700 py-2.5 px-4 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium disabled:opacity-50"
             >
               Cancel

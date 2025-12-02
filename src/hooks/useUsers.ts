@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../services/userService';
 import type { CreateUserPayload, UpdateUserPayload } from '../types/user';
 import { useToast } from '../context/ToastContext';
+import { keepPreviousData } from '@tanstack/react-query';
 
 // Query Keys
 export const userKeys = {
@@ -18,7 +19,7 @@ export const useUsers = (page: number = 1, pageSize: number = 10) => {
     queryKey: userKeys.list(page, pageSize),
     queryFn: () => userService.getUsers(page, pageSize),
     staleTime: 5 * 60 * 1000, // 5 minutes
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -40,7 +41,8 @@ export const useCreateUser = () => {
   return useMutation({
     mutationFn: (data: CreateUserPayload) => userService.createUser(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(userKeys.lists());
+      // queryClient.invalidateQueries(userKeys.lists());
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       showSuccess('User created successfully');
     },
     onError: (error: any) => {
@@ -58,7 +60,8 @@ export const useCreateStaff = () => {
   return useMutation({
     mutationFn: (data: CreateUserPayload) => userService.createStaff(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(userKeys.lists());
+      // queryClient.invalidateQueries(userKeys.lists());
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       showSuccess('Staff user created successfully');
     },
     onError: (error: any) => {
@@ -77,8 +80,10 @@ export const useUpdateUser = () => {
     mutationFn: ({ userId, data }: { userId: string; data: UpdateUserPayload }) => 
       userService.updateUser(userId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(userKeys.lists());
-      queryClient.invalidateQueries(userKeys.detail(variables.userId));
+      // queryClient.invalidateQueries(userKeys.lists());
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(variables.userId) });
+      // queryClient.invalidateQueries(userKeys.detail(variables.userId));
       showSuccess('User updated successfully');
     },
     onError: (error: any) => {
@@ -96,7 +101,8 @@ export const useDeleteUser = () => {
   return useMutation({
     mutationFn: (userId: string) => userService.deleteUser(userId),
     onSuccess: () => {
-      queryClient.invalidateQueries(userKeys.lists());
+      // queryClient.invalidateQueries(userKeys.lists());
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       showSuccess('User deleted successfully');
     },
     onError: (error: any) => {

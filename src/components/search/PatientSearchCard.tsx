@@ -1,5 +1,3 @@
-// src/components/search/PatientSearchCard.tsx
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Phone, Calendar, Heart, ChevronRight } from 'lucide-react';

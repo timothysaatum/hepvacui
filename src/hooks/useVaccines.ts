@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { vaccineService } from '../services/vaccineService';
 import type {
   CreateVaccinePayload,
@@ -33,7 +33,7 @@ export const useVaccines = (
     queryKey: vaccineKeys.list(page, pageSize, publishedOnly, lowStockOnly),
     queryFn: () => vaccineService.getVaccines(page, pageSize, publishedOnly, lowStockOnly),
     staleTime: 3 * 60 * 1000, // 3 minutes
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -84,8 +84,10 @@ export const useCreateVaccine = () => {
   return useMutation({
     mutationFn: (data: CreateVaccinePayload) => vaccineService.createVaccine(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(vaccineKeys.lists());
-      queryClient.invalidateQueries(vaccineKeys.lowStock());
+      // queryClient.invalidateQueries(vaccineKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
+      // queryClient.invalidateQueries(vaccineKeys.lowStock());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lowStock() });
       showSuccess('Vaccine created successfully');
     },
     onError: (error: any) => {
@@ -104,10 +106,14 @@ export const useUpdateVaccine = () => {
     mutationFn: ({ vaccineId, data }: { vaccineId: string; data: UpdateVaccinePayload }) =>
       vaccineService.updateVaccine(vaccineId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(vaccineKeys.lists());
-      queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
-      queryClient.invalidateQueries(vaccineKeys.stock(variables.vaccineId));
-      queryClient.invalidateQueries(vaccineKeys.lowStock());
+      // queryClient.invalidateQueries(vaccineKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
+      // queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.detail(variables.vaccineId) });
+      // queryClient.invalidateQueries(vaccineKeys.stock(variables.vaccineId));
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.stock(variables.vaccineId) });
+      // queryClient.invalidateQueries(vaccineKeys.lowStock());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lowStock() });
       showSuccess('Vaccine updated successfully');
     },
     onError: (error: any) => {
@@ -125,8 +131,10 @@ export const useDeleteVaccine = () => {
   return useMutation({
     mutationFn: (vaccineId: string) => vaccineService.deleteVaccine(vaccineId),
     onSuccess: () => {
-      queryClient.invalidateQueries(vaccineKeys.lists());
-      queryClient.invalidateQueries(vaccineKeys.lowStock());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
+      // queryClient.invalidateQueries(vaccineKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lowStock() });
+      // queryClient.invalidateQueries(vaccineKeys.lowStock());
       showSuccess('Vaccine deleted successfully');
     },
     onError: (error: any) => {
@@ -145,10 +153,14 @@ export const useAddStock = () => {
     mutationFn: ({ vaccineId, data }: { vaccineId: string; data: AddStockPayload }) =>
       vaccineService.addStock(vaccineId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(vaccineKeys.lists());
-      queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
-      queryClient.invalidateQueries(vaccineKeys.stock(variables.vaccineId));
-      queryClient.invalidateQueries(vaccineKeys.lowStock());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
+      // queryClient.invalidateQueries(vaccineKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.detail(variables.vaccineId) });
+      // queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
+      // queryClient.invalidateQueries(vaccineKeys.stock(variables.vaccineId));
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.stock(variables.vaccineId) });
+      // queryClient.invalidateQueries(vaccineKeys.lowStock());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lowStock() });
       showSuccess('Stock added successfully');
     },
     onError: (error: any) => {
@@ -167,8 +179,10 @@ export const usePublishVaccine = () => {
     mutationFn: ({ vaccineId, data }: { vaccineId: string; data: PublishVaccinePayload }) =>
       vaccineService.publishVaccine(vaccineId, data),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries(vaccineKeys.lists());
-      queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
+      // queryClient.invalidateQueries(vaccineKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
+      // queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
+      queryClient.invalidateQueries({ queryKey: vaccineKeys.detail(variables.vaccineId) });
       const action = data.is_published ? 'published' : 'unpublished';
       showSuccess(`Vaccine ${action} successfully`);
     },

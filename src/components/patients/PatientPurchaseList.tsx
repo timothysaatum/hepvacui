@@ -17,10 +17,10 @@ export const PatientPurchaseList: React.FC<PatientPurchaseListProps> = ({
   onMakePayment,
   onAdministerDose,
 }) => {
-  const { data: purchases, isLoading, error } = usePatientPurchases(patientId, false);
+  const { data: purchases, isPending, error } = usePatientPurchases(patientId, false);
 
   // Loading state
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">

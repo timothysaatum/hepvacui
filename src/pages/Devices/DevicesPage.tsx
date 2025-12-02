@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PendingDevicesList } from '../../components/devices/PendingDevicesList';
 import { MyDevicesList } from '../../components/devices/MyDevicesList';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
 import { AlertTriangle, Smartphone, Info } from 'lucide-react';
 
 export const DevicesPage: React.FC = () => {

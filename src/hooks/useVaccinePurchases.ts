@@ -91,8 +91,10 @@ export const useCreateVaccinePurchase = () => {
     mutationFn: ({ patientId, data }: { patientId: string; data: CreateVaccinePurchasePayload }) =>
       vaccinePurchaseService.createVaccinePurchase(patientId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(vaccinePurchaseKeys.list(variables.patientId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.list(variables.patientId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.list(variables.patientId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.lists() });
       showSuccess('Vaccine purchase created successfully');
     },
     onError: (error: any) => {
@@ -111,8 +113,11 @@ export const useUpdateVaccinePurchase = () => {
     mutationFn: ({ purchaseId, data }: { purchaseId: string; data: UpdateVaccinePurchasePayload }) =>
       vaccinePurchaseService.updateVaccinePurchase(purchaseId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(vaccinePurchaseKeys.detail(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.detail(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.detail(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.lists() });
+
       showSuccess('Vaccine purchase updated successfully');
     },
     onError: (error: any) => {
@@ -131,11 +136,16 @@ export const useCreatePayment = () => {
     mutationFn: ({ purchaseId, data }: { purchaseId: string; data: CreatePaymentPayload }) =>
       vaccinePurchaseService.createPayment(purchaseId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(vaccinePurchaseKeys.detail(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.payments(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.progress(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.eligibility(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.detail(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.detail(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.payments(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.payments(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.progress(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.progress(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.eligibility(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.eligibility(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.lists() });
       showSuccess('Payment recorded successfully');
     },
     onError: (error: any) => {
@@ -154,11 +164,16 @@ export const useAdministerVaccination = () => {
     mutationFn: ({ purchaseId, data }: { purchaseId: string; data: CreateVaccinationPayload }) =>
       vaccinePurchaseService.administerVaccination(purchaseId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(vaccinePurchaseKeys.detail(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.vaccinations(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.progress(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.eligibility(variables.purchaseId));
-      queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.detail(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.detail(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.vaccinations(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.vaccinations(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.progress(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.progress(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.eligibility(variables.purchaseId));
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.eligibility(variables.purchaseId) });
+      // queryClient.invalidateQueries(vaccinePurchaseKeys.lists());
+      queryClient.invalidateQueries({ queryKey: vaccinePurchaseKeys.lists() });
       showSuccess('Vaccination administered successfully');
     },
     onError: (error: any) => {

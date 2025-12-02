@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreatePregnantPatient, useCreateRegularPatient } from '../../hooks/usePatients';
-import { useAuth } from '../../context/AuthContext';
+// import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth'
+
 import {
   createPregnantPatientSchema,
   createRegularPatientSchema,
@@ -80,7 +82,7 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
     }
   };
 
-  const isLoading = createPregnantMutation.isLoading || createRegularMutation.isLoading;
+  const isPending = createPregnantMutation.isPending || createRegularMutation.isPending;
   const isSubmitting = isSubmittingPregnant || isSubmittingRegular;
 
   return (
@@ -208,17 +210,17 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || isLoading}
+              disabled={isSubmitting || isPending}
               className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
-              {isSubmitting || isLoading ? 'Adding Patient...' : 'Add Patient'}
+              {isSubmitting || isPending ? 'Adding Patient...' : 'Add Patient'}
             </button>
 
             {onCancel && (
               <button
                 type="button"
                 onClick={onCancel}
-                disabled={isSubmitting || isLoading}
+                disabled={isSubmitting || isPending}
                 className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none transition-colors font-medium disabled:opacity-50"
               >
                 Cancel
@@ -428,17 +430,17 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
           <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={isSubmitting || isLoading}
+              disabled={isSubmitting || isPending}
               className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
-              {isSubmitting || isLoading ? 'Adding Patient...' : 'Add Patient'}
+              {isSubmitting || isPending ? 'Adding Patient...' : 'Add Patient'}
             </button>
 
             {onCancel && (
               <button
                 type="button"
                 onClick={onCancel}
-                disabled={isSubmitting || isLoading}
+                disabled={isSubmitting || isPending}
                 className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none transition-colors font-medium disabled:opacity-50"
               >
                 Cancel

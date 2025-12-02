@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { patientService } from '../services/patientService';
 import type {
   CreatePregnantPatientPayload,
@@ -9,6 +9,7 @@ import type {
   PatientFilters,
 } from '../types/patient';
 import { useToast } from '../context/ToastContext';
+// import {  } from '@tanstack/react-query';
 
 // Query Keys
 export const patientKeys = {
@@ -26,7 +27,7 @@ export const usePatients = (filters: PatientFilters = {}) => {
     queryKey: patientKeys.list(filters),
     queryFn: () => patientService.getPatients(filters),
     staleTime: 3 * 60 * 1000, // 3 minutes
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   });
 };
 
@@ -59,7 +60,8 @@ export const useCreatePregnantPatient = () => {
     mutationFn: (data: CreatePregnantPatientPayload) => 
       patientService.createPregnantPatient(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(patientKeys.lists());
+      // queryClient.invalidateQueries(patientKeys.lists());
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       showSuccess('Pregnant patient created successfully');
     },
     onError: (error: any) => {
@@ -78,7 +80,8 @@ export const useCreateRegularPatient = () => {
     mutationFn: (data: CreateRegularPatientPayload) => 
       patientService.createRegularPatient(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(patientKeys.lists());
+      // queryClient.invalidateQueries(patientKeys.lists());
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       showSuccess('Regular patient created successfully');
     },
     onError: (error: any) => {
@@ -99,8 +102,10 @@ export const useUpdatePregnantPatient = () => {
       data: UpdatePregnantPatientPayload 
     }) => patientService.updatePregnantPatient(patientId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(patientKeys.lists());
-      queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'pregnant'));
+      // queryClient.invalidateQueries(patientKeys.lists());
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'pregnant') });
+      // queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'pregnant'));
       showSuccess('Pregnant patient updated successfully');
     },
     onError: (error: any) => {
@@ -121,8 +126,10 @@ export const useUpdateRegularPatient = () => {
       data: UpdateRegularPatientPayload 
     }) => patientService.updateRegularPatient(patientId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(patientKeys.lists());
-      queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'regular'));
+      // queryClient.invalidateQueries(patientKeys.lists());
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'regular') });
+      // queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'regular'));
       showSuccess('Regular patient updated successfully');
     },
     onError: (error: any) => {
@@ -143,8 +150,10 @@ export const useConvertToRegular = () => {
       data: ConvertToRegularPayload 
     }) => patientService.convertToRegular(patientId, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(patientKeys.lists());
-      queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'pregnant'));
+      // queryClient.invalidateQueries(patientKeys.lists());
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      // queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'pregnant'));
+      queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'pregnant') });
       showSuccess('Patient converted to regular successfully');
     },
     onError: (error: any) => {
@@ -162,7 +171,8 @@ export const useDeletePatient = () => {
   return useMutation({
     mutationFn: (patientId: string) => patientService.deletePatient(patientId),
     onSuccess: () => {
-      queryClient.invalidateQueries(patientKeys.lists());
+      // queryClient.invalidateQueries(patientKeys.lists());
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       showSuccess('Patient deleted successfully');
     },
     onError: (error: any) => {
