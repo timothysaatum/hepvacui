@@ -407,13 +407,6 @@ const StatCard: React.FC<{
   </div>
 );
 
-// Then update the usage to add className directly:
-<StatCard
-  title="Total Paid"
-  value={formatCurrency(totalSpent)}
-  icon={<CreditCard className="w-6 h-6" />}
-/>
-
 const PurchaseCard: React.FC<{
   purchase: VaccinePurchase;
   isExpanded: boolean;
