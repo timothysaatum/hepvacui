@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Heart, Activity, Calendar, Phone, Pill, CreditCard, Syringe, FileText, TrendingUp, ChevronRight, ArrowLeft, Edit3} from 'lucide-react';
 import type { Patient, RegularPatient } from '../../types/patient';
 import type { VaccinePurchase } from '../../types/vaccinePurchase';
 import { usePregnantPatient, useRegularPatient } from '../../hooks/usePatients';
@@ -9,49 +8,98 @@ import { PurchaseVaccinePanel } from '../../components/purchases/PurchaseVaccine
 import { PaymentPanel } from '../../components/purchases/PaymentPanel';
 import { AdministerVaccinationPanel } from '../../components/purchases/AdministerVaccinationPanel';
 import { formatDate, formatCurrency } from '../../utils/formatters';
+import {
+  ArrowLeft,
+  Edit3,
+  User,
+  Heart,
+  Activity,
+  FileText,
+  Calendar,
+  Phone,
+  Syringe,
+  CreditCard,
+  TrendingUp,
+  Pill,
+  ChevronRight
+} from 'lucide-react';
 
 export const PatientDetailPage: React.FC = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'purchases'>('overview');
+  const [activeTab, setActiveTab] = useState<'info' | 'purchases'>('info');
+  const [expandedPurchase, setExpandedPurchase] = useState<string | null>(null);
 
-  // Slide-over panel states
   const [purchaseVaccinePatient, setPurchaseVaccinePatient] = useState<Patient | null>(null);
   const [paymentPurchase, setPaymentPurchase] = useState<VaccinePurchase | null>(null);
   const [administerPurchase, setAdministerPurchase] = useState<VaccinePurchase | null>(null);
-  const [expandedPurchase, setExpandedPurchase] = useState<string | null>(null);
 
-  // Fetch patient data
   const { data: pregnantData, isPending: pregnantLoading } = usePregnantPatient(patientId || null);
   const { data: regularData, isPending: regularLoading } = useRegularPatient(patientId || null);
-  const { data: purchases, isPending: purchasesLoading } = usePatientPurchases(patientId || '', false);
+  
+  const { data: purchases, isPending: purchasesLoading } = usePatientPurchases(
+    patientId || '', 
+    activeTab === 'purchases'
+  );
 
   const isPending = pregnantLoading || regularLoading;
   const patient = pregnantData || regularData;
   const isPregnant = patient?.patient_type === 'pregnant';
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = useCallback((status: string) => {
     const styles = {
       active: 'bg-gray-100 text-black border-gray-200',
       inactive: 'bg-gray-50 text-gray-600 border-gray-200',
       converted: 'bg-gray-100 text-black border-gray-200'
     };
     return styles[status as keyof typeof styles] || styles.inactive;
-  };
+  }, []);
 
-  const getPaymentStatusBadge = (status: string) => {
+  const getPaymentStatusBadge = useCallback((status: string) => {
     const styles = {
       paid: 'bg-gray-100 text-black border-gray-200',
       partial: 'bg-gray-100 text-black border-gray-200',
       unpaid: 'bg-gray-50 text-gray-600 border-gray-200'
     };
     return styles[status as keyof typeof styles] || styles.unpaid;
-  };
+  }, []);
 
-  // Calculate totals
-  const totalSpent = purchases?.reduce((sum, p) => sum + Number(p.amount_paid), 0) || 0;
-  const totalBalance = purchases?.reduce((sum, p) => sum + Number(p.balance), 0) || 0;
-  const totalDoses = purchases?.reduce((sum, p) => sum + p.doses_administered, 0) || 0;
+  const getPaymentStatus = useCallback((purchase: VaccinePurchase): string => {
+    if (purchase.balance === 0) return 'paid';
+    if (purchase.amount_paid > 0) return 'partial';
+    return 'unpaid';
+  }, []);
+
+  const { totalSpent, totalBalance, totalDoses } = useMemo(() => {
+    if (!purchases) return { totalSpent: 0, totalBalance: 0, totalDoses: 0 };
+    
+    return {
+      totalSpent: purchases.reduce((sum, p) => sum + Number(p.amount_paid), 0),
+      totalBalance: purchases.reduce((sum, p) => sum + Number(p.balance), 0),
+      totalDoses: purchases.reduce((sum, p) => sum + p.doses_administered, 0)
+    };
+  }, [purchases]);
+
+  const handlePurchaseVaccine = useCallback(() => {
+    if (patient) setPurchaseVaccinePatient(patient);
+  }, [patient]);
+
+  const handleEditPatient = useCallback(() => {
+    navigate(`/patients/${patientId}/edit`);
+  }, [navigate, patientId]);
+
+  const handleBackToPatients = useCallback(() => {
+    navigate('/patients');
+  }, [navigate]);
+
+  const handlePurchaseSuccess = useCallback(() => {
+    setPurchaseVaccinePatient(null);
+    setActiveTab('purchases');
+  }, []);
+
+  const togglePurchaseExpansion = useCallback((purchaseId: string) => {
+    setExpandedPurchase(prev => prev === purchaseId ? null : purchaseId);
+  }, []);
 
   if (isPending) {
     return (
@@ -73,7 +121,7 @@ export const PatientDetailPage: React.FC = () => {
           The patient you're looking for doesn't exist or you don't have permission to view it.
         </p>
         <button
-          onClick={() => navigate('/patients')}
+          onClick={handleBackToPatients}
           className="px-6 py-2 bg-black text-white rounded-lg hover:bg-gray-900"
         >
           Back to Patients
@@ -83,272 +131,125 @@ export const PatientDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-white p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-white p-8 border-b border-gray-200">
-            <div className="flex items-start justify-between mb-8">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white p-8 border-b border-gray-200">
+          <div className="flex items-start justify-between mb-8">
+            <button
+              onClick={handleBackToPatients}
+              className="text-gray-600 hover:text-black transition-colors group"
+              title="Back to Patients"
+            >
+              <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+            </button>
+            <div className="flex gap-3">
               <button
-                onClick={() => navigate('/patients')}
-                className="text-gray-600 hover:text-black transition-colors group"
+                onClick={handlePurchaseVaccine}
+                className="px-5 py-2.5 bg-black hover:bg-gray-900 text-white rounded-xl font-medium transition-all hover:scale-105 flex items-center gap-2"
               >
-                <ArrowLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
+                <Syringe className="w-4 h-4" />
+                Purchase Vaccine
               </button>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setPurchaseVaccinePatient(patient)}
-                  className="px-5 py-2.5 bg-black hover:bg-gray-900 text-white rounded-xl font-medium transition-all hover:scale-105 flex items-center gap-2"
-                >
-                  <Syringe className="w-4 h-4" />
-                  Purchase Vaccine
-                </button>
-                <button
-                  onClick={() => navigate(`/patients/${patientId}/edit`)}
-                  className="px-5 py-2.5 bg-white text-black hover:bg-gray-50 rounded-xl font-medium transition-all hover:scale-105 flex items-center gap-2 border border-gray-200"
-                >
-                  <Edit3 className="w-4 h-4" />
-                  Edit Patient
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-2xl bg-gray-100 flex items-center justify-center shadow-sm border border-gray-200">
-                <Heart className="w-12 h-12 text-black" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-4xl font-bold text-black">{patient.name}</h1>
-                  <span className={`px-3 py-1 text-xs font-semibold rounded-lg border ${getStatusBadge(patient.status)}`}>
-                    {patient.status.charAt(0).toUpperCase() + patient.status.slice(1)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-6 text-black">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    <span className="text-sm font-medium">{patient.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span className="text-sm font-medium">{patient.age} years</span>
-                  </div>
-                  <div className="px-3 py-1 bg-gray-100 rounded-lg text-xs font-semibold border border-gray-200">
-                    {isPregnant ? 'Pregnant Patient' : 'Regular Patient'}
-                  </div>
-                </div>
-              </div>
+              <button
+                onClick={handleEditPatient}
+                className="px-5 py-2.5 bg-white text-black hover:bg-gray-50 rounded-xl font-medium transition-all hover:scale-105 flex items-center gap-2 border border-gray-200"
+              >
+                <Edit3 className="w-4 h-4" />
+                Edit Patient
+              </button>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="border-b border-gray-200 bg-white px-8">
-            <div className="flex gap-8">
-              {['overview', 'purchases'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab as 'overview' | 'purchases')}
-                  className={`py-4 px-2 font-semibold text-sm transition-all relative ${activeTab === tab
-                      ? 'text-black'
-                      : 'text-gray-500 hover:text-black'
-                    }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  {activeTab === tab && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
-                  )}
-                </button>
-              ))}
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 rounded-2xl bg-gray-100 flex items-center justify-center shadow-sm border border-gray-200">
+              <Heart className="w-12 h-12 text-black" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-4xl font-bold text-black">{patient.name}</h1>
+                <span className={`px-3 py-1 text-xs font-semibold rounded-lg border ${getStatusBadge(patient.status)}`}>
+                  {patient.status.charAt(0).toUpperCase() + patient.status.slice(1)}
+                </span>
+              </div>
+              <div className="flex items-center gap-6 text-black">
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  <span className="text-sm font-medium">{patient.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <span className="text-sm font-medium">{patient.age} years</span>
+                </div>
+                <div className="px-3 py-1 bg-gray-100 rounded-lg text-xs font-semibold border border-gray-200">
+                  {isPregnant ? 'Pregnant Patient' : 'Regular Patient'}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Content */}
-        {activeTab === 'overview' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Basic Information */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <User className="w-5 h-5 text-black" />
-                </div>
-                <h3 className="text-lg font-bold text-black">Basic Information</h3>
-              </div>
-              <div className="space-y-4">
-                <InfoRow label="Full Name" value={patient.name} />
-                <InfoRow label="Phone Number" value={patient.phone} />
-                <InfoRow label="Age" value={`${patient.age} years`} />
-                <InfoRow
-                  label="Sex"
-                  value={isPregnant ? 'Female' : (regularData as RegularPatient)?.sex === 'male' ? 'Male' : 'Female'}
-                />
-                <InfoRow label="Patient ID" value={patient.id} />
-              </div>
-            </div>
-
-            {/* Pregnant-specific Information */}
-            {isPregnant && pregnantData && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                    <Heart className="w-5 h-5 text-black" />
-                  </div>
-                  <h3 className="text-lg font-bold text-black">Pregnancy Information</h3>
-                </div>
-                <div className="space-y-4">
-                  <InfoRow
-                    label="Expected Delivery Date"
-                    value={formatDate(pregnantData.expected_delivery_date)}
-                  />
-                  <InfoRow
-                    label="Actual Delivery Date"
-                    value={pregnantData.actual_delivery_date ? formatDate(pregnantData.actual_delivery_date) : 'Not delivered yet'}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Regular Patient Medical Information */}
-            {!isPregnant && regularData && (
-              <>
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-black" />
-                    </div>
-                    <h3 className="text-lg font-bold text-black">Medical Information</h3>
-                  </div>
-                  <div className="space-y-4">
-                    <InfoRow
-                      label="Diagnosis Date"
-                      value={regularData.diagnosis_date ? formatDate(regularData.diagnosis_date) : 'N/A'}
-                    />
-                    <InfoRow
-                      label="Treatment Start Date"
-                      value={regularData.treatment_start_date ? formatDate(regularData.treatment_start_date) : 'N/A'}
-                    />
-                    <InfoRow
-                      label="Viral Load"
-                      value={regularData.viral_load || 'N/A'}
-                    />
-                    <InfoRow
-                      label="Last Viral Load Date"
-                      value={regularData.last_viral_load_date ? formatDate(regularData.last_viral_load_date) : 'N/A'}
-                    />
-                    <InfoRow
-                      label="Treatment Regimen"
-                      value={regularData.treatment_regimen || 'N/A'}
-                    />
-                  </div>
-                </div>
-
-                {(regularData.allergies || regularData.medical_history || regularData.notes) && (
-                  <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-black" />
-                      </div>
-                      <h3 className="text-lg font-bold text-black">Additional Notes</h3>
-                    </div>
-                    <div className="space-y-4">
-                      {regularData.allergies && (
-                        <InfoRow label="Allergies" value={regularData.allergies} isTextArea />
-                      )}
-                      {regularData.medical_history && (
-                        <InfoRow label="Medical History" value={regularData.medical_history} isTextArea />
-                      )}
-                      {regularData.notes && (
-                        <InfoRow label="Notes" value={regularData.notes} isTextArea />
-                      )}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* System Information */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:col-span-2 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-black" />
-                </div>
-                <h3 className="text-lg font-bold text-black">System Information</h3>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <InfoRow label="Created At" value={formatDate(patient.created_at, 'long')} />
-                <InfoRow label="Updated At" value={formatDate(patient.updated_at, 'long')} />
-                <InfoRow label="Facility ID" value={patient.facility_id} />
-                <InfoRow label="Created By ID" value={patient.created_by_id} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'purchases' && (
-          <div className="space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard
-                title="Total Paid"
-                value={formatCurrency(totalSpent)}
-                icon={<CreditCard className="w-6 h-6" />}
-              />
-              <StatCard
-                title="Outstanding Balance"
-                value={formatCurrency(totalBalance)}
-                icon={<TrendingUp className="w-6 h-6" />}
-              />
-              <StatCard
-                title="Doses Administered"
-                value={totalDoses.toString()}
-                icon={<Syringe className="w-6 h-6" />}
-              />
-            </div>
-
-            {/* Purchase History */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-bold text-black mb-6 flex items-center gap-2">
-                <Pill className="w-5 h-5 text-black" />
-                Purchase History
-              </h3>
-
-              {purchasesLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
-                </div>
-              ) : !purchases || purchases.length === 0 ? (
-                <div className="text-center py-12">
-                  <Syringe className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No vaccine purchases yet</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {purchases.map((purchase) => (
-                    <PurchaseCard
-                      key={purchase.id}
-                      purchase={purchase}
-                      isExpanded={expandedPurchase === purchase.id}
-                      onToggle={() => setExpandedPurchase(expandedPurchase === purchase.id ? null : purchase.id)}
-                      getPaymentStatusBadge={getPaymentStatusBadge}
-                      onMakePayment={() => setPaymentPurchase(purchase)}
-                      onAdministerDose={() => setAdministerPurchase(purchase)}
-                    />
-                  ))}
-                </div>
+        {/* Tabs */}
+        <div className="border-b border-gray-200 bg-white px-8">
+          <div className="flex gap-8">
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`py-4 px-2 font-semibold text-sm transition-all relative ${activeTab === 'info'
+                  ? 'text-black'
+                  : 'text-gray-500 hover:text-black'
+                }`}
+            >
+              Patient Information
+              {activeTab === 'info' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
               )}
-            </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('purchases')}
+              className={`py-4 px-2 font-semibold text-sm transition-all relative ${activeTab === 'purchases'
+                  ? 'text-black'
+                  : 'text-gray-500 hover:text-black'
+                }`}
+            >
+              Vaccine Purchases & History
+              {activeTab === 'purchases' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
+              )}
+            </button>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Slide-over Panels */}
+      {/* Tab Content */}
+      {activeTab === 'info' && (
+        <PatientInfoTab 
+          patient={patient}
+          isPregnant={isPregnant}
+          pregnantData={pregnantData}
+          regularData={regularData as RegularPatient}
+        />
+      )}
+
+      {activeTab === 'purchases' && (
+        <PurchasesTab
+          purchases={purchases}
+          purchasesLoading={purchasesLoading}
+          totalSpent={totalSpent}
+          totalBalance={totalBalance}
+          totalDoses={totalDoses}
+          expandedPurchase={expandedPurchase}
+          onTogglePurchase={togglePurchaseExpansion}
+          getPaymentStatusBadge={getPaymentStatusBadge}
+          getPaymentStatus={getPaymentStatus}
+          onMakePayment={setPaymentPurchase}
+          onAdministerDose={setAdministerPurchase}
+        />
+      )}
+
       <PurchaseVaccinePanel
         patient={purchaseVaccinePatient}
         onClose={() => setPurchaseVaccinePatient(null)}
-        onSuccess={() => {
-          setPurchaseVaccinePatient(null);
-          setActiveTab('purchases');
-        }}
+        onSuccess={handlePurchaseSuccess}
       />
 
       <PaymentPanel
@@ -366,61 +267,237 @@ export const PatientDetailPage: React.FC = () => {
   );
 };
 
-// Helper Components
-const InfoRow: React.FC<{
-  label: string;
-  value: string;
-  isTextArea?: boolean;
-}> = ({ label, value, isTextArea = false }) => {
-  return (
-    <div className={isTextArea ? '' : 'flex justify-between items-center py-2 border-b border-gray-100 last:border-0'}>
-      {isTextArea ? (
-        <>
-          <dt className="text-sm font-medium text-gray-600 mb-1">{label}</dt>
-          <dd className="text-sm text-black bg-gray-50 p-3 rounded-md border border-gray-200 whitespace-pre-wrap">
-            {value}
-          </dd>
-        </>
-      ) : (
-        <>
-          <span className="text-sm font-medium text-gray-600">{label}</span>
-          <span className="text-sm font-semibold text-black">{value}</span>
-        </>
-      )}
-    </div>
-  );
-};
-
-const StatCard: React.FC<{
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-}> = ({ title, value, icon }) => (
-  <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 hover:shadow-md transition-all hover:scale-105">
-    <div className="flex items-center justify-between mb-3">
-      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-black">
-        {icon}
+const PatientInfoTab = React.memo<{
+  patient: Patient;
+  isPregnant: boolean;
+  pregnantData: any;
+  regularData: RegularPatient;
+}>(({ patient, isPregnant, pregnantData, regularData }) => (
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {/* Basic Information */}
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+          <User className="w-5 h-5 text-black" />
+        </div>
+        <h3 className="text-lg font-bold text-black">Basic Information</h3>
+      </div>
+      <div className="space-y-4">
+        <InfoRow label="Full Name" value={patient.name} />
+        <InfoRow label="Phone Number" value={patient.phone} />
+        <InfoRow label="Age" value={`${patient.age} years`} />
+        <InfoRow
+          label="Sex"
+          value={isPregnant ? 'Female' : regularData?.sex === 'male' ? 'Male' : 'Female'}
+        />
+        <InfoRow label="Patient ID" value={patient.id} />
       </div>
     </div>
-    <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-    <p className="text-3xl font-bold text-black">{value}</p>
-  </div>
-);
 
-const PurchaseCard: React.FC<{
+    {/* Pregnant-specific Information */}
+    {isPregnant && pregnantData && (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+            <Heart className="w-5 h-5 text-black" />
+          </div>
+          <h3 className="text-lg font-bold text-black">Pregnancy Information</h3>
+        </div>
+        <div className="space-y-4">
+          <InfoRow
+            label="Expected Delivery Date"
+            value={formatDate(pregnantData.expected_delivery_date)}
+          />
+          <InfoRow
+            label="Actual Delivery Date"
+            value={pregnantData.actual_delivery_date ? formatDate(pregnantData.actual_delivery_date) : 'Not delivered yet'}
+          />
+        </div>
+      </div>
+    )}
+
+    {/* Regular Patient Medical Information */}
+    {!isPregnant && regularData && (
+      <>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+              <Activity className="w-5 h-5 text-black" />
+            </div>
+            <h3 className="text-lg font-bold text-black">Medical Information</h3>
+          </div>
+          <div className="space-y-4">
+            <InfoRow
+              label="Diagnosis Date"
+              value={regularData.diagnosis_date ? formatDate(regularData.diagnosis_date) : 'N/A'}
+            />
+            <InfoRow
+              label="Treatment Start Date"
+              value={regularData.treatment_start_date ? formatDate(regularData.treatment_start_date) : 'N/A'}
+            />
+            <InfoRow
+              label="Viral Load"
+              value={regularData.viral_load || 'N/A'}
+            />
+            <InfoRow
+              label="Last Viral Load Date"
+              value={regularData.last_viral_load_date ? formatDate(regularData.last_viral_load_date) : 'N/A'}
+            />
+            <InfoRow
+              label="Treatment Regimen"
+              value={regularData.treatment_regimen || 'N/A'}
+            />
+          </div>
+        </div>
+
+        {(regularData.allergies || regularData.medical_history || regularData.notes) && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+                <FileText className="w-5 h-5 text-black" />
+              </div>
+              <h3 className="text-lg font-bold text-black">Additional Notes</h3>
+            </div>
+            <div className="space-y-4">
+              {regularData.allergies && (
+                <InfoRow label="Allergies" value={regularData.allergies} isTextArea />
+              )}
+              {regularData.medical_history && (
+                <InfoRow label="Medical History" value={regularData.medical_history} isTextArea />
+              )}
+              {regularData.notes && (
+                <InfoRow label="Notes" value={regularData.notes} isTextArea />
+              )}
+            </div>
+          </div>
+        )}
+      </>
+    )}
+
+    {/* System Information */}
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 lg:col-span-2 hover:shadow-md transition-shadow">
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
+          <Calendar className="w-5 h-5 text-black" />
+        </div>
+        <h3 className="text-lg font-bold text-black">System Information</h3>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <InfoRow label="Created At" value={formatDate(patient.created_at, 'long')} />
+        <InfoRow label="Updated At" value={formatDate(patient.updated_at, 'long')} />
+        <InfoRow label="Facility ID" value={patient.facility_id} />
+        <InfoRow label="Created By ID" value={patient.created_by_id} />
+      </div>
+    </div>
+  </div>
+));
+
+const PurchasesTab = React.memo<{
+  purchases?: VaccinePurchase[];
+  purchasesLoading: boolean;
+  totalSpent: number;
+  totalBalance: number;
+  totalDoses: number;
+  expandedPurchase: string | null;
+  onTogglePurchase: (id: string) => void;
+  getPaymentStatusBadge: (status: string) => string;
+  getPaymentStatus: (purchase: VaccinePurchase) => string;
+  onMakePayment: (purchase: VaccinePurchase) => void;
+  onAdministerDose: (purchase: VaccinePurchase) => void;
+}>(({ 
+  purchases, 
+  purchasesLoading, 
+  totalSpent, 
+  totalBalance, 
+  totalDoses,
+  expandedPurchase,
+  onTogglePurchase,
+  getPaymentStatusBadge,
+  getPaymentStatus,
+  onMakePayment,
+  onAdministerDose
+}) => (
+  <div className="space-y-6">
+    {/* Stats Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 hover:shadow-md transition-all hover:scale-105">
+        <div className="flex items-center justify-between mb-3">
+          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+            <CreditCard className="w-6 h-6 text-black" />
+          </div>
+        </div>
+        <p className="text-sm font-medium text-gray-600 mb-1">Total Paid</p>
+        <p className="text-3xl font-bold text-black">{formatCurrency(totalSpent)}</p>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 hover:shadow-md transition-all hover:scale-105">
+        <div className="flex items-center justify-between mb-3">
+          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6 text-black" />
+          </div>
+        </div>
+        <p className="text-sm font-medium text-gray-600 mb-1">Outstanding Balance</p>
+        <p className="text-3xl font-bold text-black">{formatCurrency(totalBalance)}</p>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 hover:shadow-md transition-all hover:scale-105">
+        <div className="flex items-center justify-between mb-3">
+          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+            <Syringe className="w-6 h-6 text-black" />
+          </div>
+        </div>
+        <p className="text-sm font-medium text-gray-600 mb-1">Doses Administered</p>
+        <p className="text-3xl font-bold text-black">{totalDoses}</p>
+      </div>
+    </div>
+
+    {/* Purchase History */}
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <h3 className="text-lg font-bold text-black mb-6 flex items-center gap-2">
+        <Pill className="w-5 h-5 text-black" />
+        Purchase History
+      </h3>
+
+      {purchasesLoading ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
+        </div>
+      ) : !purchases || purchases.length === 0 ? (
+        <div className="text-center py-12">
+          <Syringe className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500">No vaccine purchases yet</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {purchases.map((purchase) => (
+            <PurchaseCard
+              key={purchase.id}
+              purchase={purchase}
+              isExpanded={expandedPurchase === purchase.id}
+              onToggle={() => onTogglePurchase(purchase.id)}
+              getPaymentStatusBadge={getPaymentStatusBadge}
+              getPaymentStatus={getPaymentStatus}
+              onMakePayment={() => onMakePayment(purchase)}
+              onAdministerDose={() => onAdministerDose(purchase)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+));
+
+const PurchaseCard = React.memo<{
   purchase: VaccinePurchase;
   isExpanded: boolean;
   onToggle: () => void;
   getPaymentStatusBadge: (status: string) => string;
+  getPaymentStatus: (purchase: VaccinePurchase) => string;
   onMakePayment: () => void;
   onAdministerDose: () => void;
-}> = ({ purchase, isExpanded, onToggle, getPaymentStatusBadge, onMakePayment, onAdministerDose }) => {
-  const getPaymentStatus = (): string => {
-    if (purchase.balance === 0) return 'paid';
-    if (purchase.amount_paid > 0) return 'partial';
-    return 'unpaid';
-  };
-
+}>(({ purchase, isExpanded, onToggle, getPaymentStatusBadge, getPaymentStatus, onMakePayment, onAdministerDose }) => {
+  const paymentStatus = getPaymentStatus(purchase);
+  
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 transition-all hover:shadow-sm">
       <div
@@ -431,8 +508,8 @@ const PurchaseCard: React.FC<{
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <h4 className="font-bold text-black">{purchase.vaccine_name}</h4>
-              <span className={`px-2 py-1 text-xs font-semibold rounded-lg border ${getPaymentStatusBadge(getPaymentStatus())}`}>
-                {getPaymentStatus().charAt(0).toUpperCase() + getPaymentStatus().slice(1)}
+              <span className={`px-2 py-1 text-xs font-semibold rounded-lg border ${getPaymentStatusBadge(paymentStatus)}`}>
+                {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-600">
@@ -497,4 +574,29 @@ const PurchaseCard: React.FC<{
       )}
     </div>
   );
-};
+});
+
+// Helper component for displaying information rows
+const InfoRow = React.memo<{
+  label: string;
+  value: string;
+  isTextArea?: boolean;
+}>(({ label, value, isTextArea = false }) => {
+  return (
+    <div className={isTextArea ? '' : 'flex justify-between items-center py-2 border-b border-gray-100 last:border-0'}>
+      {isTextArea ? (
+        <>
+          <dt className="text-sm font-medium text-gray-600 mb-1">{label}</dt>
+          <dd className="text-sm text-black bg-gray-50 p-3 rounded-md border border-gray-200 whitespace-pre-wrap">
+            {value}
+          </dd>
+        </>
+      ) : (
+        <>
+          <span className="text-sm font-medium text-gray-600">{label}</span>
+          <span className="text-sm font-semibold text-black">{value}</span>
+        </>
+      )}
+    </div>
+  );
+});

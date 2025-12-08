@@ -34,13 +34,13 @@ export const LoginForm: React.FC = () => {
         {/* Logo/Brand */}
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl shadow-lg mb-4">
-            <span className="text-white font-bold text-2xl">H</span>
+            <span className="text-white font-bold text-2xl">M</span>
           </div>
           <h2 className="text-3xl font-bold text-gray-900">
             Welcome back
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to access your HepVac account
+            Sign in to access your MCVIMS account
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export const LoginForm: React.FC = () => {
           {/* Footer */}
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-200">
             <p className="text-xs text-center text-gray-500">
-              © 2024 HepVac. All rights reserved.
+              © 2024 MCVIMS. All rights reserved.
             </p>
           </div>
         </div>

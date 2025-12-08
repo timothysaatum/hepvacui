@@ -1,80 +1,134 @@
-import { useQuery } from '@tanstack/react-query';
-import { searchService } from '../services/searchService';
+// import { useQuery, keepPreviousData } from '@tanstack/react-query';
+// import { searchService } from '../services/searchService';
+// import type {
+//     PatientSearchFilters,
+//     VaccinationSearchFilters,
+//     PaymentSearchFilters,
+//     VaccineSearchFilters,
+// } from '../types/search';
+
+
+// export const searchKeys = {
+//     patients: (filters: PatientSearchFilters) => ['search', 'patients', filters] as const,
+//     vaccinations: (filters: VaccinationSearchFilters) => ['search', 'vaccinations', filters] as const,
+//     payments: (filters: PaymentSearchFilters) => ['search', 'payments', filters] as const,
+//     vaccines: (filters: VaccineSearchFilters) => ['search', 'vaccines', filters] as const,
+// };
+
+
+// export const usePatientSearch = (filters: PatientSearchFilters) => {
+//     return useQuery({
+//         queryKey: searchKeys.patients(filters),
+//         queryFn: () => searchService.searchPatients(filters),
+//         staleTime: 3 * 60 * 1000, // 3 minutes - matches usePatients
+//         placeholderData: keepPreviousData, // Smooth pagination/filtering
+//     });
+// };
+
+// export const useVaccinationSearch = (filters: VaccinationSearchFilters) => {
+//     return useQuery({
+//         queryKey: searchKeys.vaccinations(filters),
+//         queryFn: () => searchService.searchVaccinations(filters),
+//         staleTime: 1 * 60 * 1000,
+//         placeholderData: keepPreviousData,
+//     });
+// };
+
+// export const usePaymentSearch = (filters: PaymentSearchFilters) => {
+//     return useQuery({
+//         queryKey: searchKeys.payments(filters),
+//         queryFn: () => searchService.searchPayments(filters),
+//         staleTime: 1 * 60 * 1000,
+//         placeholderData: keepPreviousData,
+//     });
+// };
+
+
+// export const useVaccineSearch = (filters: VaccineSearchFilters) => {
+//     return useQuery({
+//         queryKey: searchKeys.vaccines(filters),
+//         queryFn: () => searchService.searchVaccines(filters),
+//         staleTime: 3 * 60 * 1000,
+//         placeholderData: keepPreviousData,
+//     });
+// };
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import type {
     PatientSearchFilters,
+    PatientSearchResponse,
     VaccinationSearchFilters,
+    VaccinationSearchResponse,
     PaymentSearchFilters,
+    PaymentSearchResponse,
+    VaccineSearchFilters,
+    VaccineSearchResponse
 } from '../types/search';
+import { searchService } from '../services/searchService';
 
-// export const usePatientSearch = (filters: PatientSearchFilters, enabled: boolean = true) => {
-//     return useQuery({
-//         queryKey: ['search', 'patients', filters],
-//         queryFn: () => searchService.searchPatients(filters),
-//         enabled,
-//         staleTime: 1 * 60 * 1000, // 1 minute
-//     });
-// };
-export const usePatientSearch = (filters: PatientSearchFilters, enabled: boolean = true) => {
-    const query = useQuery({
-        queryKey: ['search', 'patients', filters],
+// Query Keys - IMPORTANT: Each search type must have COMPLETELY unique keys
+// The problem was likely that filter objects were being compared by reference,
+// causing cache collisions between different search types
+export const searchKeys = {
+    // Each key builder creates a UNIQUE array structure for that search type
+    patients: (filters: PatientSearchFilters) =>
+        ['search', 'patients', { ...filters }] as const,
+    vaccinations: (filters: VaccinationSearchFilters) =>
+        ['search', 'vaccinations', { ...filters }] as const,
+    payments: (filters: PaymentSearchFilters) =>
+        ['search', 'payments', { ...filters }] as const,
+    vaccines: (filters: VaccineSearchFilters) =>
+        ['search', 'vaccines', { ...filters }] as const,
+};
+
+// Patient Search Hook
+export const usePatientSearch = (filters: PatientSearchFilters = {}) => {
+    return useQuery<PatientSearchResponse>({
+        queryKey: searchKeys.patients(filters),
         queryFn: () => searchService.searchPatients(filters),
-        enabled,
-        staleTime: 1 * 60 * 1000,
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData,
+        // Add this to help with debugging
+        meta: {
+            searchType: 'patients'
+        }
     });
-
-    return {
-        ...query,
-        isFetching: query.isFetching,   // for loading spinner
-        isLoading: query.isLoading,     // first load
-        isError: query.isError,
-    };
 };
 
-// export const useVaccinationSearch = (filters: VaccinationSearchFilters, enabled: boolean = true) => {
-//     return useQuery({
-//         queryKey: ['search', 'vaccinations', filters],
-//         queryFn: () => searchService.searchVaccinations(filters),
-//         enabled,
-//         staleTime: 1 * 60 * 1000,
-//     });
-// };
-export const useVaccinationSearch = (filters: VaccinationSearchFilters, enabled: boolean = true) => {
-    const query = useQuery({
-        queryKey: ['search', 'vaccinations', filters],
+// Vaccination Search Hook
+export const useVaccinationSearch = (filters: VaccinationSearchFilters = {}) => {
+    return useQuery<VaccinationSearchResponse>({
+        queryKey: searchKeys.vaccinations(filters),
         queryFn: () => searchService.searchVaccinations(filters),
-        enabled,
-        staleTime: 1 * 60 * 1000,
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData,
+        meta: {
+            searchType: 'vaccinations'
+        }
     });
-
-    return {
-        ...query,
-        isFetching: query.isFetching,
-        isLoading: query.isLoading,
-        isError: query.isError,
-    };
 };
 
-
-// export const usePaymentSearch = (filters: PaymentSearchFilters, enabled: boolean = true) => {
-//     return useQuery({
-//         queryKey: ['search', 'payments', filters],
-//         queryFn: () => searchService.searchPayments(filters),
-//         enabled,
-//         staleTime: 1 * 60 * 1000,
-//     });
-// };
-export const usePaymentSearch = (filters: PaymentSearchFilters, enabled: boolean = true) => {
-    const query = useQuery({
-        queryKey: ['search', 'payments', filters],
+// Payment Search Hook
+export const usePaymentSearch = (filters: PaymentSearchFilters = {}) => {
+    return useQuery<PaymentSearchResponse>({
+        queryKey: searchKeys.payments(filters),
         queryFn: () => searchService.searchPayments(filters),
-        enabled,
-        staleTime: 1 * 60 * 1000,
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData,
+        meta: {
+            searchType: 'payments'
+        }
     });
+};
 
-    return {
-        ...query,
-        isFetching: query.isFetching,
-        isLoading: query.isLoading,
-        isError: query.isError,
-    };
+// Vaccine Search Hook
+export const useVaccineSearch = (filters: VaccineSearchFilters = {}) => {
+    return useQuery<VaccineSearchResponse>({
+        queryKey: searchKeys.vaccines(filters),
+        queryFn: () => searchService.searchVaccines(filters),
+        staleTime: 2 * 60 * 1000,
+        placeholderData: keepPreviousData,
+        meta: {
+            searchType: 'vaccines'
+        }
+    });
 };

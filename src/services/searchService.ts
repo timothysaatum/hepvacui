@@ -6,6 +6,8 @@ import type {
     VaccinationSearchResponse,
     PaymentSearchFilters,
     PaymentSearchResponse,
+    VaccineSearchResponse,
+    VaccineSearchFilters
 } from '../types/search';
 
 export const searchService = {
@@ -48,6 +50,33 @@ export const searchService = {
         });
 
         const response = await api.get(`/api/v1/search/payments?${params.toString()}`);
+        return response.data;
+    },
+
+    // Search vaccines
+//     searchVaccines: async (filters: VaccineSearchFilters): Promise<VaccineSearchResponse> => {
+//     const params = new URLSearchParams();
+
+//     Object.entries(filters).forEach(([key, value]) => {
+//         if (value !== undefined && value !== null && value !== '') {
+//             params.append(key, value.toString());
+//         }
+//     });
+
+//     const response = await api.get(`/api/v1/vaccines/search?${params.toString()}`);
+//     return response.data;
+// },
+    // Search vaccines
+    searchVaccines: async (filters: VaccineSearchFilters): Promise<VaccineSearchResponse> => {
+        const params = new URLSearchParams();
+
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== '') {
+                params.append(key, value.toString());
+            }
+        });
+
+        const response = await api.get(`/api/v1/vaccines/search?${params.toString()}`);
         return response.data;
     },
 };

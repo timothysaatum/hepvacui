@@ -1,5 +1,3 @@
-// src/types/search.ts
-
 export interface PatientSearchFilters {
     name?: string;
     phone?: string;
@@ -128,4 +126,64 @@ export interface PaymentSearchResponse {
     has_next: boolean;
     has_previous: boolean;
     query_time_ms?: number;
+}
+
+export interface VaccineSearchFilters {
+    vaccine_name?: string;
+    batch_number?: string;
+    is_published?: boolean;
+    low_stock?: boolean;
+    created_from?: string;
+    created_to?: string;
+    page?: number;
+    page_size?: number;
+}
+
+export interface VaccineSearchResult {
+    id: string;
+    vaccine_name: string;
+    batch_number: string;
+    price_per_dose: number;
+    quantity: number;
+    is_published: boolean;
+    added_by_id?: string;
+    created_at: string;
+}
+
+export interface VaccineSearchResponse {
+    items: VaccineSearchResult[];
+    total_count: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+    has_next: boolean;
+    has_previous: boolean;
+    query_time_ms?: number;
+}
+
+export interface Vaccine {
+    id: string;
+    vaccine_name: string;
+    batch_number: string;
+    price_per_dose: number;
+    quantity: number;
+    is_published: boolean;
+    added_by_id?: string;
+    created_at: string;
+}
+
+export interface PageInfo {
+    total_items: number;
+    total_pages: number;
+    current_page: number;
+    page_size: number;
+    has_next: boolean;
+    has_previous: boolean;
+    next_page: number | null;
+    previous_page: number | null;
+}
+
+export interface PaginatedVaccines {
+    items: Vaccine[];
+    page_info: PageInfo;
 }

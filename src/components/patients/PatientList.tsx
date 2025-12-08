@@ -1,6 +1,7 @@
-import React, { useState, memo } from 'react';
+import React, { useState, memo, useEffect, useCallback } from 'react';
 import type { Patient, PatientType, PatientStatus } from '../../types/patient';
-import { usePatients, useDeletePatient } from '../../hooks/usePatients';
+import { usePatientSearch } from '../../hooks/useSearch';
+import { useDeletePatient } from '../../hooks/usePatients';
 import { useConfirm } from '../common/ConfirmDialog';
 import { formatDate } from '../../utils/formatters';
 import {
@@ -18,7 +19,9 @@ import {
   Filter,
   X,
   AlertTriangle,
-  Loader2
+  Loader2,
+  Search,
+  CalendarRange
 } from 'lucide-react';
 
 interface PatientListProps {
@@ -183,14 +186,47 @@ export const PatientList: React.FC<PatientListProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [patientType, setPatientType] = useState<PatientType | ''>('');
   const [patientStatus, setPatientStatus] = useState<PatientStatus | ''>('');
+  const [searchName, setSearchName] = useState('');
+  const [searchPhone, setSearchPhone] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [debouncedName, setDebouncedName] = useState('');
+  const [debouncedPhone, setDebouncedPhone] = useState('');
   const { confirm } = useConfirm();
 
-  const { data, isPending, error, isFetching } = usePatients({
+  // Debounce search inputs
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedName(searchName);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchName]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedPhone(searchPhone);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchPhone]);
+
+  // Reset to page 1 when search terms or filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedName, debouncedPhone, patientType, patientStatus, dateFrom, dateTo]);
+
+  const { data, isPending, error, isFetching } = usePatientSearch({
     page: currentPage,
     page_size: 10,
     patient_type: patientType || undefined,
-    patient_status: patientStatus || undefined,
+    status: patientStatus || undefined,
+    name: debouncedName.length >= 2 ? debouncedName : undefined,
+    phone: debouncedPhone || undefined,
+    created_from: dateFrom || undefined,
+    created_to: dateTo || undefined,
   });
+  
   const deleteMutation = useDeletePatient();
 
   const handleDelete = async (patientId: string, patientName: string) => {
@@ -207,7 +243,17 @@ export const PatientList: React.FC<PatientListProps> = ({
     deleteMutation.mutate(patientId);
   };
 
-  const hasActiveFilters = patientType || patientStatus;
+  const handleClearAllFilters = useCallback(() => {
+    setPatientType('');
+    setPatientStatus('');
+    setSearchName('');
+    setSearchPhone('');
+    setDateFrom('');
+    setDateTo('');
+    setCurrentPage(1);
+  }, []);
+
+  const hasActiveFilters = patientType || patientStatus || searchName || searchPhone || dateFrom || dateTo;
 
   if (isPending) {
     return (
@@ -238,19 +284,126 @@ export const PatientList: React.FC<PatientListProps> = ({
 
   if (!data || data.items.length === 0) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-12">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Users className="w-8 h-8 text-gray-400" />
+      <div className="bg-white rounded-lg border border-gray-200">
+        {/* Search and Filters - Always show */}
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <div className="space-y-4">
+            {/* Search Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name (min 2 chars)..."
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by phone number..."
+                  value={searchPhone}
+                  onChange={(e) => setSearchPhone(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+            </div>
+
+            {/* Date Range Filter */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="relative">
+                <CalendarRange className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="date"
+                  placeholder="From date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+              <div className="relative">
+                <CalendarRange className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="date"
+                  placeholder="To date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+                />
+              </div>
+            </div>
+
+            {/* Filter Dropdowns */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Filter className="w-4 h-4" />
+                Filters:
+              </div>
+
+              <select
+                value={patientType}
+                onChange={(e) => {
+                  setPatientType(e.target.value as PatientType | '');
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
+              >
+                <option value="">All Types</option>
+                <option value="pregnant">Pregnant</option>
+                <option value="regular">Regular</option>
+              </select>
+
+              <select
+                value={patientStatus}
+                onChange={(e) => {
+                  setPatientStatus(e.target.value as PatientStatus | '');
+                  setCurrentPage(1);
+                }}
+                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
+              >
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="converted">Converted</option>
+              </select>
+
+              {hasActiveFilters && (
+                <button
+                  onClick={handleClearAllFilters}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                  Clear All
+                </button>
+              )}
+
+              {isFetching && (
+                <div className="ml-auto">
+                  <Loader2 className="w-5 h-5 text-black animate-spin" />
+                </div>
+              )}
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {hasActiveFilters ? 'No patients found' : 'No patients yet'}
-          </h3>
-          <p className="text-sm text-gray-500 max-w-sm mx-auto">
-            {hasActiveFilters
-              ? 'No patients match the selected filters'
-              : 'Get started by adding your first patient to the system'}
-          </p>
+        </div>
+
+        {/* Empty State */}
+        <div className="p-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {hasActiveFilters ? 'No patients found' : 'No patients yet'}
+            </h3>
+            <p className="text-sm text-gray-500 max-w-sm mx-auto">
+              {hasActiveFilters
+                ? 'No patients match your search criteria. Try adjusting your filters.'
+                : 'Get started by adding your first patient to the system'}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -258,60 +411,118 @@ export const PatientList: React.FC<PatientListProps> = ({
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      {/* Filters */}
+      {/* Search and Filters */}
       <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <Filter className="w-4 h-4" />
-            Filters:
+        <div className="space-y-4">
+          {/* Search Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name (min 2 chars)..."
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+              />
+              {searchName && searchName.length < 2 && (
+                <p className="text-xs text-amber-600 mt-1">Enter at least 2 characters to search</p>
+              )}
+            </div>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by phone number..."
+                value={searchPhone}
+                onChange={(e) => setSearchPhone(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+              />
+            </div>
           </div>
 
-          <select
-            value={patientType}
-            onChange={(e) => {
-              setPatientType(e.target.value as PatientType | '');
-              setCurrentPage(1);
-            }}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
-          >
-            <option value="">All Types</option>
-            <option value="pregnant">Pregnant</option>
-            <option value="regular">Regular</option>
-          </select>
+          {/* Date Range Filter */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="relative">
+              <CalendarRange className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="date"
+                placeholder="From date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                max={dateTo || undefined}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+              />
+              <label className="absolute left-9 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                {!dateFrom && 'Created from'}
+              </label>
+            </div>
+            <div className="relative">
+              <CalendarRange className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                type="date"
+                placeholder="To date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                min={dateFrom || undefined}
+                className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+              />
+              <label className="absolute left-9 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                {!dateTo && 'Created to'}
+              </label>
+            </div>
+          </div>
 
-          <select
-            value={patientStatus}
-            onChange={(e) => {
-              setPatientStatus(e.target.value as PatientStatus | '');
-              setCurrentPage(1);
-            }}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
-          >
-            <option value="">All Statuses</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-            <option value="converted">Converted</option>
-          </select>
+          {/* Filter Dropdowns */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Filter className="w-4 h-4" />
+              Filters:
+            </div>
 
-          {hasActiveFilters && (
-            <button
-              onClick={() => {
-                setPatientType('');
-                setPatientStatus('');
+            <select
+              value={patientType}
+              onChange={(e) => {
+                setPatientType(e.target.value as PatientType | '');
                 setCurrentPage(1);
               }}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
             >
-              <X className="w-3 h-3" />
-              Clear Filters
-            </button>
-          )}
+              <option value="">All Types</option>
+              <option value="pregnant">Pregnant</option>
+              <option value="regular">Regular</option>
+            </select>
 
-          {isFetching && (
-            <div className="ml-auto">
-              <Loader2 className="w-5 h-5 text-black animate-spin" />
-            </div>
-          )}
+            <select
+              value={patientStatus}
+              onChange={(e) => {
+                setPatientStatus(e.target.value as PatientStatus | '');
+                setCurrentPage(1);
+              }}
+              className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
+            >
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="converted">Converted</option>
+            </select>
+
+            {hasActiveFilters && (
+              <button
+                onClick={handleClearAllFilters}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Clear All
+              </button>
+            )}
+
+            {isFetching && (
+              <div className="ml-auto">
+                <Loader2 className="w-5 h-5 text-black animate-spin" />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -343,7 +554,7 @@ export const PatientList: React.FC<PatientListProps> = ({
             {data.items.map((patient) => (
               <PatientRow
                 key={patient.id}
-                patient={patient}
+                patient={patient as Patient}
                 onEdit={onEdit!}
                 onDelete={handleDelete}
                 onViewDetails={onViewDetails}
@@ -357,22 +568,22 @@ export const PatientList: React.FC<PatientListProps> = ({
       {/* Pagination */}
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
         <div className="text-sm text-gray-600">
-          Page <span className="font-semibold text-gray-900">{data.page_info.current_page}</span> of{' '}
-          <span className="font-semibold text-gray-900">{data.page_info.total_pages}</span>
+          Page <span className="font-semibold text-gray-900">{data.page}</span> of{' '}
+          <span className="font-semibold text-gray-900">{data.total_pages}</span>
           {' • '}
-          <span className="font-semibold text-gray-900">{data.page_info.total_items}</span> total patients
+          <span className="font-semibold text-gray-900">{data.total_count}</span> total patients
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setCurrentPage(data.page_info.previous_page!)}
-            disabled={!data.page_info.has_previous || isFetching}
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={!data.has_previous || isFetching}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Previous
           </button>
           <button
-            onClick={() => setCurrentPage(data.page_info.next_page!)}
-            disabled={!data.page_info.has_next || isFetching}
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={!data.has_next || isFetching}
             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Next

@@ -38,13 +38,20 @@ export const patientService = {
     return response.data;
   },
 
-  // Get single pregnant patient
+  // OPTIMIZED: Single endpoint to get patient by ID (regardless of type)
+  // This eliminates the need to call both pregnant and regular endpoints
+  getPatient: async (patientId: string): Promise<PregnantPatient | RegularPatient> => {
+    const response = await api.get(`/api/v1/patients/${patientId}`);
+    return response.data;
+  },
+
+  // Get single pregnant patient (keep for backward compatibility)
   getPregnantPatient: async (patientId: string): Promise<PregnantPatient> => {
     const response = await api.get(`/api/v1/patients/pregnant/${patientId}`);
     return response.data;
   },
 
-  // Get single regular patient
+  // Get single regular patient (keep for backward compatibility)
   getRegularPatient: async (patientId: string): Promise<RegularPatient> => {
     const response = await api.get(`/api/v1/patients/regular/${patientId}`);
     return response.data;

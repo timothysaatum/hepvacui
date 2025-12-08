@@ -9,7 +9,6 @@ import type {
   PatientFilters,
 } from '../types/patient';
 import { useToast } from '../context/ToastContext';
-// import {  } from '@tanstack/react-query';
 
 // Query Keys
 export const patientKeys = {
@@ -19,6 +18,8 @@ export const patientKeys = {
   details: () => [...patientKeys.all, 'detail'] as const,
   detail: (id: string, type: 'pregnant' | 'regular') => 
     [...patientKeys.details(), id, type] as const,
+  // OPTIMIZATION: New unified query key
+  detailUnified: (id: string) => [...patientKeys.details(), id] as const,
 };
 
 // Fetch Patients List with Pagination and Filters
@@ -31,7 +32,31 @@ export const usePatients = (filters: PatientFilters = {}) => {
   });
 };
 
-// Fetch Single Pregnant Patient
+export const usePatient = (patientId: string | null) => {
+  return useQuery({
+    queryKey: patientKeys.detailUnified(patientId!),
+    queryFn: async () => {
+      if (!patientId) return null;
+      
+      // Try pregnant endpoint first
+      try {
+        return await patientService.getPregnantPatient(patientId);
+      } catch (error: any) {
+        // If 404 or 400, try regular endpoint
+        if (error.response?.status === 404 || error.response?.status === 400) {
+          return await patientService.getRegularPatient(patientId);
+        }
+        throw error;
+      }
+    },
+    enabled: !!patientId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: false, // Let our fallback logic handle retries
+  });
+};
+
+// Fetch Single Pregnant Patient (keep for backward compatibility)
 export const usePregnantPatient = (patientId: string | null) => {
   return useQuery({
     queryKey: patientKeys.detail(patientId!, 'pregnant'),
@@ -41,7 +66,7 @@ export const usePregnantPatient = (patientId: string | null) => {
   });
 };
 
-// Fetch Single Regular Patient
+// Fetch Single Regular Patient (keep for backward compatibility)
 export const useRegularPatient = (patientId: string | null) => {
   return useQuery({
     queryKey: patientKeys.detail(patientId!, 'regular'),
@@ -60,8 +85,8 @@ export const useCreatePregnantPatient = () => {
     mutationFn: (data: CreatePregnantPatientPayload) => 
       patientService.createPregnantPatient(data),
     onSuccess: () => {
-      // queryClient.invalidateQueries(patientKeys.lists());
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
       showSuccess('Pregnant patient created successfully');
     },
     onError: (error: any) => {
@@ -80,8 +105,8 @@ export const useCreateRegularPatient = () => {
     mutationFn: (data: CreateRegularPatientPayload) => 
       patientService.createRegularPatient(data),
     onSuccess: () => {
-      // queryClient.invalidateQueries(patientKeys.lists());
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
       showSuccess('Regular patient created successfully');
     },
     onError: (error: any) => {
@@ -102,10 +127,10 @@ export const useUpdatePregnantPatient = () => {
       data: UpdatePregnantPatientPayload 
     }) => patientService.updatePregnantPatient(patientId, data),
     onSuccess: (_, variables) => {
-      // queryClient.invalidateQueries(patientKeys.lists());
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'pregnant') });
-      // queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'pregnant'));
+      queryClient.invalidateQueries({ queryKey: patientKeys.detailUnified(variables.patientId) });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
       showSuccess('Pregnant patient updated successfully');
     },
     onError: (error: any) => {
@@ -126,10 +151,11 @@ export const useUpdateRegularPatient = () => {
       data: UpdateRegularPatientPayload 
     }) => patientService.updateRegularPatient(patientId, data),
     onSuccess: (_, variables) => {
-      // queryClient.invalidateQueries(patientKeys.lists());
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'regular') });
-      // queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'regular'));
+      // OPTIMIZATION: Also invalidate unified query
+      queryClient.invalidateQueries({ queryKey: patientKeys.detailUnified(variables.patientId) });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
       showSuccess('Regular patient updated successfully');
     },
     onError: (error: any) => {
@@ -150,10 +176,10 @@ export const useConvertToRegular = () => {
       data: ConvertToRegularPayload 
     }) => patientService.convertToRegular(patientId, data),
     onSuccess: (_, variables) => {
-      // queryClient.invalidateQueries(patientKeys.lists());
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
-      // queryClient.invalidateQueries(patientKeys.detail(variables.patientId, 'pregnant'));
       queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'pregnant') });
+      queryClient.invalidateQueries({ queryKey: patientKeys.detailUnified(variables.patientId) });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
       showSuccess('Patient converted to regular successfully');
     },
     onError: (error: any) => {
@@ -171,8 +197,8 @@ export const useDeletePatient = () => {
   return useMutation({
     mutationFn: (patientId: string) => patientService.deletePatient(patientId),
     onSuccess: () => {
-      // queryClient.invalidateQueries(patientKeys.lists());
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
       showSuccess('Patient deleted successfully');
     },
     onError: (error: any) => {

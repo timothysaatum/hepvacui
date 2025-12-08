@@ -1,14 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-// import { useAuth } from '../../context/AuthContext';
 import { useAuth } from '../../context/useAuth'
 
 import {
   LayoutDashboard,
   Users,
-  // Syringe,
   Pill,
-  // CreditCard,
   Building2,
   UserCog,
   Monitor,
@@ -45,10 +42,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems: NavItem[] = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Patients', path: '/patients', icon: Users },
-    // { name: 'Vaccinations', path: '/vaccinations', icon: Syringe },
     { name: 'Vaccines', path: '/vaccines', icon: Pill },
     {name: 'Records', path: '/records', icon: Search },
-    // { name: 'Payments', path: '/payments', icon: CreditCard },
     { name: 'Facilities', path: '/facilities', icon: Building2, adminOnly: true },
     { name: 'Staff', path: '/staff', icon: UserCog, adminOnly: true },
     { name: 'Devices', path: '/devices', icon: Monitor, adminOnly: true },
@@ -74,7 +69,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Logo/Brand */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
           {sidebarOpen ? (
-            <h1 className="text-xl font-bold text-black">HepVac</h1>
+            <h1 className="text-xl font-bold text-black">MCVIMS</h1>
           ) : (
             <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-sm">H</span>
@@ -102,7 +97,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                         : 'text-gray-700 hover:bg-gray-100'
                       }`}
                   >
-                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <Icon className="w-5 h-5 shrink-0" />
                     {sidebarOpen && (
                       <span className="ml-3 font-medium">{item.name}</span>
                     )}
@@ -122,7 +117,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         <div className="border-t border-gray-200 p-4">
           {sidebarOpen ? (
             <div className="flex items-center">
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold">
                   {user?.full_name?.charAt(0).toUpperCase()}
                 </div>
@@ -156,7 +151,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       >
         {/* Logo/Brand */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
-          <h1 className="text-xl font-bold text-black">HepVac</h1>
+          <h1 className="text-xl font-bold text-black">MCVIMS</h1>
           <button
             onClick={() => setMobileMenuOpen(false)}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-600"
@@ -192,7 +187,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* User Profile */}
         <div className="border-t border-gray-200 p-4">
           <div className="flex items-center">
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold">
                 {user?.full_name?.charAt(0).toUpperCase()}
               </div>

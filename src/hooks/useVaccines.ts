@@ -86,7 +86,7 @@ export const useCreateVaccine = () => {
     onSuccess: () => {
       // queryClient.invalidateQueries(vaccineKeys.lists());
       queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
-      // queryClient.invalidateQueries(vaccineKeys.lowStock());
+      queryClient.invalidateQueries({ queryKey: ['search', 'vaccines'] });
       queryClient.invalidateQueries({ queryKey: vaccineKeys.lowStock() });
       showSuccess('Vaccine created successfully');
     },
@@ -108,7 +108,7 @@ export const useUpdateVaccine = () => {
     onSuccess: (_, variables) => {
       // queryClient.invalidateQueries(vaccineKeys.lists());
       queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
-      // queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
+      queryClient.invalidateQueries({ queryKey: ['search', 'vaccines'] });
       queryClient.invalidateQueries({ queryKey: vaccineKeys.detail(variables.vaccineId) });
       // queryClient.invalidateQueries(vaccineKeys.stock(variables.vaccineId));
       queryClient.invalidateQueries({ queryKey: vaccineKeys.stock(variables.vaccineId) });
@@ -132,7 +132,7 @@ export const useDeleteVaccine = () => {
     mutationFn: (vaccineId: string) => vaccineService.deleteVaccine(vaccineId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
-      // queryClient.invalidateQueries(vaccineKeys.lists());
+      queryClient.invalidateQueries({ queryKey: ['search', 'vaccines'] });
       queryClient.invalidateQueries({ queryKey: vaccineKeys.lowStock() });
       // queryClient.invalidateQueries(vaccineKeys.lowStock());
       showSuccess('Vaccine deleted successfully');
@@ -156,7 +156,7 @@ export const useAddStock = () => {
       queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
       // queryClient.invalidateQueries(vaccineKeys.lists());
       queryClient.invalidateQueries({ queryKey: vaccineKeys.detail(variables.vaccineId) });
-      // queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
+      queryClient.invalidateQueries({ queryKey: ['search', 'vaccines'] });
       // queryClient.invalidateQueries(vaccineKeys.stock(variables.vaccineId));
       queryClient.invalidateQueries({ queryKey: vaccineKeys.stock(variables.vaccineId) });
       // queryClient.invalidateQueries(vaccineKeys.lowStock());
@@ -181,7 +181,7 @@ export const usePublishVaccine = () => {
     onSuccess: (data, variables) => {
       // queryClient.invalidateQueries(vaccineKeys.lists());
       queryClient.invalidateQueries({ queryKey: vaccineKeys.lists() });
-      // queryClient.invalidateQueries(vaccineKeys.detail(variables.vaccineId));
+      queryClient.invalidateQueries({ queryKey: ['search', 'vaccines'] });
       queryClient.invalidateQueries({ queryKey: vaccineKeys.detail(variables.vaccineId) });
       const action = data.is_published ? 'published' : 'unpublished';
       showSuccess(`Vaccine ${action} successfully`);
