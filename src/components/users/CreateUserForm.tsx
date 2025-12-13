@@ -3,7 +3,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateUser, useCreateStaff } from '../../hooks/useUsers';
 import { createUserSchema, type CreateUserFormData } from '../../utils/validationSchemas';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Loader2, Plus, Info } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Loader2, Plus, Info, Sparkles, Copy, Check } from 'lucide-react';
+import { generateMemorablePassword } from '../../utils/passwordGenerator';
 
 interface CreateUserFormProps {
   onSuccess?: () => void;
@@ -18,6 +19,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [copiedField, setCopiedField] = useState<'password' | 'confirm' | null>(null);
 
   const createUserMutation = useCreateUser();
   const createStaffMutation = useCreateStaff();
@@ -29,6 +31,8 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    setValue,
+    watch,
   } = useForm<CreateUserFormData>({
     resolver: zodResolver(createUserSchema),
     defaultValues: {
@@ -40,6 +44,29 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
       password_confirm: '',
     },
   });
+
+  const passwordValue = watch('password');
+
+  const handleGeneratePassword = () => {
+    const newPassword = generateMemorablePassword();
+    setValue('password', newPassword, { shouldValidate: true });
+    setValue('password_confirm', newPassword, { shouldValidate: true });
+    setShowPassword(true);
+    setShowConfirmPassword(true);
+  };
+
+  const handleCopyPassword = async (field: 'password' | 'confirm') => {
+    const password = passwordValue;
+    if (password) {
+      try {
+        await navigator.clipboard.writeText(password);
+        setCopiedField(field);
+        setTimeout(() => setCopiedField(null), 2000);
+      } catch (err) {
+        console.error('Failed to copy password:', err);
+      }
+    }
+  };
 
   const onSubmit = async (data: CreateUserFormData) => {
     try {
@@ -166,9 +193,19 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Password <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGeneratePassword}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Generate
+                </button>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="w-4 h-4 text-gray-400" />
@@ -177,18 +214,34 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
                   placeholder="••••••••"
-                  className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.password
+                  className={`w-full pl-10 pr-20 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.password
                       ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                       : 'border-gray-300 focus:ring-black focus:border-black'
                     }`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+                  {passwordValue && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPassword('password')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                      title="Copy password"
+                    >
+                      {copiedField === 'password' ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               {errors.password && (
                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
@@ -196,10 +249,12 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
                   {errors.password.message}
                 </p>
               )}
-              <p className="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
-                <Info className="w-3 h-3" />
-                Must be at least 8 characters with uppercase, lowercase, and number
-              </p>
+              {!errors.password && (
+                <p className="mt-1.5 text-xs text-gray-500 flex items-center gap-1">
+                  <Info className="w-3 h-3" />
+                  8+ chars with uppercase, lowercase, digit & special character
+                </p>
+              )}
             </div>
 
             {/* Confirm Password */}
@@ -215,18 +270,34 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
                   type={showConfirmPassword ? 'text' : 'password'}
                   {...register('password_confirm')}
                   placeholder="••••••••"
-                  className={`w-full pl-10 pr-10 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.password_confirm
+                  className={`w-full pl-10 pr-20 py-2.5 border rounded-lg focus:outline-none focus:ring-2 transition-all ${errors.password_confirm
                       ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                       : 'border-gray-300 focus:ring-black focus:border-black'
                     }`}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+                  {passwordValue && (
+                    <button
+                      type="button"
+                      onClick={() => handleCopyPassword('confirm')}
+                      className="p-1.5 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                      title="Copy password"
+                    >
+                      {copiedField === 'confirm' ? (
+                        <Check className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="p-1.5 text-gray-400 hover:text-gray-600 rounded transition-colors"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
               {errors.password_confirm && (
                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
@@ -236,6 +307,28 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
               )}
             </div>
           </div>
+
+          {/* Generated Password Preview */}
+          {passwordValue && showPassword && (
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-purple-900 mb-1">
+                    Generated Password
+                  </h4>
+                  <p className="text-sm text-purple-700 font-mono bg-white px-3 py-2 rounded border border-purple-200">
+                    {passwordValue}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-2">
+                    💡 Make sure to save this password securely before creating the user
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
@@ -252,7 +345,7 @@ export const CreateUserForm: React.FC<CreateUserFormProps> = ({
               ) : (
                 <>
                   <Plus className="w-4 h-4" />
-                  Create User
+                  Create {isStaff ? 'Staff' : 'User'}
                 </>
               )}
             </button>

@@ -2,9 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreatePregnantPatient, useCreateRegularPatient } from '../../hooks/usePatients';
-// import { useAuth } from '../../context/AuthContext';
-import { useAuth } from '../../context/useAuth'
-
+import { useAuth } from '../../context/useAuth';
 import {
   createPregnantPatientSchema,
   createRegularPatientSchema,
@@ -17,8 +15,24 @@ interface CreatePatientFormProps {
   onCancel?: () => void;
 }
 
+// Utility function to clean empty date strings
+const cleanFormData = <T extends Record<string, any>>(data: T): T => {
+  const cleaned: any = { ...data };
+  Object.keys(cleaned).forEach((key) => {
+    // Convert empty strings to undefined for optional fields
+    if (cleaned[key] === '' || cleaned[key] === null) {
+      cleaned[key] = undefined;
+    }
+    // Trim string values
+    else if (typeof cleaned[key] === 'string' && cleaned[key]) {
+      cleaned[key] = cleaned[key].trim();
+    }
+  });
+  return cleaned as T;
+};
+
 export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess, onCancel }) => {
-  useAuth();
+  const { user } = useAuth();
   const [patientType, setPatientType] = useState<'pregnant' | 'regular'>('regular');
   const createPregnantMutation = useCreatePregnantPatient();
   const createRegularMutation = useCreateRegularPatient();
@@ -34,7 +48,7 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
       name: '',
       phone: '',
       sex: 'female',
-      age: 25,
+      age: undefined,
       expected_delivery_date: '',
     },
   });
@@ -50,11 +64,11 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
       name: '',
       phone: '',
       sex: 'male',
-      age: 30,
-      diagnosis_date: '',
+      age: undefined,
+      diagnosis_date: undefined,
       viral_load: '',
-      last_viral_load_date: '',
-      treatment_start_date: '',
+      last_viral_load_date: undefined,
+      treatment_start_date: undefined,
       treatment_regimen: '',
       medical_history: '',
       allergies: '',
@@ -63,20 +77,44 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
   });
 
   const onSubmitPregnant = async (data: CreatePregnantPatientFormData) => {
+    if (!user?.id || !user?.facility.id) {
+      console.error('User information not available');
+      return;
+    }
+
     try {
-      await createPregnantMutation.mutateAsync(data);
+      // Clean the form data - converts empty strings to undefined
+      const cleanedData = cleanFormData(data);
+
+      await createPregnantMutation.mutateAsync({
+        ...cleanedData,
+        facility_id: user.facility.id,
+        created_by_id: user.id,
+      });
       resetPregnant();
-      if (onSuccess) onSuccess();
+      onSuccess?.();
     } catch (error) {
       console.error('Form submission error:', error);
     }
   };
 
   const onSubmitRegular = async (data: CreateRegularPatientFormData) => {
+    if (!user?.id || !user?.facility.id) {
+      console.error('User information not available');
+      return;
+    }
+
     try {
-      await createRegularMutation.mutateAsync(data);
+      // Clean the form data - converts empty strings to undefined
+      const cleanedData = cleanFormData(data);
+
+      await createRegularMutation.mutateAsync({
+        ...cleanedData,
+        facility_id: user.facility.id,
+        created_by_id: user.id,
+      });
       resetRegular();
-      if (onSuccess) onSuccess();
+      onSuccess?.();
     } catch (error) {
       console.error('Form submission error:', error);
     }
@@ -92,17 +130,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
       {/* Patient Type Selector */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Patient Type *
+          Patient Type <span className="text-red-500">*</span>
         </label>
         <div className="flex gap-4">
           <button
             type="button"
             onClick={() => setPatientType('regular')}
-            className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
-              patientType === 'regular'
+            className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${patientType === 'regular'
                 ? 'border-blue-500 bg-blue-50 text-blue-700'
                 : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-            }`}
+              }`}
           >
             <div className="text-2xl mb-1">👤</div>
             <div className="font-medium">Regular Patient</div>
@@ -110,11 +147,10 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
           <button
             type="button"
             onClick={() => setPatientType('pregnant')}
-            className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${
-              patientType === 'pregnant'
+            className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${patientType === 'pregnant'
                 ? 'border-pink-500 bg-pink-50 text-pink-700'
                 : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-            }`}
+              }`}
           >
             <div className="text-2xl mb-1">🤰</div>
             <div className="font-medium">Pregnant Patient</div>
@@ -129,17 +165,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name *
+                Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerPregnant('name')}
                 placeholder="e.g., Mariam Mardia"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.name
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.name
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.name && (
                 <p className="mt-1 text-sm text-red-600">{errorsPregnant.name.message}</p>
@@ -149,17 +184,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerPregnant('phone')}
                 placeholder="e.g., 0594438287"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.phone
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.phone
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.phone && (
                 <p className="mt-1 text-sm text-red-600">{errorsPregnant.phone.message}</p>
@@ -169,17 +203,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Age */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age *
+                Age <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 {...registerPregnant('age', { valueAsNumber: true })}
                 placeholder="25"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.age
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.age
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.age && (
                 <p className="mt-1 text-sm text-red-600">{errorsPregnant.age.message}</p>
@@ -189,16 +222,15 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Expected Delivery Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expected Delivery Date *
+                Expected Delivery Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 {...registerPregnant('expected_delivery_date')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.expected_delivery_date
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.expected_delivery_date
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.expected_delivery_date && (
                 <p className="mt-1 text-sm text-red-600">{errorsPregnant.expected_delivery_date.message}</p>
@@ -237,17 +269,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name *
+                Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerRegular('name')}
                 placeholder="e.g., John Doe"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsRegular.name
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.name
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsRegular.name && (
                 <p className="mt-1 text-sm text-red-600">{errorsRegular.name.message}</p>
@@ -257,17 +288,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number *
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerRegular('phone')}
                 placeholder="e.g., 0201234567"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsRegular.phone
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.phone
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsRegular.phone && (
                 <p className="mt-1 text-sm text-red-600">{errorsRegular.phone.message}</p>
@@ -277,15 +307,14 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Sex */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sex *
+                Sex <span className="text-red-500">*</span>
               </label>
               <select
                 {...registerRegular('sex')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsRegular.sex
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.sex
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               >
                 <option value="male">Male</option>
                 <option value="female">Female</option>
@@ -298,17 +327,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             {/* Age */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age *
+                Age <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 {...registerRegular('age', { valueAsNumber: true })}
                 placeholder="30"
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsRegular.age
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.age
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsRegular.age && (
                 <p className="mt-1 text-sm text-red-600">{errorsRegular.age.message}</p>
@@ -321,7 +349,7 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({ onSuccess,
             <h3 className="text-lg font-medium text-gray-900 mb-3">
               Medical Information (Optional)
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Diagnosis Date */}
               <div>

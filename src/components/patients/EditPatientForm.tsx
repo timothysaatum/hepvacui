@@ -1,16 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Patient } from '../../types/patient';
+import type { Patient, PregnantPatient, RegularPatient } from '../../types/patient';
 import {
-  usePregnantPatient,
-  useRegularPatient,
   useUpdatePregnantPatient,
   useUpdateRegularPatient,
 } from '../../hooks/usePatients';
-// import { useAuth } from '../../context/AuthContext';
-import { useAuth } from '../../context/useAuth'
-
+import { useAuth } from '../../context/useAuth';
 import {
   updatePregnantPatientSchema,
   updateRegularPatientSchema,
@@ -24,6 +20,17 @@ interface EditPatientFormProps {
   onCancel?: () => void;
 }
 
+// Utility function to clean empty date strings
+const cleanDateFields = <T extends Record<string, any>>(data: T): T => {
+  const cleaned: any = { ...data };
+  Object.keys(cleaned).forEach((key) => {
+    if (cleaned[key] === '' || cleaned[key] === null) {
+      cleaned[key] = undefined;
+    }
+  });
+  return cleaned as T;
+};
+
 export const EditPatientForm: React.FC<EditPatientFormProps> = ({
   patient,
   onSuccess,
@@ -32,15 +39,19 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
   const { user } = useAuth();
   const isPregnant = patient.patient_type === 'pregnant';
 
-  const { data: pregnantData, isPending: pregnantLoading } = usePregnantPatient(
-    isPregnant ? patient.id : null
-  );
-  const { data: regularData, isPending: regularLoading } = useRegularPatient(
-    !isPregnant ? patient.id : null
-  );
-
   const updatePregnantMutation = useUpdatePregnantPatient();
   const updateRegularMutation = useUpdateRegularPatient();
+
+  // Memoize the patient data with proper typing
+  const pregnantData = useMemo(() =>
+    isPregnant ? (patient as PregnantPatient) : null,
+    [patient, isPregnant]
+  );
+
+  const regularData = useMemo(() =>
+    !isPregnant ? (patient as RegularPatient) : null,
+    [patient, isPregnant]
+  );
 
   const {
     register: registerPregnant,
@@ -60,7 +71,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
     resolver: zodResolver(updateRegularPatientSchema),
   });
 
-  // Populate form when patient data is loaded
+  // Populate form when patient data is available
   useEffect(() => {
     if (isPregnant && pregnantData) {
       resetPregnant({
@@ -94,51 +105,53 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
   }, [regularData, resetRegular, isPregnant]);
 
   const onSubmitPregnant = async (data: UpdatePregnantPatientFormData) => {
+    if (!user?.id) {
+      console.error('User ID not available');
+      return;
+    }
+
     try {
+      // Clean empty strings from date fields
+      const cleanedData = cleanDateFields(data);
+
       await updatePregnantMutation.mutateAsync({
         patientId: patient.id,
         data: {
-          ...data,
-          updated_by_id: user?.id || '',
+          ...cleanedData,
+          updated_by_id: user.id,
         },
       });
-      if (onSuccess) onSuccess();
+      onSuccess?.();
     } catch (error) {
       console.error('Form submission error:', error);
     }
   };
 
   const onSubmitRegular = async (data: UpdateRegularPatientFormData) => {
+    if (!user?.id) {
+      console.error('User ID not available');
+      return;
+    }
+
     try {
+      // Clean empty strings from date fields
+      const cleanedData = cleanDateFields(data);
+
       await updateRegularMutation.mutateAsync({
         patientId: patient.id,
         data: {
-          ...data,
-          updated_by_id: user?.id || '',
+          ...cleanedData,
+          updated_by_id: user.id,
         },
       });
-      if (onSuccess) onSuccess();
+      onSuccess?.();
     } catch (error) {
       console.error('Form submission error:', error);
     }
   };
 
-  const isPending = pregnantLoading || regularLoading;
   const isSubmitting = isSubmittingPregnant || isSubmittingRegular;
   const isMutating = updatePregnantMutation.isPending || updateRegularMutation.isPending;
-
-  if (isPending) {
-    return (
-      <div className="bg-white p-6 rounded-lg shadow">
-        <div className="flex justify-center items-center py-8">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
-            <p className="text-gray-500">Loading patient data...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
@@ -153,16 +166,15 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
+                Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerPregnant('name')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.name
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.name
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.name && (
                 <p className="mt-1 text-sm text-red-600">{errorsPregnant.name.message}</p>
@@ -172,16 +184,15 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerPregnant('phone')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.phone
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.phone
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.phone && (
                 <p className="mt-1 text-sm text-red-600">{errorsPregnant.phone.message}</p>
@@ -191,16 +202,15 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Age */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age
+                Age <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 {...registerPregnant('age', { valueAsNumber: true })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.age
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.age
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.age && (
                 <p className="mt-1 text-sm text-red-600">{errorsPregnant.age.message}</p>
@@ -210,7 +220,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
+                Status <span className="text-red-500">*</span>
               </label>
               <select
                 {...registerPregnant('status')}
@@ -225,16 +235,15 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Expected Delivery Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expected Delivery Date
+                Expected Delivery Date <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
                 {...registerPregnant('expected_delivery_date')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsPregnant.expected_delivery_date
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.expected_delivery_date
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsPregnant.expected_delivery_date && (
                 <p className="mt-1 text-sm text-red-600">
@@ -246,7 +255,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Actual Delivery Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Actual Delivery Date
+                Actual Delivery Date (Optional)
               </label>
               <input
                 type="date"
@@ -287,16 +296,15 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
+                Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerRegular('name')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsRegular.name
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.name
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsRegular.name && (
                 <p className="mt-1 text-sm text-red-600">{errorsRegular.name.message}</p>
@@ -306,16 +314,15 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Phone */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number
+                Phone Number <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 {...registerRegular('phone')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsRegular.phone
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.phone
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsRegular.phone && (
                 <p className="mt-1 text-sm text-red-600">{errorsRegular.phone.message}</p>
@@ -325,16 +332,15 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Age */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age
+                Age <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
                 {...registerRegular('age', { valueAsNumber: true })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                  errorsRegular.age
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.age
                     ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                     : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
+                  }`}
               />
               {errorsRegular.age && (
                 <p className="mt-1 text-sm text-red-600">{errorsRegular.age.message}</p>
@@ -344,7 +350,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Status */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
+                Status <span className="text-red-500">*</span>
               </label>
               <select
                 {...registerRegular('status')}
@@ -359,7 +365,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Diagnosis Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Diagnosis Date
+                Diagnosis Date (Optional)
               </label>
               <input
                 type="date"
@@ -371,7 +377,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Treatment Start Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Treatment Start Date
+                Treatment Start Date (Optional)
               </label>
               <input
                 type="date"
@@ -383,7 +389,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Viral Load */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Viral Load
+                Viral Load (Optional)
               </label>
               <input
                 type="text"
@@ -395,7 +401,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Last Viral Load Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Viral Load Date
+                Last Viral Load Date (Optional)
               </label>
               <input
                 type="date"
@@ -407,7 +413,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Treatment Regimen */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Treatment Regimen
+                Treatment Regimen (Optional)
               </label>
               <input
                 type="text"
@@ -419,7 +425,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Allergies */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Allergies
+                Allergies (Optional)
               </label>
               <textarea
                 {...registerRegular('allergies')}
@@ -431,7 +437,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Medical History */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Medical History
+                Medical History (Optional)
               </label>
               <textarea
                 {...registerRegular('medical_history')}
@@ -443,7 +449,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
             {/* Notes */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
+                Notes (Optional)
               </label>
               <textarea
                 {...registerRegular('notes')}

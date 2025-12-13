@@ -342,7 +342,7 @@ const PatientInfoTab = React.memo<{
           label="Sex"
           value={isPregnant ? 'Female' : regularData?.sex === 'male' ? 'Male' : 'Female'}
         />
-        <InfoRow label="Patient ID" value={patient.id} />
+        {/* <InfoRow label="Patient ID" value={patient.id} /> */}
       </div>
     </div>
 
@@ -514,8 +514,11 @@ const PatientInfoTab = React.memo<{
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <InfoRow label="Created At" value={formatDate(patient.created_at, 'long')} />
         <InfoRow label="Updated At" value={formatDate(patient.updated_at, 'long')} />
-        <InfoRow label="Facility ID" value={patient.facility_id} />
-        <InfoRow label="Created By ID" value={patient.created_by_id} />
+        <InfoRow label="Facility" value={patient.facility?.name || 'N/A'} />
+        <InfoRow label="Created By" value={patient.created_by?.name || 'N/A'} />
+        {patient.updated_by && (
+          <InfoRow label="Updated By" value={patient.updated_by.name} />
+        )}
       </div>
     </div>
   </div>

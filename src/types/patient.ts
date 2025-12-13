@@ -1,5 +1,5 @@
 export type PatientType = 'pregnant' | 'regular';
-export type PatientStatus = 'active' | 'inactive' | 'converted';
+export type PatientStatus = 'active' | 'inactive' | 'postpartum' | 'completed' | 'converted';
 export type Sex = 'male' | 'female';
 
 export interface PatientLinks {
@@ -11,6 +11,17 @@ export interface PatientLinks {
   delete_patient?: string;
 }
 
+// Helper interfaces for nested objects
+export interface FacilityInfo {
+  id: string;
+  name: string;
+}
+
+export interface UserInfo {
+  id: string;
+  name: string;
+}
+
 export interface BasePatient {
   id: string;
   name: string;
@@ -18,9 +29,12 @@ export interface BasePatient {
   age: number;
   patient_type: PatientType;
   status: PatientStatus;
-  facility_id: string;
-  created_by_id: string;
-  updated_by_id: string | null;
+
+  // Nested objects with id and name
+  facility: FacilityInfo;
+  created_by: UserInfo | null;
+  updated_by: UserInfo | null;
+
   created_at: string;
   updated_at: string;
   links: PatientLinks;
@@ -28,7 +42,7 @@ export interface BasePatient {
 
 export interface PregnantPatient extends BasePatient {
   patient_type: 'pregnant';
-  expected_delivery_date: string;
+  expected_delivery_date: string | null;
   actual_delivery_date: string | null;
   sex: 'female';
 }
@@ -36,6 +50,7 @@ export interface PregnantPatient extends BasePatient {
 export interface RegularPatient extends BasePatient {
   patient_type: 'regular';
   sex: Sex;
+  date_of_birth?: string | null;
   diagnosis_date?: string | null;
   viral_load?: string | null;
   last_viral_load_date?: string | null;
@@ -53,7 +68,7 @@ export interface CreatePregnantPatientPayload {
   phone: string;
   sex: 'female';
   age: number;
-  expected_delivery_date: string;
+  expected_delivery_date?: string;
 }
 
 export interface CreateRegularPatientPayload {
@@ -61,6 +76,7 @@ export interface CreateRegularPatientPayload {
   phone: string;
   sex: Sex;
   age: number;
+  date_of_birth?: string;
   diagnosis_date?: string;
   viral_load?: string;
   last_viral_load_date?: string;
@@ -78,13 +94,13 @@ export interface UpdatePregnantPatientPayload {
   expected_delivery_date?: string;
   actual_delivery_date?: string;
   status?: PatientStatus;
-  updated_by_id: string;
 }
 
 export interface UpdateRegularPatientPayload {
   name?: string;
   phone?: string;
   age?: number;
+  date_of_birth?: string;
   diagnosis_date?: string;
   viral_load?: string;
   last_viral_load_date?: string;
@@ -94,12 +110,12 @@ export interface UpdateRegularPatientPayload {
   allergies?: string;
   notes?: string;
   status?: PatientStatus;
-  updated_by_id: string;
 }
 
 export interface ConvertToRegularPayload {
   actual_delivery_date: string;
   treatment_regimen?: string;
+  notes?: string;
 }
 
 export interface PaginatedPatients {
@@ -122,4 +138,38 @@ export interface PatientFilters {
   patient_status?: PatientStatus;
   page?: number;
   page_size?: number;
+}
+
+// Helper type guards
+export function isPregnantPatient(patient: Patient): patient is PregnantPatient {
+  return patient.patient_type === 'pregnant';
+}
+
+export function isRegularPatient(patient: Patient): patient is RegularPatient {
+  return patient.patient_type === 'regular';
+}
+
+// Helper functions to access nested IDs
+export function getFacilityId(patient: Patient): string {
+  return patient.facility.id;
+}
+
+export function getFacilityName(patient: Patient): string {
+  return patient.facility.name;
+}
+
+export function getCreatedById(patient: Patient): string | null {
+  return patient.created_by?.id ?? null;
+}
+
+export function getCreatedByName(patient: Patient): string | null {
+  return patient.created_by?.name ?? null;
+}
+
+export function getUpdatedById(patient: Patient): string | null {
+  return patient.updated_by?.id ?? null;
+}
+
+export function getUpdatedByName(patient: Patient): string | null {
+  return patient.updated_by?.name ?? null;
 }

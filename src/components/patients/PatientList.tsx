@@ -554,7 +554,7 @@ export const PatientList: React.FC<PatientListProps> = ({
             {data.items.map((patient) => (
               <PatientRow
                 key={patient.id}
-                patient={patient as Patient}
+                patient={patient}
                 onEdit={onEdit!}
                 onDelete={handleDelete}
                 onViewDetails={onViewDetails}

@@ -15,6 +15,7 @@ import { Layout } from './components/layout/Layout';
 import { VaccinesPage } from './pages/Vaccines/VaccinesPage';
 import { PatientsPage } from './pages/Patients/PatientsPage';
 import { PatientDetailPage } from './pages/Patients/PatientDetailPage';
+import { EditPatientPage } from './pages/Patients/EditPatientPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 
 
@@ -42,7 +43,7 @@ function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<LoginForm />} />
-                
+
                 <Route
                   path="/*"
                   element={
@@ -52,6 +53,7 @@ function App() {
                           <Route path="/" element={<Navigate to="/dashboard" replace />} />
                           <Route path="/dashboard" element={<DashboardPage />} />
                           <Route path="/patients" element={<PatientsPage />} />
+                          <Route path="/patients/:patientId/edit" element={<EditPatientPage />} />
                           <Route path="/patients/:patientId" element={<PatientDetailPage />} />
                           <Route path="/vaccines" element={<VaccinesPage />} />
                           <Route path="/records" element={<SearchPage />} />
@@ -69,7 +71,7 @@ function App() {
           </ConfirmProvider>
         </ToastProvider>
       </AuthProvider>
-      
+
       <ReactQueryDevtools initialIsOpen={false} position="bottom" />
     </QueryClientProvider>
   );
