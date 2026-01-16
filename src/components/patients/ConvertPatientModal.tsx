@@ -11,10 +11,10 @@ interface ConvertPatientModalProps {
   onSuccess?: () => void;
 }
 
-export const ConvertPatientModal: React.FC<ConvertPatientModalProps> = ({ 
-  patient, 
-  onClose, 
-  onSuccess 
+export const ConvertPatientModal: React.FC<ConvertPatientModalProps> = ({
+  patient,
+  onClose,
+  onSuccess
 }) => {
   const convertMutation = useConvertToRegular();
 
@@ -99,7 +99,9 @@ export const ConvertPatientModal: React.FC<ConvertPatientModalProps> = ({
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600">Expected Delivery Date:</span>
                 <span className="font-medium text-gray-900">
-                  {new Date(patient.expected_delivery_date).toLocaleDateString()}
+                  {patient.expected_delivery_date
+                    ? new Date(patient.expected_delivery_date).toLocaleDateString()
+                    : '—'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -117,11 +119,10 @@ export const ConvertPatientModal: React.FC<ConvertPatientModalProps> = ({
             <input
               type="date"
               {...register('actual_delivery_date')}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                errors.actual_delivery_date
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.actual_delivery_date
                   ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                   : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-              }`}
+                }`}
             />
             {errors.actual_delivery_date && (
               <p className="mt-1 text-sm text-red-600">{errors.actual_delivery_date.message}</p>
@@ -137,11 +138,10 @@ export const ConvertPatientModal: React.FC<ConvertPatientModalProps> = ({
               type="text"
               {...register('treatment_regimen')}
               placeholder="e.g., TDF/3TC/DTG"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                errors.treatment_regimen
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.treatment_regimen
                   ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                   : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-              }`}
+                }`}
             />
             {errors.treatment_regimen && (
               <p className="mt-1 text-sm text-red-600">{errors.treatment_regimen.message}</p>

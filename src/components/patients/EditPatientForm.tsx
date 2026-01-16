@@ -78,9 +78,11 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
         name: pregnantData.name,
         phone: pregnantData.phone,
         age: pregnantData.age,
-        expected_delivery_date: pregnantData.expected_delivery_date,
-        actual_delivery_date: pregnantData.actual_delivery_date || undefined,
-        status: pregnantData.status,
+        expected_delivery_date: pregnantData.expected_delivery_date ?? undefined,
+        actual_delivery_date: pregnantData.actual_delivery_date ?? undefined,
+        status: ['active', 'inactive', 'converted'].includes(pregnantData.status)
+          ? (pregnantData.status as 'active' | 'inactive' | 'converted')
+          : undefined,
       });
     }
   }, [pregnantData, resetPregnant, isPregnant]);
@@ -99,7 +101,9 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
         medical_history: regularData.medical_history || undefined,
         allergies: regularData.allergies || undefined,
         notes: regularData.notes || undefined,
-        status: regularData.status,
+        status: ['active', 'inactive', 'converted'].includes(regularData.status)
+          ? (regularData.status as 'active' | 'inactive' | 'converted')
+          : undefined,
       });
     }
   }, [regularData, resetRegular, isPregnant]);
@@ -118,7 +122,6 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
         patientId: patient.id,
         data: {
           ...cleanedData,
-          updated_by_id: user.id,
         },
       });
       onSuccess?.();
@@ -141,7 +144,6 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
         patientId: patient.id,
         data: {
           ...cleanedData,
-          updated_by_id: user.id,
         },
       });
       onSuccess?.();
@@ -172,8 +174,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
                 type="text"
                 {...registerPregnant('name')}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.name
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
                   }`}
               />
               {errorsPregnant.name && (
@@ -190,8 +192,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
                 type="text"
                 {...registerPregnant('phone')}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.phone
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
                   }`}
               />
               {errorsPregnant.phone && (
@@ -208,8 +210,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
                 type="number"
                 {...registerPregnant('age', { valueAsNumber: true })}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.age
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
                   }`}
               />
               {errorsPregnant.age && (
@@ -241,8 +243,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
                 type="date"
                 {...registerPregnant('expected_delivery_date')}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.expected_delivery_date
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
                   }`}
               />
               {errorsPregnant.expected_delivery_date && (
@@ -302,8 +304,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
                 type="text"
                 {...registerRegular('name')}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.name
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
                   }`}
               />
               {errorsRegular.name && (
@@ -320,8 +322,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
                 type="text"
                 {...registerRegular('phone')}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.phone
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
                   }`}
               />
               {errorsRegular.phone && (
@@ -338,8 +340,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
                 type="number"
                 {...registerRegular('age', { valueAsNumber: true })}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.age
-                    ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                    : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
                   }`}
               />
               {errorsRegular.age && (

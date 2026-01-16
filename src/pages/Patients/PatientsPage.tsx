@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Patient, PregnantPatient } from '../../types/patient';
+import type { PatientSearchResult } from '../../types/search';
+import { patientService } from '../../services/patientService';
 import { PatientList } from '../../components/patients/PatientList';
 import { CreatePatientForm } from '../../components/patients/CreatePatientForm';
 import { EditPatientForm } from '../../components/patients/EditPatientForm';
@@ -20,18 +22,40 @@ export const PatientsPage: React.FC = () => {
     setSelectedPatient(null);
   };
 
-  const handleEdit = (patient: Patient) => {
-    setSelectedPatient(patient);
-    setViewMode('edit');
+  const handleEdit = async (patient: Patient | PatientSearchResult) => {
+    // If we already have the full patient object (has `facility`), use it,
+    // otherwise fetch the full patient by id before opening the edit form.
+    if ('facility' in patient) {
+      setSelectedPatient(patient as Patient);
+      setViewMode('edit');
+      return;
+    }
+
+    try {
+      const full = await patientService.getPatient(patient.id);
+      setSelectedPatient(full);
+      setViewMode('edit');
+    } catch (error) {
+      console.error('Failed to load patient for editing', error);
+    }
   };
 
-  const handleViewDetails = (patient: Patient) => {
+  const handleViewDetails = (patient: Patient | PatientSearchResult) => {
     navigate(`/patients/${patient.id}`);
   };
 
-  const handleConvert = (patient: Patient) => {
-    if (patient.patient_type === 'pregnant') {
-      setConvertPatient(patient as PregnantPatient);
+  const handleConvert = async (patient: Patient | PatientSearchResult) => {
+    // Ensure we have the full pregnant patient object before opening the convert modal
+    if ('facility' in patient) {
+      if (patient.patient_type === 'pregnant') setConvertPatient(patient as PregnantPatient);
+      return;
+    }
+
+    try {
+      const full = await patientService.getPatient(patient.id);
+      if (full.patient_type === 'pregnant') setConvertPatient(full as PregnantPatient);
+    } catch (error) {
+      console.error('Failed to load patient for conversion', error);
     }
   };
 

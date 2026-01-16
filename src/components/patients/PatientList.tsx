@@ -1,5 +1,6 @@
 import React, { useState, memo, useEffect, useCallback } from 'react';
 import type { Patient, PatientType, PatientStatus } from '../../types/patient';
+import type { PatientSearchResult } from '../../types/search';
 import { usePatientSearch } from '../../hooks/useSearch';
 import { useDeletePatient } from '../../hooks/usePatients';
 import { useConfirm } from '../common/ConfirmDialog';
@@ -25,18 +26,18 @@ import {
 } from 'lucide-react';
 
 interface PatientListProps {
-  onEdit?: (patient: Patient) => void;
-  onViewDetails?: (patient: Patient) => void;
-  onConvert?: (patient: Patient) => void;
+  onEdit?: (patient: Patient | PatientSearchResult) => void;
+  onViewDetails?: (patient: Patient | PatientSearchResult) => void;
+  onConvert?: (patient: Patient | PatientSearchResult) => void;
 }
 
 // Memoized Patient Row Component
 const PatientRow = memo<{
-  patient: Patient;
-  onEdit: (patient: Patient) => void;
+  patient: Patient | PatientSearchResult;
+  onEdit: (patient: Patient | PatientSearchResult) => void;
   onDelete: (patientId: string, patientName: string) => void;
-  onViewDetails?: (patient: Patient) => void;
-  onConvert?: (patient: Patient) => void;
+  onViewDetails?: (patient: Patient | PatientSearchResult) => void;
+  onConvert?: (patient: Patient | PatientSearchResult) => void;
 }>(({ patient, onEdit, onDelete, onViewDetails, onConvert }) => {
   const getPatientTypeDisplay = () => {
     if (patient.patient_type === 'pregnant') {
@@ -226,7 +227,7 @@ export const PatientList: React.FC<PatientListProps> = ({
     created_from: dateFrom || undefined,
     created_to: dateTo || undefined,
   });
-  
+
   const deleteMutation = useDeletePatient();
 
   const handleDelete = async (patientId: string, patientName: string) => {
@@ -551,7 +552,7 @@ export const PatientList: React.FC<PatientListProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white">
-            {data.items.map((patient) => (
+            {data.items.map((patient: PatientSearchResult) => (
               <PatientRow
                 key={patient.id}
                 patient={patient}
