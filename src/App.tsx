@@ -50,9 +50,9 @@ function App() {
                     <ProtectedRoute>
                       <Layout>
                         <Routes>
-                          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                          <Route path="/dashboard" element={<DashboardPage />} />
+                          <Route path="/" element={<Navigate to="/patients" replace />} />
                           <Route path="/patients" element={<PatientsPage />} />
+                          <Route path="/dashboard" element={<DashboardPage />} />
                           <Route path="/patients/:patientId/edit" element={<EditPatientPage />} />
                           <Route path="/patients/:patientId" element={<PatientDetailPage />} />
                           <Route path="/vaccines" element={<VaccinesPage />} />

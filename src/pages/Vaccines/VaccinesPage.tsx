@@ -15,55 +15,30 @@ export const VaccinesPage: React.FC = () => {
   const [stockModalVaccine, setStockModalVaccine] = useState<Vaccine | null>(null);
   const [addStockModalVaccine, setAddStockModalVaccine] = useState<Vaccine | null>(null);
 
-  const handleCreateClick = () => {
-    setViewMode('create');
-    setSelectedVaccine(null);
-  };
-
-  const handleEdit = (vaccine: Vaccine) => {
-    setSelectedVaccine(vaccine);
-    setViewMode('edit');
-  };
-
-  const handleViewStock = (vaccine: Vaccine) => {
-    setStockModalVaccine(vaccine);
-  };
-
-  const handleAddStock = (vaccine: Vaccine) => {
-    setAddStockModalVaccine(vaccine);
-  };
-
-  const handleSuccess = () => {
-    setViewMode('list');
-    setSelectedVaccine(null);
-  };
-
-  const handleCancel = () => {
-    setViewMode('list');
-    setSelectedVaccine(null);
-  };
+  const handleSuccess = () => { setViewMode('list'); setSelectedVaccine(null); };
+  const handleCancel = () => { setViewMode('list'); setSelectedVaccine(null); };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-slate-900">
             {viewMode === 'list' && 'Vaccine Inventory'}
             {viewMode === 'create' && 'Add New Vaccine'}
             {viewMode === 'edit' && 'Edit Vaccine'}
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            {viewMode === 'list' && 'Manage vaccine inventory and stock levels'}
-            {viewMode === 'create' && 'Add a new vaccine to your inventory'}
-            {viewMode === 'edit' && 'Update vaccine information'}
+          <p className="text-sm text-slate-500 mt-1">
+            {viewMode === 'list' && 'Manage vaccine stock, pricing and availability'}
+            {viewMode === 'create' && 'Register a new vaccine in the inventory'}
+            {viewMode === 'edit' && 'Update vaccine details and pricing'}
           </p>
         </div>
 
         {viewMode === 'list' && (
           <button
-            onClick={handleCreateClick}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 font-medium transition-all hover:scale-105 shadow-sm"
+            onClick={() => { setViewMode('create'); setSelectedVaccine(null); }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 transition-colors shadow-sm"
           >
             <Plus className="w-4 h-4" />
             Add Vaccine
@@ -73,10 +48,10 @@ export const VaccinesPage: React.FC = () => {
         {(viewMode === 'create' || viewMode === 'edit') && (
           <button
             onClick={handleCancel}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none transition-colors font-medium"
+            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to List
+            Back to Inventory
           </button>
         )}
       </div>
@@ -84,17 +59,14 @@ export const VaccinesPage: React.FC = () => {
       {/* Content */}
       {viewMode === 'list' && (
         <VaccineList
-          onEdit={handleEdit}
-          onViewStock={handleViewStock}
-          onAddStock={handleAddStock}
+          onEdit={v => { setSelectedVaccine(v); setViewMode('edit'); }}
+          onViewStock={v => setStockModalVaccine(v)}
+          onAddStock={v => setAddStockModalVaccine(v)}
         />
       )}
 
       {viewMode === 'create' && (
-        <CreateVaccineForm
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
+        <CreateVaccineForm onSuccess={handleSuccess} onCancel={handleCancel} />
       )}
 
       {viewMode === 'edit' && selectedVaccine && (
@@ -107,12 +79,8 @@ export const VaccinesPage: React.FC = () => {
 
       {/* Modals */}
       {stockModalVaccine && (
-        <StockInfoModal
-          vaccine={stockModalVaccine}
-          onClose={() => setStockModalVaccine(null)}
-        />
+        <StockInfoModal vaccine={stockModalVaccine} onClose={() => setStockModalVaccine(null)} />
       )}
-
       {addStockModalVaccine && (
         <AddStockModal
           vaccine={addStockModalVaccine}

@@ -1,8 +1,8 @@
 import { createContext } from 'react';
-import type { UserWithToken, LoginPayload } from '../types/user';
+import type { User, LoginPayload } from '../types/user';
 
 export interface AuthContextType {
-  user: UserWithToken | null;
+  user: User | null;
   login: (credentials: LoginPayload) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;

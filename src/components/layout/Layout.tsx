@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/useAuth'
+import { useAuth } from '../../context/AuthContext'
 
 import {
   LayoutDashboard,
@@ -43,7 +43,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Patients', path: '/patients', icon: Users },
     { name: 'Vaccines', path: '/vaccines', icon: Pill },
-    {name: 'Records', path: '/records', icon: Search },
+    { name: 'Records', path: '/records', icon: Search },
     { name: 'Facilities', path: '/facilities', icon: Building2, adminOnly: true },
     { name: 'Staff', path: '/staff', icon: UserCog, adminOnly: true },
     { name: 'Devices', path: '/devices', icon: Monitor, adminOnly: true },
@@ -93,8 +93,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <Link
                     to={item.path}
                     className={`flex items-center px-3 py-2.5 rounded-lg transition-all group ${isActive(item.path)
-                        ? 'bg-black text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-black text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
                       }`}
                   >
                     <Icon className="w-5 h-5 shrink-0" />
@@ -171,8 +171,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     to={item.path}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center px-3 py-2.5 rounded-lg transition-all ${isActive(item.path)
-                        ? 'bg-black text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-black text-white'
+                      : 'text-gray-700 hover:bg-gray-100'
                       }`}
                   >
                     <Icon className="w-5 h-5" />

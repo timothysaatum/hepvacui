@@ -1,17 +1,19 @@
-import api from './api';
-import type { LoginPayload, UserWithToken } from '../types/user';
+import api, { setAccessToken, getAccessToken } from './api';
+import type { LoginPayload, UserWithToken, User } from '../types/user';
+
+// Module-level user store (in memory only)
+let _currentUser: User | null = null;
 
 export const authService = {
   login: async (credentials: LoginPayload): Promise<UserWithToken> => {
     const response = await api.post('/api/v1/users/login', credentials);
-    const data = response.data;
-    
-    // Store token in localStorage
+    const data: UserWithToken = response.data;
+
     if (data.access_token) {
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data));
+      setAccessToken(data.access_token);
+      _currentUser = data;
     }
-    
+
     return data;
   },
 
@@ -19,29 +21,32 @@ export const authService = {
     try {
       await api.post('/api/v1/users/logout');
     } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      setAccessToken(null);
+      _currentUser = null;
     }
   },
 
-  refreshToken: async (): Promise<UserWithToken> => {
-    const response = await api.post('/api/v1/users/refresh');
-    const data = response.data;
-    
-    if (data.access_token) {
-      localStorage.setItem('token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data));
+  /**
+   * Called on app mount to restore the session using the HTTP-only
+   * refresh-token cookie. Returns the user if the session is valid.
+   */
+  restoreSession: async (): Promise<UserWithToken | null> => {
+    try {
+      const response = await api.post('/api/v1/users/refresh');
+      const data: UserWithToken = response.data;
+
+      if (data.access_token) {
+        setAccessToken(data.access_token);
+        _currentUser = data;
+        return data;
+      }
+      return null;
+    } catch {
+      return null;
     }
-    
-    return data;
   },
 
-  getCurrentUser: (): UserWithToken | null => {
-    const userStr = localStorage.getItem('user');
-    return userStr ? JSON.parse(userStr) : null;
-  },
+  getCurrentUser: (): User | null => _currentUser,
 
-  isAuthenticated: (): boolean => {
-    return !!localStorage.getItem('token');
-  }
+  isAuthenticated: (): boolean => !!getAccessToken(),
 };

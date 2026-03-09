@@ -1,187 +1,92 @@
-import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { Modal } from '../common/Modal';
+import { Button } from '../common/Button';
+import { FormField, Input, Select, Textarea } from '../common/index';
+import { useConvertToRegular } from '../../hooks/usePatient';
+import { useToast } from '../../context/ToastContext';
 import type { PregnantPatient } from '../../types/patient';
-import { useConvertToRegular } from '../../hooks/usePatients';
-import { convertToRegularSchema, type ConvertToRegularFormData } from '../../utils/patientValidationSchemas';
+import type { PregnancyOutcome } from '../../types/pregnancy';
+import { PREGNANCY_OUTCOME_LABELS } from '../../utils/formatters';
 
-interface ConvertPatientModalProps {
-  patient: PregnantPatient;
+const OUTCOMES: PregnancyOutcome[] = ['live_birth', 'stillbirth', 'miscarriage', 'abortion', 'ectopic'];
+
+interface Props {
+  open: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
+  patient: PregnantPatient;
 }
 
-export const ConvertPatientModal: React.FC<ConvertPatientModalProps> = ({
-  patient,
-  onClose,
-  onSuccess
-}) => {
-  const convertMutation = useConvertToRegular();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    reset,
-  } = useForm<ConvertToRegularFormData>({
-    resolver: zodResolver(convertToRegularSchema),
-    defaultValues: {
-      actual_delivery_date: '',
-      treatment_regimen: '',
-    },
+export function ConvertPatientModal({ open, onClose, patient }: Props) {
+  const { showError } = useToast();
+  // useConvertToRegular() takes no args — patientId goes in mutateAsync variables
+  const convert = useConvertToRegular();
+  const [form, setForm] = useState({
+    outcome: '' as PregnancyOutcome | '',
+    actual_delivery_date: '',
+    treatment_regimen: '',
+    notes: '',
   });
 
-  const onSubmit = async (data: ConvertToRegularFormData) => {
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  const handleSubmit = async () => {
+    if (!form.outcome) { showError('Please select a pregnancy outcome.'); return; }
     try {
-      await convertMutation.mutateAsync({
+      await convert.mutateAsync({
         patientId: patient.id,
-        data,
+        data: {
+          outcome: form.outcome as PregnancyOutcome,
+          actual_delivery_date: form.actual_delivery_date || undefined,
+          treatment_regimen: form.treatment_regimen || undefined,
+          notes: form.notes || undefined,
+        },
       });
-      reset();
-      if (onSuccess) onSuccess();
       onClose();
-    } catch (error) {
-      console.error('Form submission error:', error);
+    } catch {
+      // error toast handled by onError in hook
     }
   };
 
-  // Close modal on Escape key
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [onClose]);
-
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Convert to Regular Patient"
+      subtitle={`${patient.name} — close active pregnancy and transition to long-term care`}
+      size="md"
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose} disabled={convert.isPending}>Cancel</Button>
+          <Button onClick={handleSubmit} loading={convert.isPending}>Confirm Conversion</Button>
+        </>
+      }
     >
-      <div
-        className="bg-white rounded-lg shadow-xl max-w-md w-full"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-purple-50 to-pink-50">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Convert to Regular Patient</h2>
-            <p className="text-sm text-gray-600 mt-1">{patient.name}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full text-2xl font-bold w-8 h-8 flex items-center justify-center transition-colors"
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Content */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6">
-          {/* Info Box */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-            <div className="flex items-start">
-              <span className="text-2xl mr-3">ℹ️</span>
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">Converting to Regular Patient</p>
-                <p>
-                  This will change the patient type from "Pregnant" to "Regular" and allow
-                  full medical record management. This action cannot be undone.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Patient Info */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
-            <div className="text-sm">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">Expected Delivery Date:</span>
-                <span className="font-medium text-gray-900">
-                  {patient.expected_delivery_date
-                    ? new Date(patient.expected_delivery_date).toLocaleDateString()
-                    : '—'}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Current Status:</span>
-                <span className="font-medium text-green-600">Active</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Actual Delivery Date */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Actual Delivery Date *
-            </label>
-            <input
-              type="date"
-              {...register('actual_delivery_date')}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.actual_delivery_date
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
-            />
-            {errors.actual_delivery_date && (
-              <p className="mt-1 text-sm text-red-600">{errors.actual_delivery_date.message}</p>
-            )}
-          </div>
-
-          {/* Treatment Regimen */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Treatment Regimen (Optional)
-            </label>
-            <input
-              type="text"
-              {...register('treatment_regimen')}
-              placeholder="e.g., TDF/3TC/DTG"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errors.treatment_regimen
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                }`}
-            />
-            {errors.treatment_regimen && (
-              <p className="mt-1 text-sm text-red-600">{errors.treatment_regimen.message}</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              You can add more medical details after conversion
-            </p>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={isSubmitting || convertMutation.isPending}
-              className="flex-1 bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              {isSubmitting || convertMutation.isPending ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Converting...
-                </span>
-              ) : (
-                'Convert Patient'
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting || convertMutation.isPending}
-              className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none transition-colors font-medium disabled:opacity-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-sm text-amber-800">
+        ⚠️ This will close the active pregnancy and convert the patient to the regular treatment pathway. This action cannot be undone.
       </div>
-    </div>
+
+      <div className="space-y-4">
+        <FormField label="Pregnancy Outcome" required>
+          <Select value={form.outcome} onChange={e => set('outcome', e.target.value)}>
+            <option value="">Select outcome…</option>
+            {OUTCOMES.map(o => (
+              <option key={o} value={o}>{PREGNANCY_OUTCOME_LABELS[o]}</option>
+            ))}
+          </Select>
+        </FormField>
+
+        <FormField label="Actual Delivery Date">
+          <Input type="date" value={form.actual_delivery_date} onChange={e => set('actual_delivery_date', e.target.value)} />
+        </FormField>
+
+        <FormField label="Treatment Regimen" hint="HIV regimen to start post-delivery">
+          <Input placeholder="e.g. TDF/3TC/EFV" value={form.treatment_regimen} onChange={e => set('treatment_regimen', e.target.value)} />
+        </FormField>
+
+        <FormField label="Notes">
+          <Textarea value={form.notes} onChange={e => set('notes', e.target.value)} />
+        </FormField>
+      </div>
+    </Modal>
   );
-};
+}

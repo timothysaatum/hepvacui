@@ -1,62 +1,87 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+/**
+ * Patient React Query hooks.
+ *              includes the required `outcome: PregnancyOutcome` field.
+ *              Without it every conversion call returns 422.
+ */
+
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query';
 import { patientService } from '../services/patientService';
 import type {
+  PatientType,
+  PatientFilters,
   CreatePregnantPatientPayload,
   CreateRegularPatientPayload,
   UpdatePregnantPatientPayload,
   UpdateRegularPatientPayload,
   ConvertToRegularPayload,
-  PatientFilters,
 } from '../types/patient';
 import { useToast } from '../context/ToastContext';
 
-// Query Keys
+// ---------------------------------------------------------------------------
+// Query key factory
+// ---------------------------------------------------------------------------
+
 export const patientKeys = {
   all: ['patients'] as const,
+
   lists: () => [...patientKeys.all, 'list'] as const,
-  list: (filters: PatientFilters) => [...patientKeys.lists(), filters] as const,
+
+  list: (filters: PatientFilters) =>
+    [...patientKeys.lists(), filters] as const,
+
   details: () => [...patientKeys.all, 'detail'] as const,
-  detail: (id: string, type: 'pregnant' | 'regular') => 
+
+  /** Type-scoped detail key — use when type is known. */
+  detail: (id: string, type: PatientType) =>
     [...patientKeys.details(), id, type] as const,
-  // OPTIMIZATION: New unified query key
-  detailUnified: (id: string) => [...patientKeys.details(), id] as const,
+
+  /** Unified detail key — used when type is not known at call time. */
+  detailUnified: (id: string) =>
+    [...patientKeys.details(), id] as const,
 };
 
-// Fetch Patients List with Pagination and Filters
+// ---------------------------------------------------------------------------
+// Query hooks
+// ---------------------------------------------------------------------------
+
+/** Fetch a paginated, filtered list of patients. */
 export const usePatients = (filters: PatientFilters = {}) => {
   return useQuery({
     queryKey: patientKeys.list(filters),
     queryFn: () => patientService.getPatients(filters),
-    staleTime: 3 * 60 * 1000, // 3 minutes
+    staleTime: 3 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 };
 
-export const usePatient = (patientId: string | null) => {
+/**
+ * Fetch a single patient by ID.
+ *
+ *      typed endpoint immediately. The old fallback approach made an
+ *      unnecessary failed request for every regular patient.
+ *
+ * @param patientId   — the patient UUID (null disables the query)
+ * @param patientType — 'pregnant' | 'regular' — always known from list data
+ */
+export const usePatient = (
+  patientId: string | null,
+  patientType: PatientType
+) => {
   return useQuery({
-    queryKey: patientKeys.detailUnified(patientId!),
-    queryFn: async () => {
-      if (!patientId) return null;
-      
-      // Try pregnant endpoint first
-      try {
-        return await patientService.getPregnantPatient(patientId);
-      } catch (error: any) {
-        // If 404 or 400, try regular endpoint
-        if (error.response?.status === 404 || error.response?.status === 400) {
-          return await patientService.getRegularPatient(patientId);
-        }
-        throw error;
-      }
-    },
+    queryKey: patientKeys.detail(patientId!, patientType),
+    queryFn: () => patientService.getPatientByType(patientId!, patientType),
     enabled: !!patientId,
     staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    retry: false, // Let our fallback logic handle retries
+    gcTime: 10 * 60 * 1000,
   });
 };
 
-// Fetch Single Pregnant Patient (keep for backward compatibility)
+/** Fetch a pregnant patient specifically. Prefer usePatient() for new code. */
 export const usePregnantPatient = (patientId: string | null) => {
   return useQuery({
     queryKey: patientKeys.detail(patientId!, 'pregnant'),
@@ -66,7 +91,7 @@ export const usePregnantPatient = (patientId: string | null) => {
   });
 };
 
-// Fetch Single Regular Patient (keep for backward compatibility)
+/** Fetch a regular patient specifically. Prefer usePatient() for new code. */
 export const useRegularPatient = (patientId: string | null) => {
   return useQuery({
     queryKey: patientKeys.detail(patientId!, 'regular'),
@@ -76,134 +101,177 @@ export const useRegularPatient = (patientId: string | null) => {
   });
 };
 
-// Create Pregnant Patient Mutation
+// ---------------------------------------------------------------------------
+// Mutation hooks
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a new pregnant patient.
+ *
+ *      The old payload was missing it — every create call returned 422.
+ */
 export const useCreatePregnantPatient = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
   return useMutation({
-    mutationFn: (data: CreatePregnantPatientPayload) => 
+    mutationFn: (data: CreatePregnantPatientPayload) =>
       patientService.createPregnantPatient(data),
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
-      showSuccess('Pregnant patient created successfully');
+      showSuccess('Pregnant patient registered successfully');
     },
+
     onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to create pregnant patient';
-      showError(errorMsg);
+      const msg = error.response?.data?.detail ?? 'Failed to register pregnant patient';
+      showError(msg);
     },
   });
 };
 
-// Create Regular Patient Mutation
+/** Create a new regular patient. */
 export const useCreateRegularPatient = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
   return useMutation({
-    mutationFn: (data: CreateRegularPatientPayload) => 
+    mutationFn: (data: CreateRegularPatientPayload) =>
       patientService.createRegularPatient(data),
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
-      showSuccess('Regular patient created successfully');
+      showSuccess('Patient registered successfully');
     },
+
     onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to create regular patient';
-      showError(errorMsg);
+      const msg = error.response?.data?.detail ?? 'Failed to register patient';
+      showError(msg);
     },
   });
 };
 
-// Update Pregnant Patient Mutation
+/** Update patient-level fields on a pregnant patient. */
 export const useUpdatePregnantPatient = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
   return useMutation({
-    mutationFn: ({ patientId, data }: { 
-      patientId: string; 
-      data: UpdatePregnantPatientPayload 
+    mutationFn: ({
+      patientId,
+      data,
+    }: {
+      patientId: string;
+      data: UpdatePregnantPatientPayload;
     }) => patientService.updatePregnantPatient(patientId, data),
+
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'pregnant') });
-      queryClient.invalidateQueries({ queryKey: patientKeys.detailUnified(variables.patientId) });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detail(variables.patientId, 'pregnant'),
+      });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detailUnified(variables.patientId),
+      });
       queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
-      showSuccess('Pregnant patient updated successfully');
+      showSuccess('Patient updated successfully');
     },
+
     onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to update pregnant patient';
-      showError(errorMsg);
+      const msg = error.response?.data?.detail ?? 'Failed to update patient';
+      showError(msg);
     },
   });
 };
 
-// Update Regular Patient Mutation
+/** Update a regular patient. */
 export const useUpdateRegularPatient = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
   return useMutation({
-    mutationFn: ({ patientId, data }: { 
-      patientId: string; 
-      data: UpdateRegularPatientPayload 
+    mutationFn: ({
+      patientId,
+      data,
+    }: {
+      patientId: string;
+      data: UpdateRegularPatientPayload;
     }) => patientService.updateRegularPatient(patientId, data),
+
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'regular') });
-      // OPTIMIZATION: Also invalidate unified query
-      queryClient.invalidateQueries({ queryKey: patientKeys.detailUnified(variables.patientId) });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detail(variables.patientId, 'regular'),
+      });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detailUnified(variables.patientId),
+      });
       queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
-      showSuccess('Regular patient updated successfully');
+      showSuccess('Patient updated successfully');
     },
+
     onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to update regular patient';
-      showError(errorMsg);
+      const msg = error.response?.data?.detail ?? 'Failed to update patient';
+      showError(msg);
     },
   });
 };
 
-// Convert Pregnant to Regular Patient Mutation
+/**
+ * Convert a pregnant patient to a regular patient.
+ *
+ */
 export const useConvertToRegular = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
   return useMutation({
-    mutationFn: ({ patientId, data }: { 
-      patientId: string; 
-      data: ConvertToRegularPayload 
+    mutationFn: ({
+      patientId,
+      data,
+    }: {
+      patientId: string;
+      data: ConvertToRegularPayload;
     }) => patientService.convertToRegular(patientId, data),
+
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: patientKeys.detail(variables.patientId, 'pregnant') });
-      queryClient.invalidateQueries({ queryKey: patientKeys.detailUnified(variables.patientId) });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detail(variables.patientId, 'pregnant'),
+      });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detailUnified(variables.patientId),
+      });
       queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
-      showSuccess('Patient converted to regular successfully');
+      showSuccess('Patient converted to regular care successfully');
     },
+
     onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to convert patient';
-      showError(errorMsg);
+      const msg = error.response?.data?.detail ?? 'Failed to convert patient';
+      showError(msg);
     },
   });
 };
 
-// Delete Patient Mutation
+/** Soft delete a patient. */
 export const useDeletePatient = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
   return useMutation({
     mutationFn: (patientId: string) => patientService.deletePatient(patientId),
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
       showSuccess('Patient deleted successfully');
     },
+
     onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to delete patient';
-      showError(errorMsg);
+      const msg = error.response?.data?.detail ?? 'Failed to delete patient';
+      showError(msg);
     },
   });
 };
