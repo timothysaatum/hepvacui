@@ -200,7 +200,7 @@ export function PurchaseVaccineModal({
 // ── Record Payment Modal ──────────────────────────────────────────────────────
 
 export function RecordPaymentModal({
-    open, onClose, purchaseId, patientId,
+    open, onClose, purchaseId,
 }: {
     open: boolean; onClose: () => void; purchaseId: string; patientId: string;
 }) {
@@ -297,7 +297,7 @@ export function RecordPaymentModal({
 // ── Administer Dose Modal ─────────────────────────────────────────────────────
 
 export function AdministerDoseModal({
-    open, onClose, purchaseId, patientId,
+    open, onClose, purchaseId,
 }: {
     open: boolean; onClose: () => void; purchaseId: string; patientId: string;
 }) {

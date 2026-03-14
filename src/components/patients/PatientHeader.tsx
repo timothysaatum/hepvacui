@@ -8,9 +8,10 @@ import { formatDate, getGravidaParaLabel, getInitials } from '../../utils/format
 interface PatientHeaderProps {
     patient: Patient;
     onConvert?: () => void;
+    onReRegisterPregnant?: () => void;
 }
 
-export function PatientHeader({ patient, onConvert }: PatientHeaderProps) {
+export function PatientHeader({ patient, onConvert, onReRegisterPregnant }: PatientHeaderProps) {
     const navigate = useNavigate();
     const pregnant = isPregnantPatient(patient);
 
@@ -75,13 +76,18 @@ export function PatientHeader({ patient, onConvert }: PatientHeaderProps) {
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/patients/${patient.id}/edit`)}
+                        onClick={() => navigate(`/patients/${patient.id}/edit?type=${patient.patient_type}`)}
                     >
                         Edit
                     </Button>
                     {pregnant && patient.status === 'active' && onConvert && (
                         <Button variant="secondary" size="sm" onClick={onConvert}>
                             Convert to Regular
+                        </Button>
+                    )}
+                    {!pregnant && onReRegisterPregnant && (
+                        <Button variant="secondary" size="sm" onClick={onReRegisterPregnant}>
+                            Re-register as Pregnant
                         </Button>
                     )}
                 </div>

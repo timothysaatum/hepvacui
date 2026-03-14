@@ -14,7 +14,7 @@ export function getAccessToken(): string | null {
 
 // ── Axios instance ────────────────────────────────────────────────────────────
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_API_URL || '';
 const REFRESH_URL = `${BASE_URL}/api/v1/users/refresh`;
 
 const api: AxiosInstance = axios.create({

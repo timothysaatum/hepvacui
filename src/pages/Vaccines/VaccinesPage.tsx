@@ -24,7 +24,7 @@ export const VaccinesPage: React.FC = () => {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
-            {viewMode === 'list' && 'Vaccine Inventory'}
+            {viewMode === 'list' && 'Vaccines'}
             {viewMode === 'create' && 'Add New Vaccine'}
             {viewMode === 'edit' && 'Edit Vaccine'}
           </h1>

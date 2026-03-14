@@ -19,6 +19,7 @@ import type {
   UpdatePregnantPatientPayload,
   UpdateRegularPatientPayload,
   ConvertToRegularPayload,
+  ReRegisterAsPregnantPayload,
 } from '../types/patient';
 import { useToast } from '../context/ToastContext';
 
@@ -223,7 +224,7 @@ export const useUpdateRegularPatient = () => {
  * Convert a pregnant patient to a regular patient.
  *
  */
-export const useConvertToRegular = () => {
+export const useConvertToRegular = (onConverted?: (patientId: string) => void) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToast();
 
@@ -237,19 +238,67 @@ export const useConvertToRegular = () => {
     }) => patientService.convertToRegular(patientId, data),
 
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
-      queryClient.invalidateQueries({
+      // Remove (not just invalidate) the typed detail cache entries so React Query
+      // cannot fire a background refetch before navigation unmounts the subscriber.
+      // invalidateQueries triggers an immediate refetch of any mounted query, which
+      // would hit GET /pregnant/{id} after the discriminator flipped → 409 Conflict.
+      queryClient.removeQueries({
         queryKey: patientKeys.detail(variables.patientId, 'pregnant'),
       });
-      queryClient.invalidateQueries({
+      queryClient.removeQueries({
         queryKey: patientKeys.detailUnified(variables.patientId),
       });
-      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
+
+      // Navigate first so the component unmounts before the list refresh fires.
       showSuccess('Patient converted to regular care successfully');
+      onConverted?.(variables.patientId);
+
+      // Invalidate the list + search in the background after navigation.
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
     },
 
     onError: (error: any) => {
       const msg = error.response?.data?.detail ?? 'Failed to convert patient';
+      showError(msg);
+    },
+  });
+};
+
+/** Re-register a regular patient as pregnant (second or later pregnancy). */
+export const useReRegisterAsPregnant = (onReRegistered?: (patientId: string) => void) => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      patientId,
+      data,
+    }: {
+      patientId: string;
+      data: ReRegisterAsPregnantPayload;
+    }) => patientService.reRegisterAsPregnant(patientId, data),
+
+    onSuccess: (_, variables) => {
+      // Same pattern: remove regular detail before navigating to prevent a
+      // background refetch hitting GET /regular/{id} after the discriminator
+      // has flipped back to PREGNANT.
+      queryClient.removeQueries({
+        queryKey: patientKeys.detail(variables.patientId, 'regular'),
+      });
+      queryClient.removeQueries({
+        queryKey: patientKeys.detailUnified(variables.patientId),
+      });
+
+      showSuccess('Patient re-registered as pregnant successfully');
+      onReRegistered?.(variables.patientId);
+
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
+    },
+
+    onError: (error: any) => {
+      const msg = error.response?.data?.detail ?? 'Failed to re-register patient';
       showError(msg);
     },
   });

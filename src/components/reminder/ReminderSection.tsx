@@ -7,7 +7,7 @@ import { Modal } from '../common/Modal';
 import { FormField, Input, Select, Textarea } from '../common/index';
 import { useToast } from '../../context/ToastContext';
 import { formatDate, REMINDER_TYPE_LABELS } from '../../utils/formatters';
-import type { ReminderType } from '../../types/reminder';
+import type { PatientReminder, ReminderType } from '../../types/reminder';
 import { useCreateReminder, useReminders, useUpdateReminder } from '../../hooks/useReminder';
 
 const REMINDER_TYPES: ReminderType[] = [
@@ -27,6 +27,7 @@ interface Props { patient: Patient; }
 export function ReminderSection({ patient }: Props) {
     const { data: reminders = [], isLoading } = useReminders(patient.id);
     const [addOpen, setAddOpen] = useState(false);
+    const [editReminder, setEditReminder] = useState<PatientReminder | null>(null);
     const updateReminder = useUpdateReminder(patient.id);
     const { showSuccess, showError } = useToast();
 
@@ -50,7 +51,12 @@ export function ReminderSection({ patient }: Props) {
                 action={<Button size="sm" onClick={() => setAddOpen(true)}>+ Add Reminder</Button>}
             >
                 {!reminders.length ? (
-                    <EmptyState icon={<span className="text-xl">🔔</span>} title="No reminders" description="Set up automated reminders for this patient." action={<Button size="sm" onClick={() => setAddOpen(true)}>+ Add Reminder</Button>} />
+                    <EmptyState
+                        icon={<span className="text-xl">🔔</span>}
+                        title="No reminders"
+                        description="Set up automated reminders for this patient."
+                        action={<Button size="sm" onClick={() => setAddOpen(true)}>+ Add Reminder</Button>}
+                    />
                 ) : (
                     <div className="space-y-5">
                         {pending.length > 0 && (
@@ -69,7 +75,20 @@ export function ReminderSection({ patient }: Props) {
                                             </div>
                                             <div className="flex items-center gap-2 shrink-0">
                                                 <ReminderStatusBadge status={r.status} />
-                                                <Button size="sm" variant="ghost" onClick={() => cancel(r.id)}>Cancel</Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => setEditReminder(r)}
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => cancel(r.id)}
+                                                >
+                                                    Cancel
+                                                </Button>
                                             </div>
                                         </div>
                                     ))}
@@ -100,47 +119,181 @@ export function ReminderSection({ patient }: Props) {
                 )}
             </SectionCard>
 
-            <AddReminderModal open={addOpen} onClose={() => setAddOpen(false)} patientId={patient.id} />
+            <AddReminderModal
+                open={addOpen}
+                onClose={() => setAddOpen(false)}
+                patientId={patient.id}
+            />
+
+            {editReminder && (
+                <EditReminderModal
+                    open={!!editReminder}
+                    onClose={() => setEditReminder(null)}
+                    reminder={editReminder}
+                    patientId={patient.id}
+                />
+            )}
         </div>
     );
 }
 
 // ── Add Reminder Modal ────────────────────────────────────────────────────────
 
-function AddReminderModal({ open, onClose, patientId }: { open: boolean; onClose: () => void; patientId: string }) {
+function AddReminderModal({
+    open,
+    onClose,
+    patientId,
+}: {
+    open: boolean;
+    onClose: () => void;
+    patientId: string;
+}) {
     const { showSuccess, showError } = useToast();
     const mutation = useCreateReminder(patientId);
-    const [form, setForm] = useState({ reminder_type: '' as ReminderType | '', scheduled_date: '', message: '' });
+    const [form, setForm] = useState({
+        reminder_type: '' as ReminderType | '',
+        scheduled_date: '',
+        message: '',
+    });
     const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
     const handleSubmit = async () => {
         if (!form.reminder_type || !form.scheduled_date || !form.message) {
-            showError('All fields are required.'); return;
+            showError('All fields are required.');
+            return;
         }
-        if (form.message.trim().length < 10) { showError('Message must be at least 10 characters.'); return; }
+        if (form.message.trim().length < 10) {
+            showError('Message must be at least 10 characters.');
+            return;
+        }
         try {
-            await mutation.mutateAsync({ reminder_type: form.reminder_type as ReminderType, scheduled_date: form.scheduled_date, message: form.message });
+            await mutation.mutateAsync({
+                reminder_type: form.reminder_type as ReminderType,
+                scheduled_date: form.scheduled_date,
+                message: form.message,
+            });
             showSuccess('Reminder created.');
             onClose();
-        } catch (e: any) { showError(e?.response?.data?.detail || 'Failed to create reminder.'); }
+        } catch (e: any) {
+            showError(e?.response?.data?.detail || 'Failed to create reminder.');
+        }
     };
 
     return (
-        <Modal open={open} onClose={onClose} title="Add Reminder" size="sm"
-            footer={<><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={handleSubmit} loading={mutation.isPending}>Save Reminder</Button></>}
+        <Modal
+            open={open}
+            onClose={onClose}
+            title="Add Reminder"
+            size="sm"
+            footer={
+                <>
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button onClick={handleSubmit} loading={mutation.isPending}>Save Reminder</Button>
+                </>
+            }
         >
             <div className="space-y-4">
                 <FormField label="Reminder Type" required>
                     <Select value={form.reminder_type} onChange={e => set('reminder_type', e.target.value)}>
                         <option value="">Select type…</option>
-                        {REMINDER_TYPES.map(t => <option key={t} value={t}>{TYPE_ICONS[t]} {REMINDER_TYPE_LABELS[t]}</option>)}
+                        {REMINDER_TYPES.map(t => (
+                            <option key={t} value={t}>{TYPE_ICONS[t]} {REMINDER_TYPE_LABELS[t]}</option>
+                        ))}
                     </Select>
                 </FormField>
                 <FormField label="Scheduled Date" required>
                     <Input type="date" value={form.scheduled_date} onChange={e => set('scheduled_date', e.target.value)} />
                 </FormField>
                 <FormField label="Message" required hint="Minimum 10 characters">
-                    <Textarea value={form.message} onChange={e => set('message', e.target.value)} placeholder="Enter reminder message…" />
+                    <Textarea
+                        value={form.message}
+                        onChange={e => set('message', e.target.value)}
+                        placeholder="Enter reminder message…"
+                    />
+                </FormField>
+            </div>
+        </Modal>
+    );
+}
+
+// ── Edit Reminder Modal ───────────────────────────────────────────────────────
+
+function EditReminderModal({
+    open,
+    onClose,
+    reminder,
+    patientId,
+}: {
+    open: boolean;
+    onClose: () => void;
+    reminder: PatientReminder;
+    patientId: string;
+}) {
+    const { showSuccess, showError } = useToast();
+    const mutation = useUpdateReminder(patientId);
+    const [form, setForm] = useState({
+        scheduled_date: reminder.scheduled_date,
+        message: reminder.message,
+    });
+    const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+    const handleSubmit = async () => {
+        if (!form.scheduled_date || !form.message) {
+            showError('All fields are required.');
+            return;
+        }
+        if (form.message.trim().length < 10) {
+            showError('Message must be at least 10 characters.');
+            return;
+        }
+        try {
+            await mutation.mutateAsync({
+                id: reminder.id,
+                data: {
+                    scheduled_date: form.scheduled_date,
+                    message: form.message,
+                },
+            });
+            showSuccess('Reminder updated.');
+            onClose();
+        } catch (e: any) {
+            showError(e?.response?.data?.detail || 'Failed to update reminder.');
+        }
+    };
+
+    return (
+        <Modal
+            open={open}
+            onClose={onClose}
+            title="Edit Reminder"
+            size="sm"
+            footer={
+                <>
+                    <Button variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button onClick={handleSubmit} loading={mutation.isPending}>Save Changes</Button>
+                </>
+            }
+        >
+            <div className="space-y-4">
+                <FormField label="Reminder Type">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600">
+                        <span>{TYPE_ICONS[reminder.reminder_type]}</span>
+                        <span>{REMINDER_TYPE_LABELS[reminder.reminder_type]}</span>
+                    </div>
+                </FormField>
+                <FormField label="Scheduled Date" required>
+                    <Input
+                        type="date"
+                        value={form.scheduled_date}
+                        onChange={e => set('scheduled_date', e.target.value)}
+                    />
+                </FormField>
+                <FormField label="Message" required hint="Minimum 10 characters">
+                    <Textarea
+                        value={form.message}
+                        onChange={e => set('message', e.target.value)}
+                        placeholder="Enter reminder message…"
+                    />
                 </FormField>
             </div>
         </Modal>

@@ -7,7 +7,7 @@ import { authService } from '../services/authService';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (credentials: LoginPayload) => Promise<void>;
+  login: (credentials: LoginPayload, extraHeaders?: Record<string, string>) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -43,8 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => window.removeEventListener('auth:logout', handleLogout);
   }, []);
 
-  const login = async (credentials: LoginPayload) => {
-    const userData = await authService.login(credentials);
+  const login = async (credentials: LoginPayload, extraHeaders?: Record<string, string>) => {
+    const userData = await authService.login(credentials, extraHeaders);
     setUser(userData);
   };
 

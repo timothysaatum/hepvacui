@@ -212,6 +212,14 @@ export interface ConvertToRegularPayload {
   notes?: string;
 }
 
+export interface ReRegisterAsPregnantPayload {
+  lmp_date?: string;
+  expected_delivery_date?: string;
+  gestational_age_weeks?: number;
+  risk_factors?: string;
+  notes?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Pagination
 // ---------------------------------------------------------------------------

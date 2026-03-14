@@ -5,8 +5,13 @@ import type { LoginPayload, UserWithToken, User } from '../types/user';
 let _currentUser: User | null = null;
 
 export const authService = {
-  login: async (credentials: LoginPayload): Promise<UserWithToken> => {
-    const response = await api.post('/api/v1/users/login', credentials);
+  login: async (
+    credentials: LoginPayload,
+    extraHeaders?: Record<string, string>,
+  ): Promise<UserWithToken> => {
+    const response = await api.post('/api/v1/users/login', credentials, {
+      headers: extraHeaders,
+    });
     const data: UserWithToken = response.data;
 
     if (data.access_token) {

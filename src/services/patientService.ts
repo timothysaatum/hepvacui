@@ -13,6 +13,7 @@ import type {
   UpdatePregnantPatientPayload,
   UpdateRegularPatientPayload,
   ConvertToRegularPayload,
+  ReRegisterAsPregnantPayload,
   PaginatedPatients,
   PatientFilters,
 } from '../types/patient';
@@ -78,6 +79,21 @@ export const patientService = {
     return response.data;
   },
 
+
+  /**
+   * Re-register a regular patient as pregnant (second or later pregnancy).
+   * POST /api/v1/patients/regular/{patient_id}/re-register-pregnant
+   */
+  reRegisterAsPregnant: async (
+    patientId: string,
+    data: ReRegisterAsPregnantPayload
+  ): Promise<PregnantPatient> => {
+    const response = await api.post(
+      `/api/v1/patients/regular/${patientId}/re-register-pregnant`,
+      data
+    );
+    return response.data;
+  },
   // -------------------------------------------------------------------------
   // Regular patient
   // -------------------------------------------------------------------------
