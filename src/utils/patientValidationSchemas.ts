@@ -1,29 +1,35 @@
 import { z } from 'zod';
 
+const patientStatus = z.enum(['active', 'inactive', 'postpartum', 'completed']);
+
 // Pregnant Patient Schema
 export const createPregnantPatientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Phone number is too long'),
   sex: z.literal('female'),
-  age: z.number().min(13, 'Age must be at least 13').max(60, 'Age must be less than 60'),
-  expected_delivery_date: z.string().min(1, 'Expected delivery date is required'),
+  date_of_birth: z.string().optional(),
+  first_pregnancy: z.object({
+    lmp_date: z.string().optional(),
+    expected_delivery_date: z.string().optional(),
+    gestational_age_weeks: z.number().min(1).max(45).optional(),
+    risk_factors: z.string().max(1000).optional(),
+    notes: z.string().optional(),
+  }),
 });
 
 export const updatePregnantPatientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100).optional(),
   phone: z.string().min(10).max(15).optional(),
-  age: z.number().min(13).max(60).optional(),
-  expected_delivery_date: z.string().optional(),
-  actual_delivery_date: z.string().optional(),
-  status: z.enum(['active', 'inactive', 'converted']).optional(),
+  date_of_birth: z.string().optional(),
+  status: patientStatus.optional(),
 });
 
 // Regular Patient Schema
 export const createRegularPatientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Phone number is too long'),
-  sex: z.enum(['male', 'female'], 'Gender is required'),
-  age: z.number().min(0, 'Age must be positive').max(120, 'Age must be less than 120'),
+  sex: z.enum(['male', 'female']),
+  date_of_birth: z.string().optional(),
   diagnosis_date: z.string().optional(),
   viral_load: z.string().max(50).optional(),
   last_viral_load_date: z.string().optional(),
@@ -37,7 +43,7 @@ export const createRegularPatientSchema = z.object({
 export const updateRegularPatientSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   phone: z.string().min(10).max(15).optional(),
-  age: z.number().min(0).max(120).optional(),
+  date_of_birth: z.string().optional(),
   diagnosis_date: z.string().optional(),
   viral_load: z.string().max(50).optional(),
   last_viral_load_date: z.string().optional(),
@@ -46,7 +52,7 @@ export const updateRegularPatientSchema = z.object({
   medical_history: z.string().max(1000).optional(),
   allergies: z.string().max(500).optional(),
   notes: z.string().max(1000).optional(),
-  status: z.enum(['active', 'inactive', 'converted']).optional(),
+  status: patientStatus.optional(),
 });
 
 // Convert to Regular Schema

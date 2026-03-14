@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { Patient, PregnantPatient, RegularPatient } from '../../types/patient';
+import type { Patient, PatientStatus, PregnantPatient, RegularPatient } from '../../types/patient';
 import {
   useUpdatePregnantPatient,
   useUpdateRegularPatient,
@@ -71,18 +71,16 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
     resolver: zodResolver(updateRegularPatientSchema),
   });
 
+  const VALID_STATUSES: PatientStatus[] = ['active', 'inactive', 'postpartum', 'completed'];
+
   // Populate form when patient data is available
   useEffect(() => {
     if (isPregnant && pregnantData) {
       resetPregnant({
         name: pregnantData.name,
         phone: pregnantData.phone,
-        age: pregnantData.age,
-        expected_delivery_date: pregnantData.expected_delivery_date ?? undefined,
-        actual_delivery_date: pregnantData.actual_delivery_date ?? undefined,
-        status: ['active', 'inactive', 'converted'].includes(pregnantData.status)
-          ? (pregnantData.status as 'active' | 'inactive' | 'converted')
-          : undefined,
+        date_of_birth: pregnantData.date_of_birth ?? undefined,
+        status: VALID_STATUSES.includes(pregnantData.status) ? pregnantData.status : undefined,
       });
     }
   }, [pregnantData, resetPregnant, isPregnant]);
@@ -92,7 +90,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
       resetRegular({
         name: regularData.name,
         phone: regularData.phone,
-        age: regularData.age,
+        date_of_birth: regularData.date_of_birth ?? undefined,
         diagnosis_date: regularData.diagnosis_date || undefined,
         viral_load: regularData.viral_load || undefined,
         last_viral_load_date: regularData.last_viral_load_date || undefined,
@@ -101,9 +99,7 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
         medical_history: regularData.medical_history || undefined,
         allergies: regularData.allergies || undefined,
         notes: regularData.notes || undefined,
-        status: ['active', 'inactive', 'converted'].includes(regularData.status)
-          ? (regularData.status as 'active' | 'inactive' | 'converted')
-          : undefined,
+        status: VALID_STATUSES.includes(regularData.status) ? regularData.status : undefined,
       });
     }
   }, [regularData, resetRegular, isPregnant]);
@@ -201,22 +197,16 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
               )}
             </div>
 
-            {/* Age */}
+            {/* Date of Birth */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age <span className="text-red-500">*</span>
+                Date of Birth (Optional)
               </label>
               <input
-                type="number"
-                {...registerPregnant('age', { valueAsNumber: true })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.age
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                  }`}
+                type="date"
+                {...registerPregnant('date_of_birth')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               />
-              {errorsPregnant.age && (
-                <p className="mt-1 text-sm text-red-600">{errorsPregnant.age.message}</p>
-              )}
             </div>
 
             {/* Status */}
@@ -230,40 +220,9 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
-                <option value="converted">Converted</option>
+                <option value="postpartum">Postpartum</option>
+                <option value="completed">Completed</option>
               </select>
-            </div>
-
-            {/* Expected Delivery Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Expected Delivery Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                {...registerPregnant('expected_delivery_date')}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsPregnant.expected_delivery_date
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                  }`}
-              />
-              {errorsPregnant.expected_delivery_date && (
-                <p className="mt-1 text-sm text-red-600">
-                  {errorsPregnant.expected_delivery_date.message}
-                </p>
-              )}
-            </div>
-
-            {/* Actual Delivery Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Actual Delivery Date (Optional)
-              </label>
-              <input
-                type="date"
-                {...registerPregnant('actual_delivery_date')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-              />
             </div>
           </div>
 
@@ -331,22 +290,16 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
               )}
             </div>
 
-            {/* Age */}
+            {/* Date of Birth */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Age <span className="text-red-500">*</span>
+                Date of Birth (Optional)
               </label>
               <input
-                type="number"
-                {...registerRegular('age', { valueAsNumber: true })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${errorsRegular.age
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
-                  : 'border-gray-300 focus:ring-purple-500 focus:border-purple-500'
-                  }`}
+                type="date"
+                {...registerRegular('date_of_birth')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               />
-              {errorsRegular.age && (
-                <p className="mt-1 text-sm text-red-600">{errorsRegular.age.message}</p>
-              )}
             </div>
 
             {/* Status */}
@@ -360,7 +313,8 @@ export const EditPatientForm: React.FC<EditPatientFormProps> = ({
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
-                <option value="converted">Converted</option>
+                <option value="postpartum">Postpartum</option>
+                <option value="completed">Completed</option>
               </select>
             </div>
 

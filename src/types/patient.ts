@@ -91,7 +91,8 @@ export interface PregnantPatient extends BasePatient {
    * Contains the expected delivery date, gestational age, etc.
    */
   active_pregnancy: PregnancySummary | null;
-
+  expected_delivery_date?: string | null;
+  actual_delivery_date?: string | null;
   /**
    * All completed pregnancy episodes for this patient, newest first.
    * Does NOT include the active pregnancy.

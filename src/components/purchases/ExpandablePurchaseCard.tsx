@@ -262,7 +262,7 @@ export const ExpandablePurchaseCard: React.FC<ExpandablePurchaseCardProps> = ({
                             </p>
                           </div>
                           <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded capitalize">
-                            {payment.payment_method.replace('_', ' ')}
+                            {payment.payment_method ? payment.payment_method.replace('_', ' ') : 'N/A'}
                           </span>
                         </div>
                         {payment.reference_number && (

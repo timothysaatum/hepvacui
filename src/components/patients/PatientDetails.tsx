@@ -36,9 +36,9 @@ export const PatientDetailPage: React.FC = () => {
 
   const { data: pregnantData, isPending: pregnantLoading } = usePregnantPatient(patientId || null);
   const { data: regularData, isPending: regularLoading } = useRegularPatient(patientId || null);
-  
+
   const { data: purchases, isPending: purchasesLoading } = usePatientPurchases(
-    patientId || '', 
+    patientId || '',
     activeTab === 'purchases'
   );
 
@@ -72,7 +72,7 @@ export const PatientDetailPage: React.FC = () => {
 
   const { totalSpent, totalBalance, totalDoses } = useMemo(() => {
     if (!purchases) return { totalSpent: 0, totalBalance: 0, totalDoses: 0 };
-    
+
     return {
       totalSpent: purchases.reduce((sum, p) => sum + Number(p.amount_paid), 0),
       totalBalance: purchases.reduce((sum, p) => sum + Number(p.balance), 0),
@@ -195,8 +195,8 @@ export const PatientDetailPage: React.FC = () => {
             <button
               onClick={() => setActiveTab('info')}
               className={`py-4 px-2 font-semibold text-sm transition-all relative ${activeTab === 'info'
-                  ? 'text-black'
-                  : 'text-gray-500 hover:text-black'
+                ? 'text-black'
+                : 'text-gray-500 hover:text-black'
                 }`}
             >
               Patient Information
@@ -207,8 +207,8 @@ export const PatientDetailPage: React.FC = () => {
             <button
               onClick={() => setActiveTab('purchases')}
               className={`py-4 px-2 font-semibold text-sm transition-all relative ${activeTab === 'purchases'
-                  ? 'text-black'
-                  : 'text-gray-500 hover:text-black'
+                ? 'text-black'
+                : 'text-gray-500 hover:text-black'
                 }`}
             >
               Vaccine Purchases & History
@@ -222,7 +222,7 @@ export const PatientDetailPage: React.FC = () => {
 
       {/* Tab Content */}
       {activeTab === 'info' && (
-        <PatientInfoTab 
+        <PatientInfoTab
           patient={patient}
           isPregnant={isPregnant}
           pregnantData={pregnantData}
@@ -385,8 +385,8 @@ const PatientInfoTab = React.memo<{
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <InfoRow label="Created At" value={formatDate(patient.created_at, 'long')} />
         <InfoRow label="Updated At" value={formatDate(patient.updated_at, 'long')} />
-        <InfoRow label="Facility ID" value={patient.facility_id} />
-        <InfoRow label="Created By ID" value={patient.created_by_id} />
+        <InfoRow label="Facility" value={patient.facility.name} />
+        <InfoRow label="Created By" value={patient.created_by?.name ?? 'N/A'} />
       </div>
     </div>
   </div>
@@ -404,11 +404,11 @@ const PurchasesTab = React.memo<{
   getPaymentStatus: (purchase: VaccinePurchase) => string;
   onMakePayment: (purchase: VaccinePurchase) => void;
   onAdministerDose: (purchase: VaccinePurchase) => void;
-}>(({ 
-  purchases, 
-  purchasesLoading, 
-  totalSpent, 
-  totalBalance, 
+}>(({
+  purchases,
+  purchasesLoading,
+  totalSpent,
+  totalBalance,
   totalDoses,
   expandedPurchase,
   onTogglePurchase,
@@ -497,7 +497,7 @@ const PurchaseCard = React.memo<{
   onAdministerDose: () => void;
 }>(({ purchase, isExpanded, onToggle, getPaymentStatusBadge, getPaymentStatus, onMakePayment, onAdministerDose }) => {
   const paymentStatus = getPaymentStatus(purchase);
-  
+
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden hover:border-gray-300 transition-all hover:shadow-sm">
       <div

@@ -42,8 +42,10 @@ const sanitisePayload = <T extends Record<string, unknown>>(data: T): T => {
       if (trimmed !== '') result[key] = trimmed;
     } else if (typeof value === 'object' && !Array.isArray(value)) {
       // Recursively sanitise nested objects (e.g. first_pregnancy)
+      // Always include the object even if empty — required fields like first_pregnancy
+      // must be present in the payload even when the user leaves all sub-fields blank.
       const nested = sanitisePayload(value as Record<string, unknown>);
-      if (Object.keys(nested).length > 0) result[key] = nested;
+      result[key] = nested;
     } else {
       result[key] = value;
     }
@@ -113,13 +115,9 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({
   });
 
   const onSubmitPregnant = async (data: CreatePregnantPatientFormData) => {
-    if (!user?.id || !user?.facility?.id) return;
+    if (!user?.id) return;
     try {
-      await createPregnantMutation.mutateAsync({
-        ...sanitisePayload(data),
-        facility_id: user.facility.id,
-        created_by_id: user.id,
-      });
+      await createPregnantMutation.mutateAsync(sanitisePayload(data));
       resetPregnant();
       onSuccess?.();
     } catch (error) {
@@ -128,19 +126,16 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({
   };
 
   const onSubmitRegular = async (data: CreateRegularPatientFormData) => {
-    if (!user?.id || !user?.facility?.id) return;
+    if (!user?.id) return;
     try {
-      await createRegularMutation.mutateAsync({
-        ...sanitisePayload(data),
-        facility_id: user.facility.id,
-        created_by_id: user.id,
-      });
+      await createRegularMutation.mutateAsync(sanitisePayload(data));
       resetRegular();
       onSuccess?.();
     } catch (error) {
       console.error('Create regular patient error:', error);
     }
   };
+
 
   const isBusy =
     createPregnantMutation.isPending ||
@@ -162,8 +157,8 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({
             type="button"
             onClick={() => setPatientType('regular')}
             className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${patientType === 'regular'
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              ? 'border-blue-500 bg-blue-50 text-blue-700'
+              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
               }`}
           >
             <div className="text-2xl mb-1" aria-hidden="true">👤</div>
@@ -173,8 +168,8 @@ export const CreatePatientForm: React.FC<CreatePatientFormProps> = ({
             type="button"
             onClick={() => setPatientType('pregnant')}
             className={`flex-1 py-3 px-4 rounded-lg border-2 transition-colors ${patientType === 'pregnant'
-                ? 'border-pink-500 bg-pink-50 text-pink-700'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              ? 'border-pink-500 bg-pink-50 text-pink-700'
+              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
               }`}
           >
             <div className="text-2xl mb-1" aria-hidden="true">🤰</div>
