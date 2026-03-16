@@ -15,7 +15,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { name: 'Patients', path: '/patients', icon: Users },
   { name: 'Vaccines', path: '/vaccines', icon: Pill },
-  { name: 'Records', path: '/records', icon: Search},
+  { name: 'Records', path: '/records', icon: Search },
   { name: 'Reports', path: '/reports', icon: BarChart2, adminOnly: true },
   { name: 'Facilities', path: '/facilities', icon: Building2, adminOnly: true },
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -39,7 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const isAdmin = user?.roles?.some(r => r.name.toLowerCase() === 'admin');
   const filteredNav = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
   const mainNav = filteredNav.filter(i => !i.adminOnly && i.path !== '/settings');
-  const adminNav = filteredNav.filter(i => i.adminOnly);
+  const adminNav = filteredNav.filter(i => i.adminOnly && i.path !== '/settings');
   const settingsNav = filteredNav.filter(i => i.path === '/settings');
   const roleName = user?.roles?.[0]?.name ?? 'Staff';
 
