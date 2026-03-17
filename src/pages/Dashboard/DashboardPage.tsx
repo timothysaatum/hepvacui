@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { useAuth } from '../../context/useAuth';
 import { analyticsService, toNumber, type AcquisitionDay, type DashboardSummary, type RevenueDay, type UpcomingDelivery, type VaccineDoseCompletion } from '../../services/dashboardService';
 
 
@@ -69,8 +70,9 @@ const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
 
 export function DashboardPage() {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [trendDays, setTrendDays] = useState<7 | 30>(30);
-
+    const isAdmin = user?.roles?.some(role => role.name.toLowerCase() === 'admin');
     // ── API queries ─────────────────────────────────────────────────────────────
     const {
         data: summary,
@@ -201,13 +203,15 @@ export function DashboardPage() {
                         })}
                     </p>
                 </div>
-                <button
-                    onClick={handleExportSummary}
-                    disabled={loading || !summary}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-900 disabled:opacity-40 transition-colors"
-                >
-                    <DownloadIcon /> Export Summary
-                </button>
+                {isAdmin && (
+                    <button
+                        onClick={handleExportSummary}
+                        disabled={loading || !summary}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-slate-800 rounded-lg hover:bg-slate-900 disabled:opacity-40 transition-colors"
+                    >
+                        <DownloadIcon /> Export Summary
+                    </button>
+                )}
             </div>
 
             {/* ── KPI strip ────────────────────────────────────────────────────────── */}

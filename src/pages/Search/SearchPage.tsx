@@ -16,50 +16,49 @@ export const SearchPage: React.FC = () => {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* Header */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-black flex items-center justify-center">
-                        <Search className="w-6 h-6 text-white" />
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-slate-900 flex items-center justify-center">
+                        <Search className="w-4 h-4 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-black">Advanced Search</h1>
-                        <p className="text-sm text-gray-600">
-                            Search across patients, vaccinations, and payment records
-                        </p>
+                        <h1 className="text-base font-semibold text-slate-900">Advanced Search</h1>
+                        <p className="text-xs text-slate-500">Search across patients, vaccinations, and payments</p>
                     </div>
                 </div>
+            </div>
 
-                {/* Tabs */}
-                <div className="flex gap-2 border-b border-gray-200">
+            {/* Tabs + Content */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {/* Tab bar */}
+                <div className="flex items-center border-b border-slate-100 px-1 bg-slate-50">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
+                        const active = activeTab === tab.id;
                         return (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`flex items-center gap-2 px-6 py-3 font-semibold text-sm transition-all relative ${activeTab === tab.id
-                                        ? 'text-black'
-                                        : 'text-gray-500 hover:text-black'
+                                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-all relative border-b-2 ${active
+                                        ? 'text-slate-900 border-slate-900'
+                                        : 'text-slate-500 border-transparent hover:text-slate-700'
                                     }`}
                             >
-                                <Icon className="w-4 h-4" />
+                                <Icon className="w-3.5 h-3.5" />
                                 {tab.label}
-                                {activeTab === tab.id && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
-                                )}
                             </button>
                         );
                     })}
                 </div>
-            </div>
 
-            {/* Tab Content */}
-            <div>
-                {activeTab === 'patients' && <PatientSearchTab />}
-                {activeTab === 'vaccinations' && <VaccinationSearchTab />}
-                {activeTab === 'payments' && <PaymentSearchTab />}
+                {/* Tab content */}
+                <div className="p-4">
+                    {activeTab === 'patients' && <PatientSearchTab />}
+                    {activeTab === 'vaccinations' && <VaccinationSearchTab />}
+                    {activeTab === 'payments' && <PaymentSearchTab />}
+                </div>
             </div>
         </div>
     );

@@ -25,6 +25,14 @@ const PAYMENT_FILTER_FIELDS = [
     { name: 'amount_max', label: 'Max Amount', type: 'number' as const, placeholder: '10000' },
 ];
 
+const METHOD_COLORS: Record<string, string> = {
+    cash: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
+    mobile_money: 'bg-yellow-50 text-yellow-700 ring-1 ring-yellow-200',
+    bank_transfer: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+    card: 'bg-purple-50 text-purple-700 ring-1 ring-purple-200',
+    cheque: 'bg-slate-50 text-slate-600 ring-1 ring-slate-200',
+};
+
 const METHOD_LABELS: Record<string, string> = {
     cash: 'Cash',
     mobile_money: 'MoMo',
@@ -50,7 +58,7 @@ export const PaymentSearchTab: React.FC = () => {
     };
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             <SearchFilters
                 filters={filters}
                 onFilterChange={handleFilterChange}
@@ -61,40 +69,44 @@ export const PaymentSearchTab: React.FC = () => {
             />
 
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                    <p className="text-sm text-red-700">Failed to search payments. Please try again.</p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+                    <p className="text-xs text-red-700">Failed to search payments. Please try again.</p>
                 </div>
             )}
 
             {searchTrigger === 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                    <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <h3 className="text-base font-semibold text-gray-700 mb-1">Search for Payments</h3>
-                    <p className="text-sm text-gray-500">Use the filters above to search payment records.</p>
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center mb-2.5">
+                        <CreditCard className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <p className="text-sm font-medium text-slate-600">Search for Payments</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Apply filters above and click Search</p>
                 </div>
             )}
 
             {searchTrigger > 0 && !isFetching && !error && data && (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    {/* Summary bar */}
-                    <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
-                        <span className="text-sm font-semibold text-gray-700">
-                            {data.total_count} payment{data.total_count !== 1 ? 's' : ''} found
+                <div className="rounded-lg border border-slate-200 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2 bg-slate-50 border-b border-slate-100">
+                        <span className="text-xs text-slate-500">
+                            <span className="font-semibold text-slate-700">{data.total_count}</span>{' '}
+                            payment{data.total_count !== 1 ? 's' : ''} found
                         </span>
                         {data.total_count > 0 && (
-                            <span className="text-sm font-semibold text-gray-900">
-                                Total: <span className="text-emerald-700">{formatCurrency(data.total_amount)}</span>
+                            <span className="text-xs text-slate-500">
+                                Total:{' '}
+                                <span className="font-semibold text-emerald-700 tabular-nums">
+                                    {formatCurrency(data.total_amount)}
+                                </span>
                             </span>
                         )}
                     </div>
 
                     {data.items.length === 0 ? (
-                        <div className="py-12 text-center text-sm text-gray-500">No payments match your filters.</div>
+                        <div className="py-10 text-center text-xs text-slate-400">No payments match your filters.</div>
                     ) : (
                         <>
-                            {/* Column headers */}
-                            <div className="grid grid-cols-12 gap-4 px-5 py-2.5 border-b border-gray-100 bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            <div className="grid grid-cols-12 gap-3 px-4 py-2 border-b border-slate-100 bg-slate-50 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                                 <div className="col-span-3">Patient</div>
                                 <div className="col-span-2">Vaccine</div>
                                 <div className="col-span-2">Date</div>
@@ -103,28 +115,28 @@ export const PaymentSearchTab: React.FC = () => {
                                 <div className="col-span-1 text-right">Amount</div>
                             </div>
 
-                            <div className="divide-y divide-gray-50">
+                            <div className="divide-y divide-slate-50">
                                 {data.items.map((payment: PaymentSearchResult) => (
-                                    <div key={payment.id} className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center hover:bg-slate-50 transition-colors">
+                                    <div key={payment.id} className="grid grid-cols-12 gap-3 px-4 py-2.5 items-center hover:bg-slate-50 transition-colors">
                                         <div className="col-span-3 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 truncate">{payment.patient_name}</p>
-                                            <p className="text-xs text-gray-500">{payment.patient_phone}</p>
+                                            <p className="text-xs font-medium text-slate-800 truncate">{payment.patient_name}</p>
+                                            <p className="text-[10px] text-slate-400 tabular-nums">{payment.patient_phone}</p>
                                         </div>
-                                        <div className="col-span-2 text-sm text-gray-600 truncate">{payment.vaccine_name}</div>
-                                        <div className="col-span-2 text-sm text-gray-600">{formatDate(payment.payment_date)}</div>
+                                        <div className="col-span-2 text-xs text-slate-600 truncate">{payment.vaccine_name}</div>
+                                        <div className="col-span-2 text-xs text-slate-500 tabular-nums">{formatDate(payment.payment_date)}</div>
                                         <div className="col-span-2">
                                             {payment.payment_method ? (
-                                                <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                                <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${METHOD_COLORS[payment.payment_method] ?? 'bg-slate-50 text-slate-600 ring-1 ring-slate-200'}`}>
                                                     {METHOD_LABELS[payment.payment_method] ?? payment.payment_method}
                                                 </span>
                                             ) : (
-                                                <span className="text-sm text-gray-400">—</span>
+                                                <span className="text-xs text-slate-300">—</span>
                                             )}
                                         </div>
-                                        <div className="col-span-2 text-sm text-gray-500 font-mono truncate">
+                                        <div className="col-span-2 text-[10px] text-slate-400 font-mono truncate">
                                             {payment.reference_number ?? '—'}
                                         </div>
-                                        <div className="col-span-1 text-right text-sm font-semibold text-emerald-700">
+                                        <div className="col-span-1 text-right text-xs font-semibold text-emerald-700 tabular-nums">
                                             {formatCurrency(payment.amount)}
                                         </div>
                                     </div>
@@ -132,24 +144,21 @@ export const PaymentSearchTab: React.FC = () => {
                             </div>
 
                             {data.total_pages > 1 && (
-                                <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50">
-                                    <span className="text-xs text-gray-500">Page {data.page} of {data.total_pages}</span>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handlePageChange(data.page - 1)}
-                                            disabled={!data.has_previous}
-                                            className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            <ChevronLeft className="w-3 h-3" /> Previous
-                                        </button>
-                                        <button
-                                            onClick={() => handlePageChange(data.page + 1)}
-                                            disabled={!data.has_next}
-                                            className="flex items-center gap-1 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                                        >
-                                            Next <ChevronRight className="w-3 h-3" />
-                                        </button>
-                                    </div>
+                                <div className="flex items-center justify-end gap-1.5 px-4 py-2 border-t border-slate-100 bg-slate-50">
+                                    <button
+                                        onClick={() => handlePageChange(data.page - 1)}
+                                        disabled={!data.has_previous}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium border border-slate-200 rounded-md bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <ChevronLeft className="w-3 h-3" /> Prev
+                                    </button>
+                                    <button
+                                        onClick={() => handlePageChange(data.page + 1)}
+                                        disabled={!data.has_next}
+                                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium border border-slate-200 rounded-md bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        Next <ChevronRight className="w-3 h-3" />
+                                    </button>
                                 </div>
                             )}
                         </>
