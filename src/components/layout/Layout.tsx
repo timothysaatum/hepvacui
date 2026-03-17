@@ -56,21 +56,55 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="flex flex-col h-full">
 
       {/* Brand */}
-      <div className={`h-14 flex items-center border-b border-slate-100 shrink-0 ${collapsed && !mobile ? 'justify-center' : 'px-4 gap-3'
+      <div className={`h-14 flex items-center border-b border-slate-100 shrink-0 ${collapsed && !mobile ? 'justify-center px-2' : 'px-4 gap-3'
         }`}>
-        <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center shrink-0">
-          <span className="text-white font-bold text-[11px] tracking-tight">D4H</span>
-        </div>
-        {(!collapsed || mobile) && (
-          <div className="min-w-0">
-            <p className="text-white font-semibold text-sm leading-none">Drive4Health</p>
-            <p className="text-slate-500 text-[10px] leading-none mt-1 tracking-[0.15em] uppercase">Drive4Health</p>
+        {collapsed && !mobile ? (
+          /* Collapsed: show small square logo or D4H badge */
+          <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center shrink-0">
+            <img
+              src="/logo-icon.svg"
+              alt="D4H"
+              className="w-6 h-6 object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML =
+                  '<span class="text-white font-bold text-[11px] tracking-tight">D4H</span>';
+              }}
+            />
+          </div>
+        ) : (
+          /* Expanded: show full logo */
+          <div className="flex-1 flex items-center gap-3 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <img
+                src="/logo.svg"
+                alt="Drive4Health"
+                className="h-8 w-auto max-w-[140px] object-contain"
+                onError={(e) => {
+                  /* Fallback to badge + text if logo not found */
+                  e.currentTarget.style.display = 'none';
+                  const fallback = document.getElementById('brand-fallback');
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+              />
+              {/* Fallback shown if logo fails to load */}
+              <div id="brand-fallback" className="hidden items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-teal-500 flex items-center justify-center shrink-0">
+                  <span className="text-white font-bold text-[11px] tracking-tight">D4H</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-slate-800 font-semibold text-sm leading-none">Drive4Health</p>
+                  <p className="text-slate-400 text-[10px] leading-none mt-1 tracking-[0.15em] uppercase">Healthcare</p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
+
         {!mobile && (
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`p-1 rounded-md text-slate-500 hover:text-slate-300 hover:bg-slate-100 transition-colors ${collapsed ? 'ml-0' : 'ml-auto'
+            className={`p-1 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0 ${collapsed ? 'ml-0' : 'ml-auto'
               }`}
           >
             {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
