@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { reminderService, type PaginatedRemindersResponse } from '../services/reminderService';
+import { reminderService } from '../services/reminderService';
 import type { CreateReminderPayload, UpdateReminderPayload } from '../types/reminder';
 
 export function useReminders(patientId: string, pendingOnly?: boolean) {

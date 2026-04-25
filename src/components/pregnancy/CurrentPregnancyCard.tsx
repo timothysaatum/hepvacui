@@ -24,7 +24,6 @@ interface Props {
 export function CurrentPregnancyCard({
   patient,
   pregnancy,
-  patientId,
 }: Props) {
   if (!pregnancy) {
     return null;

@@ -1,4 +1,4 @@
-import type { PregnantPatient } from '../types/patient';
+import type { PregnantPatient } from "../../types/patient";
 
 interface Props {
   patient: PregnantPatient;

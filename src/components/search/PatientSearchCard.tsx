@@ -63,20 +63,11 @@ export const PatientSearchCard: React.FC<PatientSearchCardProps> = ({ patient })
                 </div>
             </div>
 
-            {patient.patient_type === 'pregnant' && patient.expected_delivery_date && (
+            {patient.patient_type === 'pregnant' && patient.active_pregnancy?.expected_delivery_date && (
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                     <p className="text-xs font-medium text-gray-600 mb-1">Expected Delivery</p>
                     <p className="text-sm font-semibold text-black">
-                        {formatDate(patient.expected_delivery_date)}
-                    </p>
-                </div>
-            )}
-
-            {patient.patient_type === 'regular' && patient.diagnosis_date && (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <p className="text-xs font-medium text-gray-600 mb-1">Diagnosis Date</p>
-                    <p className="text-sm font-semibold text-black">
-                        {formatDate(patient.diagnosis_date)}
+                        {formatDate(patient.active_pregnancy.expected_delivery_date)}
                     </p>
                 </div>
             )}

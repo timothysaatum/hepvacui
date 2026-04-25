@@ -43,7 +43,6 @@ export function PregnancyTimeline({
     return [...pregnancies].sort((a, b) => b.pregnancy_number - a.pregnancy_number);
   }, [pregnancies]);
 
-  const completedPregnancies = sortedPregnancies.filter((p) => !p.is_active);
 
   const childForUpdate = children.find((c) => c.id === updateChildId) ?? null;
 
@@ -145,7 +144,7 @@ export function PregnancyTimeline({
           open
           onClose={() => setUpdateChildId(null)}
           child={childForUpdate}
-          patientId={childForUpdate.patient_id}
+          patientId={childForUpdate.mother_id || ''}
         />
       )}
     </>
@@ -198,9 +197,9 @@ function PregnancyTimelineItem({
               Pregnancy #{pregnancy.pregnancy_number}
             </h3>
             {ongoing ? (
-              <Badge color="purple">Ongoing</Badge>
+              <Badge>Ongoing</Badge>
             ) : (
-              <Badge color="emerald">
+              <Badge>
                 {pregnancy.outcome ? PREGNANCY_OUTCOME_LABELS[pregnancy.outcome] ?? pregnancy.outcome : 'Completed'}
               </Badge>
             )}
@@ -464,10 +463,8 @@ function MiniStatus({
 
 function Badge({
   children,
-  color,
 }: {
   children: React.ReactNode;
-  color?: 'purple' | 'emerald' | 'blue' | 'orange';
 }) {
   return (
     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
