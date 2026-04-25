@@ -132,9 +132,40 @@ export const patientService = {
     return response.data;
   },
 
+  /**
+   * Unified endpoint to update any patient (pregnant or regular).
+   * Automatically detects patient type and applies correct validations.
+   * PATCH /api/v1/patients/{patient_id}
+   *
+   * PREFERRED over updatePregnantPatient/updateRegularPatient.
+   */
+  updatePatient: async (
+    patientId: string,
+    data: UpdatePregnantPatientPayload | UpdateRegularPatientPayload
+  ): Promise<Patient> => {
+    const response = await api.patch(`/api/v1/patients/${patientId}`, data);
+    const { patient_type, data: patientData } = response.data;
+    return { ...patientData, patient_type } as Patient;
+  },
+
   // -------------------------------------------------------------------------
   // Type-aware fetcher
   // -------------------------------------------------------------------------
+
+  /**
+   * Fetch a patient by ID using the unified endpoint (no type required).
+   * This is preferred over getPatientByType() when the type is not known.
+   * GET /api/v1/patients/{patient_id}
+   *
+   * @param patientId - the patient's UUID
+   */
+  getPatient: async (patientId: string): Promise<Patient> => {
+    const response = await api.get(`/api/v1/patients/${patientId}`);
+    // The unified endpoint returns { patient_type, data: {...} }
+    // Extract the data based on type
+    const { patient_type, data } = response.data;
+    return { ...data, patient_type } as Patient;
+  },
 
   /**
    * Fetch a patient by ID, routing to the correct typed endpoint.

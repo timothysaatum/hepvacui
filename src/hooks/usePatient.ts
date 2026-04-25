@@ -3,12 +3,13 @@
  *
  * usePatients.ts (plural) owns all patient-related hooks.
  * This file exists so components can do:
- *   import { usePatient, useConvertToRegular } from '../hooks/usePatient'
+ *   import { usePatient, usePatientById, useConvertToRegular } from '../hooks/usePatient'
  * without confusion with the list hook.
  */
 export {
     patientKeys,
     usePatient,
+    usePatientById,
     usePregnantPatient,
     useRegularPatient,
     useCreatePregnantPatient,

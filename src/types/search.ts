@@ -17,17 +17,22 @@ export interface PatientSearchResult {
     id: string;
     name: string;
     phone: string;
-    age: number;
+    age?: number | null;
     sex: 'male' | 'female';
+    date_of_birth?: string | null;
     patient_type: 'pregnant' | 'regular';
     status: string;
-    facility_id: string;
+    facility_id?: string;
     created_at: string;
-    expected_delivery_date?: string;
-    actual_delivery_date?: string;
-    diagnosis_date?: string;
-    treatment_start_date?: string;
-    viral_load?: string;
+    
+    // Pregnant-specific fields
+    gravida?: number | null;
+    para?: number | null;
+    active_pregnancy?: {
+        id: string;
+        expected_delivery_date?: string | null;
+        actual_delivery_date?: string | null;
+    } | null;
 }
 
 export interface PatientSearchResponse {

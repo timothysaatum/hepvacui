@@ -48,7 +48,7 @@ export function PatientHeader({ patient, onConvert, onReRegisterPregnant }: Pati
                         {patient.facility && <span>🏥 {patient.facility.name}</span>}
                         {pregnant && (
                             <span className="text-purple-600 font-semibold">
-                                {getGravidaParaLabel(patient.gravida, patient.para)}
+                                {getGravidaParaLabel(patient.gravida ?? 0, patient.para ?? 0)}
                             </span>
                         )}
                     </div>

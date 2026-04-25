@@ -82,6 +82,23 @@ export const usePatient = (
   });
 };
 
+/**
+ * Fetch a patient by ID using the unified endpoint (no type required).
+ * Preferred when patient type is not known in advance.
+ * GET /api/v1/patients/{patient_id}
+ *
+ * @param patientId — the patient UUID (null disables the query)
+ */
+export const usePatientById = (patientId: string | null) => {
+  return useQuery({
+    queryKey: patientKeys.detailUnified(patientId!),
+    queryFn: () => patientService.getPatient(patientId!),
+    enabled: !!patientId,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+};
+
 /** Fetch a pregnant patient specifically. Prefer usePatient() for new code. */
 export const usePregnantPatient = (patientId: string | null) => {
   return useQuery({
@@ -203,6 +220,48 @@ export const useUpdateRegularPatient = () => {
 
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detail(variables.patientId, 'regular'),
+      });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detailUnified(variables.patientId),
+      });
+      queryClient.invalidateQueries({ queryKey: ['search', 'patients'] });
+      showSuccess('Patient updated successfully');
+    },
+
+    onError: (error: any) => {
+      const msg = error.response?.data?.detail ?? 'Failed to update patient';
+      showError(msg);
+    },
+  });
+};
+
+/**
+ * Unified endpoint to update any patient (pregnant or regular).
+ * Automatically detects patient type and applies correct validations.
+ * PATCH /api/v1/patients/{patient_id}
+ *
+ * PREFERRED over useUpdatePregnantPatient/useUpdateRegularPatient.
+ */
+export const useUpdatePatient = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({
+      patientId,
+      data,
+    }: {
+      patientId: string;
+      data: UpdatePregnantPatientPayload | UpdateRegularPatientPayload;
+    }) => patientService.updatePatient(patientId, data),
+
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: patientKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: patientKeys.detail(variables.patientId, 'pregnant'),
+      });
       queryClient.invalidateQueries({
         queryKey: patientKeys.detail(variables.patientId, 'regular'),
       });

@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { usePatient, useUpdatePregnantPatient, useUpdateRegularPatient } from '../../hooks/usePatients';
+import { useParams, useNavigate } from 'react-router-dom';
+import { usePatientById, useUpdatePatient } from '../../hooks/usePatients';
 import { isPregnantPatient, isRegularPatient } from '../../types/patient';
 import type {
     PatientStatus,
-    PatientType,
     UpdatePregnantPatientPayload,
     UpdateRegularPatientPayload,
 } from '../../types/patient';
@@ -43,13 +42,9 @@ const TREATMENT_REGIMENS = [
 export function EditPatientPage() {
     const { patientId } = useParams<{ patientId: string }>();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
 
-    // ?type=pregnant|regular is passed from PatientDetailPage so we hit the
-    // correct typed endpoint without a second round-trip to determine type.
-    const patientType = (searchParams.get('type') ?? 'regular') as PatientType;
-
-    const { data: patient, isLoading, isError } = usePatient(patientId ?? null, patientType);
+    // Use unified endpoint (no type required) to avoid 404 from type mismatch
+    const { data: patient, isLoading, isError } = usePatientById(patientId ?? null);
 
     if (isLoading) return <LoadingSpinner />;
 
@@ -130,7 +125,7 @@ function PregnantPatientForm({
     onSuccess: () => void;
 }) {
     const { showError } = useToast();
-    const mutation = useUpdatePregnantPatient();
+    const mutation = useUpdatePatient();
     const [form, setForm] = useState<PregnantFormValues>(defaultValues);
     const [errors, setErrors] = useState<Partial<Record<keyof PregnantFormValues, string>>>({});
     const set = (k: keyof PregnantFormValues, v: string) => setForm(f => ({ ...f, [k]: v }));
@@ -236,7 +231,7 @@ function RegularPatientForm({
     onSuccess: () => void;
 }) {
     const { showError } = useToast();
-    const mutation = useUpdateRegularPatient();
+    const mutation = useUpdatePatient();
     const [form, setForm] = useState<RegularFormValues>(defaultValues);
     const [errors, setErrors] = useState<Partial<Record<keyof RegularFormValues, string>>>({});
     const set = (k: keyof RegularFormValues, v: string) => setForm(f => ({ ...f, [k]: v }));

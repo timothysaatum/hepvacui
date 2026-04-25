@@ -8,7 +8,8 @@ import { FormField, Input, Select, Textarea } from '../common/index';
 import { useToast } from '../../context/ToastContext';
 import { formatDate, REMINDER_TYPE_LABELS } from '../../utils/formatters';
 import type { PatientReminder, ReminderType } from '../../types/reminder';
-import { useCreateReminder, useReminders, useUpdateReminder } from '../../hooks/useReminder';
+import { useCreateReminder, useRemindersPaginated, useUpdateReminder } from '../../hooks/useReminder';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const REMINDER_TYPES: ReminderType[] = [
     'delivery_week', 'child_6month_checkup', 'medication_due', 'payment_due', 'vaccination_due',
@@ -25,7 +26,19 @@ const TYPE_ICONS: Record<ReminderType, string> = {
 interface Props { patient: Patient; }
 
 export function ReminderSection({ patient }: Props) {
-    const { data: reminders = [], isLoading } = useReminders(patient.id);
+    const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [statusFilter, setStatusFilter] = useState<string | undefined>();
+    const [upcomingOnly, setUpcomingOnly] = useState(false);
+
+    const { data: paginatedData, isLoading } = useRemindersPaginated(
+        patient.id,
+        page,
+        pageSize,
+        statusFilter,
+        upcomingOnly
+    );
+
     const [addOpen, setAddOpen] = useState(false);
     const [editReminder, setEditReminder] = useState<PatientReminder | null>(null);
     const updateReminder = useUpdateReminder(patient.id);
@@ -33,8 +46,9 @@ export function ReminderSection({ patient }: Props) {
 
     if (isLoading) return <LoadingSpinner />;
 
+    const reminders = paginatedData?.items || [];
+    const pageInfo = paginatedData?.page_info;
     const pending = reminders.filter(r => r.status === 'pending');
-    const past = reminders.filter(r => r.status !== 'pending');
 
     const cancel = async (id: string) => {
         try {
@@ -47,9 +61,40 @@ export function ReminderSection({ patient }: Props) {
         <div className="space-y-4">
             <SectionCard
                 title="Reminders"
-                subtitle={`${pending.length} pending`}
+                subtitle={`${pageInfo?.total_items || 0} total • ${pending.length} pending`}
                 action={<Button size="sm" onClick={() => setAddOpen(true)}>+ Add Reminder</Button>}
             >
+                {/* Filters */}
+                <div className="flex flex-wrap gap-2 mb-4 pb-4 border-b">
+                    <Select
+                        value={statusFilter || ''}
+                        onChange={e => {
+                            setStatusFilter(e.target.value || undefined);
+                            setPage(1);
+                        }}
+                        className="text-xs"
+                    >
+                        <option value="">All Status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="SENT">Sent</option>
+                        <option value="FAILED">Failed</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </Select>
+                    <button
+                        onClick={() => {
+                            setUpcomingOnly(!upcomingOnly);
+                            setPage(1);
+                        }}
+                        className={`px-3 py-1 text-xs rounded-lg font-medium transition-colors ${
+                            upcomingOnly
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                    >
+                        {upcomingOnly ? '✓ Upcoming Only' : 'Show All'}
+                    </button>
+                </div>
+
                 {!reminders.length ? (
                     <EmptyState
                         icon={<span className="text-xl">🔔</span>}
@@ -96,11 +141,11 @@ export function ReminderSection({ patient }: Props) {
                             </div>
                         )}
 
-                        {past.length > 0 && (
+                        {reminders.filter(r => r.status !== 'pending').length > 0 && (
                             <div>
                                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">History</p>
                                 <div className="space-y-2">
-                                    {past.map(r => (
+                                    {reminders.filter(r => r.status !== 'pending').map(r => (
                                         <div key={r.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl opacity-70">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-lg">{TYPE_ICONS[r.reminder_type]}</span>
@@ -112,6 +157,46 @@ export function ReminderSection({ patient }: Props) {
                                             <ReminderStatusBadge status={r.status} />
                                         </div>
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Pagination Controls */}
+                        {pageInfo && pageInfo.total_pages > 1 && (
+                            <div className="flex items-center justify-between pt-4 border-t">
+                                <div className="text-xs text-slate-600">
+                                    Page {pageInfo.current_page} of {pageInfo.total_pages} • {pageInfo.total_items} total
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        value={pageSize}
+                                        onChange={e => {
+                                            setPageSize(parseInt(e.target.value));
+                                            setPage(1);
+                                        }}
+                                        className="px-2 py-1 text-xs border rounded-lg"
+                                    >
+                                        <option value="5">5 per page</option>
+                                        <option value="10">10 per page</option>
+                                        <option value="20">20 per page</option>
+                                        <option value="50">50 per page</option>
+                                    </select>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={!pageInfo.has_previous}
+                                        onClick={() => setPage(pageInfo.current_page - 1)}
+                                    >
+                                        <ChevronLeft className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={!pageInfo.has_next}
+                                        onClick={() => setPage(pageInfo.current_page + 1)}
+                                    >
+                                        <ChevronRight className="w-4 h-4" />
+                                    </Button>
                                 </div>
                             </div>
                         )}

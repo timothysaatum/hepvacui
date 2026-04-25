@@ -1,8 +1,23 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { usePatient } from '../../hooks/usePatient';
-import { PatientHeader } from '../../components/patients/PatientHeader';
+import {
+  ArrowLeft,
+  User,
+  Phone,
+  Calendar,
+  Activity,
+  AlertTriangle,
+  FileText,
+  ChevronRight,
+  Baby,
+  Syringe,
+  Pill,
+  Stethoscope,
+  Bell,
+  Edit3,
+  MoreHorizontal,
+} from 'lucide-react';
+import { usePatientById } from '../../hooks/usePatient';
 import { ConvertPatientModal } from '../../components/patients/ConvertPatientModal';
 import { PregnancySection } from '../../components/pregnancy/PregnancySection';
 import { VaccineSection } from '../../components/vaccines/VaccineSection';
@@ -10,14 +25,9 @@ import { MedicationSection } from '../../components/medication/MedicationSection
 import { ReminderSection } from '../../components/reminder/ReminderSection';
 import { DiagnosisSection } from '../../components/diagnosis/DiagnosisSection';
 import { LoadingSpinner } from '../../components/common/index';
-import { isPregnantPatient } from '../../types/patient';
-import type { PatientType } from '../../types/patient';
-import {
-  User, Phone, Calendar, Building2, Activity,
-  AlertTriangle, FileText, ChevronRight,
-  Baby, Syringe, Pill, Stethoscope, Bell,
-} from 'lucide-react';
+import { isPregnantPatient, type Patient, type PregnantPatient } from '../../types/patient';
 import { ReRegisterPregnantModal } from '../../components/patients/ReRegisterPregnantModal';
+import { getInitials } from '../../utils/formatters';
 
 type Tab = 'overview' | 'pregnancy' | 'vaccines' | 'medication' | 'diagnosis' | 'reminders';
 
@@ -33,78 +43,99 @@ const ALL_TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 export function PatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
-  const qc = useQueryClient();
 
-  // FIX: The old code used qc.getQueryData(['patients']) which always returns
-  // undefined — the real list keys are ['patients', 'list', filters].
-  // getQueriesData with the prefix searches across all cached list queries.
-  const typeParam = new URLSearchParams(window.location.search).get('type') as PatientType | null;
-  const type: PatientType = (() => {
-    const entries = qc.getQueriesData<any>({ queryKey: ['patients', 'list'] });
-    for (const [, data] of entries) {
-      const found = data?.items?.find((p: any) => p.id === patientId);
-      if (found?.patient_type) return found.patient_type as PatientType;
-    }
-    return typeParam ?? 'pregnant';
-  })();
-
-  const { data: patient, isLoading, isError } = usePatient(patientId!, type);
+  const { data: patient, isLoading, isError } = usePatientById(patientId ?? null);
   const [tab, setTab] = useState<Tab>('overview');
   const [convertOpen, setConvertOpen] = useState(false);
   const [reRegisterOpen, setReRegisterOpen] = useState(false);
 
-  if (!patientId) { navigate('/patients'); return null; }
-  if (isLoading) return <div className="max-w-5xl mx-auto px-4 py-8"><LoadingSpinner /></div>;
-  if (isError || !patient) return (
-    <div className="max-w-5xl mx-auto px-4 py-8 text-center">
-      <p className="text-slate-400 text-sm">Patient record not found.</p>
-      <button onClick={() => navigate('/patients')} className="mt-3 text-teal-600 text-sm hover:underline">
-        ← Back to patients
-      </button>
-    </div>
-  );
+  if (!patientId) {
+    navigate('/patients');
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-5 py-16">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (isError || !patient) {
+    return (
+      <div className="max-w-7xl mx-auto px-5 py-16 text-center">
+        <p className="text-slate-500 text-sm">Patient record not found.</p>
+        <button
+          onClick={() => navigate('/patients')}
+          className="mt-3 text-teal-600 text-sm hover:underline"
+        >
+          ← Back to patients
+        </button>
+      </div>
+    );
+  }
 
   const pregnant = isPregnantPatient(patient);
-  const tabs = pregnant ? ALL_TABS : ALL_TABS.filter(t => t.id !== 'pregnancy');
+  const tabs = pregnant ? ALL_TABS : ALL_TABS.filter((item) => item.id !== 'pregnancy');
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <PatientHeader
+    <div className="max-w-7xl mx-auto px-5 py-6">
+      <button
+        onClick={() => navigate('/patients')}
+        className="mb-5 inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back to Patients
+      </button>
+
+      <DetailHeader
         patient={patient}
-        onConvert={pregnant ? () => setConvertOpen(true) : undefined}
-        onReRegisterPregnant={!pregnant ? () => setReRegisterOpen(true) : undefined}
+        pregnant={pregnant}
+        onEdit={() => navigate(`/patients/${patient.id}/edit`)}
       />
 
-      {/* Tab bar */}
-      <div className="border-b border-slate-200 mb-6 mt-2">
-        <nav className="flex -mb-px overflow-x-auto">
-          {tabs.map(t => {
-            const Icon = t.icon;
+      <div className="mt-5 border-b border-slate-200">
+        <nav className="flex -mb-px overflow-x-auto gap-3">
+          {tabs.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.id;
+
             return (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap
-                  border-b-2 transition-all duration-150
-                  ${tab === t.id
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className={`flex items-center gap-2 px-3 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  active
                     ? 'border-teal-600 text-teal-700'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-                  }`}
+                }`}
               >
-                <Icon className="w-3.5 h-3.5" />
-                {t.label}
+                <Icon className="w-4 h-4" />
+                {item.label}
               </button>
             );
           })}
         </nav>
       </div>
 
-      {tab === 'overview' && <OverviewTab patient={patient} onTabChange={setTab} pregnant={pregnant} />}
-      {tab === 'pregnancy' && pregnant && <PregnancySection patient={patient} />}
-      {tab === 'vaccines' && <VaccineSection patient={patient} />}
-      {tab === 'medication' && <MedicationSection patient={patient} />}
-      {tab === 'diagnosis' && <DiagnosisSection patient={patient} />}
-      {tab === 'reminders' && <ReminderSection patient={patient} />}
+      <div className="mt-5">
+        {tab === 'overview' && (
+          <OverviewTab
+            patient={patient}
+            pregnant={pregnant}
+            onTabChange={setTab}
+            onConvert={pregnant ? () => setConvertOpen(true) : undefined}
+            onReRegister={!pregnant ? () => setReRegisterOpen(true) : undefined}
+          />
+        )}
+
+        {tab === 'pregnancy' && pregnant && <PregnancySection patient={patient} />}
+        {tab === 'vaccines' && <VaccineSection patient={patient} />}
+        {tab === 'medication' && <MedicationSection patient={patient} />}
+        {tab === 'diagnosis' && <DiagnosisSection patient={patient} />}
+        {tab === 'reminders' && <ReminderSection patient={patient} />}
+      </div>
 
       {pregnant && (
         <ConvertPatientModal
@@ -133,291 +164,380 @@ export function PatientDetailPage() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Overview Tab
-// ─────────────────────────────────────────────────────────────────────────────
-
-function OverviewTab({ patient, onTabChange, pregnant }: {
-  patient: any; onTabChange: (t: Tab) => void; pregnant: boolean;
+function DetailHeader({
+  patient,
+  pregnant,
+  onEdit,
+}: {
+  patient: Patient;
+  pregnant: boolean;
+  onEdit: () => void;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+        <div className="flex items-center gap-4 min-w-0">
+          <div
+            className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold shrink-0 ${
+              pregnant ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+            }`}
+          >
+            {getInitials(patient.name)}
+          </div>
 
-      {/* ── Identity card ──────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-        {/* Colour accent bar */}
-        <div className={`h-1 w-full ${pregnant
-          ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-rose-300'
-          : 'bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-300'}`}
-        />
-
-        <div className="p-5 sm:p-6">
-          <div className="flex gap-4 items-start">
-
-            {/* Avatar initials */}
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0
-              text-xl font-bold shadow-sm
-              ${pregnant ? 'bg-purple-100 text-purple-600' : 'bg-teal-100 text-teal-600'}`}>
-              {patient.name?.charAt(0)?.toUpperCase() ?? '?'}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-bold text-slate-900 truncate">{patient.name}</h1>
+              <TypeBadge pregnant={pregnant} />
             </div>
 
-            <div className="flex-1 min-w-0">
-              {/* Name + badges */}
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 leading-tight">{patient.name}</h2>
-                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold
-                      ${pregnant ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'}`}>
-                      {pregnant ? '🤰 Pregnant' : '👤 Regular'}
-                    </span>
-                    <StatusBadge status={patient.status} />
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Record ID</p>
-                  <p className="text-[10px] font-mono text-slate-400 mt-0.5 max-w-[160px] truncate">{patient.id}</p>
-                </div>
-              </div>
-
-              {/* Quick-stats strip */}
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <StatChip icon={Phone} label="Phone" value={patient.phone ?? '—'} />
-                <StatChip icon={Calendar} label="DOB" value={fmtDate(patient.date_of_birth)} />
-                <StatChip icon={User} label="Sex" value={capitalize(patient.sex)} />
-                <StatChip icon={Building2} label="Facility" value={patient.facility?.facility_name ?? patient.facility?.name ?? '—'} />
-              </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-slate-500">
+              <span className="inline-flex items-center gap-1.5">
+                <Phone className="w-4 h-4" />
+                {patient.phone}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                {patient.age ? `${patient.age} yrs` : '—'}
+                {patient.date_of_birth ? ` (DOB: ${fmtDate(patient.date_of_birth)})` : ''}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <User className="w-4 h-4" />
+                {capitalize(patient.sex)}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                {fmtDate(patient.created_at)}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Section shortcuts — bottom row */}
-        <div className={`border-t border-slate-100 grid divide-x divide-slate-100
-          ${pregnant ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
-          {pregnant && (
-            <NavCell icon={Baby} label="Pregnancy" meta={patient.active_pregnancy ? `G${patient.gravida} P${patient.para} · Active` : `G${patient.gravida} P${patient.para}`} accent="purple" onClick={() => onTabChange('pregnancy')} />
-          )}
-          <NavCell icon={Syringe} label="Vaccines" meta="Doses & payments" accent="teal" onClick={() => onTabChange('vaccines')} />
-          <NavCell icon={Pill} label="Medication" meta="Prescriptions" accent="blue" onClick={() => onTabChange('medication')} />
-          <NavCell icon={Stethoscope} label="Diagnosis" meta="Clinical records" accent="rose" onClick={() => onTabChange('diagnosis')} />
-          <NavCell icon={Bell} label="Reminders" meta="Pending alerts" accent="amber" onClick={() => onTabChange('reminders')} />
+        <div className="flex items-center gap-3 lg:pl-6 lg:border-l border-slate-200">
+          <div>
+            <p className="text-xs font-semibold text-slate-400 mb-1">Status</p>
+            <StatusBadge status={patient.status} />
+          </div>
+
+          <button
+            onClick={onEdit}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+          >
+            <Edit3 className="w-4 h-4" />
+            Edit Patient
+          </button>
+
+          <button className="w-9 h-9 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 flex items-center justify-center">
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
         </div>
       </div>
+    </div>
+  );
+}
 
-      {/* ── Demographics ───────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-        <SectionHeader title="Demographics" />
-        <div className="divide-y divide-slate-100 sm:divide-y-0 sm:grid sm:grid-cols-3 sm:divide-x">
-          <FieldGroup title="Personal">
+function OverviewTab({
+  patient,
+  pregnant,
+  onTabChange,
+  onConvert,
+  onReRegister,
+}: {
+  patient: Patient;
+  pregnant: boolean;
+  onTabChange: (tab: Tab) => void;
+  onConvert?: () => void;
+  onReRegister?: () => void;
+}) {
+  const activePregnancy = pregnant ? (patient as PregnantPatient).active_pregnancy : null;
+
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5">
+      <div className="space-y-5">
+        <InfoCard title="Personal Information">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4">
             <Field label="Full Name" value={patient.name} />
-            <Field label="Date of Birth" value={fmtDate(patient.date_of_birth)} />
-            <Field label="Age" value={patient.age ? `${patient.age} years` : '—'} />
-            <Field label="Sex" value={capitalize(patient.sex)} />
-          </FieldGroup>
-          <FieldGroup title="Contact">
-            <Field label="Phone" value={patient.phone ?? '—'} />
-          </FieldGroup>
-          <FieldGroup title="Clinical Registration">
-            <Field label="Facility" value={patient.facility?.facility_name ?? patient.facility?.name ?? '—'} />
             <Field label="Patient Type" value={capitalize(patient.patient_type)} />
-            <Field label="Status" value={capitalize(patient.status)} />
-          </FieldGroup>
-        </div>
-      </div>
-
-      {/* ── Obstetric summary ──────────────────────────────────────── */}
-      {pregnant && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <SectionHeader title="Obstetric Summary" badge={`G${patient.gravida} · P${patient.para}`} />
-          <div className="p-5 space-y-5">
-            {/* G / P / A stat blocks */}
-            <div className="grid grid-cols-2 gap-3 max-w-xs">
-              <ObstetricStat value={String(patient.gravida)} label="Gravida" sub="Total pregnancies" color="purple" />
-              <ObstetricStat value={String(patient.para)} label="Para" sub="Deliveries" color="pink" />
-            </div>
-
-            {patient.active_pregnancy ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-4 pt-1 border-t border-slate-100">
-                <Field label="Last Menstrual Period" value={fmtDate(patient.active_pregnancy.lmp_date)} />
-                <Field label="Expected Delivery Date" value={fmtDate(patient.active_pregnancy.expected_delivery_date)} />
-                <Field label="Gestational Age" value={patient.active_pregnancy.gestational_age_weeks ? `${patient.active_pregnancy.gestational_age_weeks} wks` : '—'} />
-                <Field label="Pregnancy Number" value={`#${patient.active_pregnancy.pregnancy_number}`} />
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400 italic border-t border-slate-100 pt-4">No active pregnancy</p>
-            )}
+            <Field label="Phone Number" value={patient.phone} />
+            <Field label="Status" value={<StatusBadge status={patient.status} />} />
+            <Field label="Date of Birth" value={fmtDate(patient.date_of_birth)} />
+            <Field label="Registered On" value={fmtDate(patient.created_at)} />
+            <Field label="Age" value={patient.age ? `${patient.age} yrs` : '—'} />
+            <Field
+              label="Facility"
+              value={patient.facility?.name ?? (patient as any).facility?.facility_name ?? '—'}
+            />
+            <Field label="Sex" value={capitalize(patient.sex)} />
+            <Field
+              label="Registered By"
+              value={patient.created_by?.name ?? (patient.created_by as any)?.full_name ?? '—'}
+            />
           </div>
-        </div>
-      )}
+        </InfoCard>
 
-      {/* ── Clinical details (regular) ─────────────────────────────── */}
-      {!pregnant && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <SectionHeader title="Clinical Details" />
-          <div className="p-5 space-y-5">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-4">
-              <Field label="Diagnosis Date" value={fmtDate(patient.diagnosis_date)} />
-              <Field label="Treatment Start" value={fmtDate(patient.treatment_start_date)} />
-              <Field label="Treatment Regimen" value={patient.treatment_regimen ?? '—'} />
-              <Field label="Viral Load" value={patient.viral_load ?? '—'} />
-              <Field label="Last VL Date" value={fmtDate(patient.last_viral_load_date)} />
+        {!pregnant && (
+          <InfoCard title="Clinical Information">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4">
+              <Field label="Diagnosis Date" value={fmtDate((patient as any).diagnosis_date)} />
+              <Field label="Treatment Start" value={fmtDate((patient as any).treatment_start_date)} />
+              <Field label="Treatment Regimen" value={(patient as any).treatment_regimen ?? '—'} />
+              <Field label="Viral Load" value={(patient as any).viral_load ?? '—'} />
+              <Field label="Last Viral Load Date" value={fmtDate((patient as any).last_viral_load_date)} />
             </div>
 
-            {patient.allergies && (
-              <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+            {(patient as any).allergies && (
+              <div className="mt-5 flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
                 <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-bold text-red-600 uppercase tracking-wide mb-0.5">Allergies</p>
-                  <p className="text-sm text-red-800">{patient.allergies}</p>
+                  <p className="text-sm text-red-800">{(patient as any).allergies}</p>
                 </div>
               </div>
             )}
 
-            {patient.medical_history && (
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <FileText className="w-3 h-3" /> Medical History
-                </p>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{patient.medical_history}</p>
-              </div>
+            {(patient as any).medical_history && (
+              <TextBlock title="Medical History" icon={FileText} value={(patient as any).medical_history} />
             )}
 
-            {patient.notes && (
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Activity className="w-3 h-3" /> Notes
-                </p>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{patient.notes}</p>
+            {(patient as any).notes && (
+              <TextBlock title="Notes" icon={Activity} value={(patient as any).notes} />
+            )}
+          </InfoCard>
+        )}
+
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400 px-1 pb-2">
+          {patient.created_by && (
+            <span>
+              Registered by{' '}
+              <span className="text-slate-500 font-medium">
+                {patient.created_by.name ?? (patient.created_by as any).full_name}
+              </span>
+            </span>
+          )}
+          {patient.updated_by && (
+            <span>
+              Last updated by{' '}
+              <span className="text-slate-500 font-medium">
+                {patient.updated_by.name ?? (patient.updated_by as any).full_name}
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        {pregnant && (
+          <>
+            <InfoCard title="Pregnancy Information">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-3 flex-1">
+                  <Field label="Gravida" value={String((patient as PregnantPatient).gravida)} compact />
+                  <Field label="Para" value={String((patient as PregnantPatient).para)} compact />
+                  <Field
+                    label="Estimated Due Date (EDD)"
+                    value={fmtDate(activePregnancy?.expected_delivery_date)}
+                    compact
+                  />
+                  <Field
+                    label="Current Gestational Age"
+                    value={
+                      activePregnancy?.gestational_age_weeks
+                        ? `${activePregnancy.gestational_age_weeks} weeks`
+                        : '—'
+                    }
+                    compact
+                  />
+                </div>
+                <div className="w-20 h-20 rounded-2xl bg-purple-50 text-purple-300 flex items-center justify-center">
+                  <Baby className="w-10 h-10" />
+                </div>
               </div>
+            </InfoCard>
+
+            <InfoCard title="Active Pregnancy">
+              {activePregnancy ? (
+                <div className="space-y-3">
+                  <Field label="Pregnancy Number" value={`#${activePregnancy.pregnancy_number}`} compact />
+                  <Field label="LMP Date" value={fmtDate(activePregnancy.lmp_date)} compact />
+                  <Field label="EDD" value={fmtDate(activePregnancy.expected_delivery_date)} compact />
+                  <Field label="Status" value={<StatusBadge status="ongoing" />} compact />
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">No active pregnancy.</p>
+              )}
+            </InfoCard>
+          </>
+        )}
+
+        <InfoCard title="Summary Card">
+          <div className="space-y-2">
+            <Shortcut icon={Syringe} label="Vaccines" meta="Doses and payments" onClick={() => onTabChange('vaccines')} />
+            <Shortcut icon={Pill} label="Medication" meta="Prescriptions" onClick={() => onTabChange('medication')} />
+            <Shortcut icon={Stethoscope} label="Diagnosis" meta="Clinical records" onClick={() => onTabChange('diagnosis')} />
+            <Shortcut icon={Bell} label="Reminders" meta="Patient alerts" onClick={() => onTabChange('reminders')} />
+
+            {pregnant && (
+              <Shortcut icon={Baby} label="Pregnancy" meta="Pregnancy record" onClick={() => onTabChange('pregnancy')} />
             )}
           </div>
-        </div>
-      )}
 
-      {/* Audit trail */}
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400 px-1 pb-2">
-        {patient.created_by && (
-          <span>Registered by <span className="text-slate-500 font-medium">{patient.created_by.name ?? patient.created_by.full_name}</span></span>
-        )}
-        {patient.updated_by && (
-          <span>Last updated by <span className="text-slate-500 font-medium">{patient.updated_by.name ?? patient.updated_by.full_name}</span></span>
-        )}
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            {pregnant ? (
+              <button
+                onClick={onConvert}
+                className="w-full px-3 py-2 rounded-lg border border-purple-200 bg-purple-50 text-purple-700 text-sm font-medium hover:bg-purple-100 transition-colors"
+              >
+                Convert to Regular
+              </button>
+            ) : (
+              <button
+                onClick={onReRegister}
+                className="w-full px-3 py-2 rounded-lg border border-teal-200 bg-teal-50 text-teal-700 text-sm font-medium hover:bg-teal-100 transition-colors"
+              >
+                Re-register as Pregnant
+              </button>
+            )}
+          </div>
+        </InfoCard>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared sub-components
-// ─────────────────────────────────────────────────────────────────────────────
-
-function SectionHeader({ title, badge }: { title: string; badge?: string }) {
+function InfoCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50/70">
-      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest">{title}</h3>
-      {badge && (
-        <span className="px-2.5 py-0.5 bg-white border border-slate-200 rounded-full text-xs font-bold text-slate-600 shadow-sm">
-          {badge}
-        </span>
-      )}
+    <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-slate-100">
+        <h2 className="text-sm font-bold text-slate-900">{title}</h2>
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  value,
+  compact = false,
+}: {
+  label: string;
+  value: React.ReactNode;
+  compact?: boolean;
+}) {
+  return (
+    <div className={compact ? 'grid grid-cols-2 gap-4 items-center' : ''}>
+      <p className="text-xs font-medium text-slate-400">{label}</p>
+      <div className="mt-1 text-sm font-semibold text-slate-800">{value ?? '—'}</div>
     </div>
   );
 }
 
-function FieldGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function TextBlock({
+  title,
+  icon: Icon,
+  value,
+}: {
+  title: string;
+  icon: React.ElementType;
+  value: string;
+}) {
   return (
-    <div className="px-5 py-5 space-y-4">
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.18em]">{title}</p>
-      <div className="space-y-4">{children}</div>
-    </div>
-  );
-}
-
-function Field({ label, value, icon: Icon }: { label: string; value: string; icon?: React.ElementType }) {
-  return (
-    <div>
-      <p className="text-[11px] text-slate-400 font-medium mb-0.5 flex items-center gap-1">
-        {Icon && <Icon className="w-2.5 h-2.5" />}
-        {label}
+    <div className="mt-5 pt-4 border-t border-slate-100">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <Icon className="w-3 h-3" />
+        {title}
       </p>
-      <p className="text-sm font-semibold text-slate-800">{value || '—'}</p>
+      <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{value}</p>
     </div>
   );
 }
 
-function StatChip({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
-      <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-      <div className="min-w-0">
-        <p className="text-[10px] text-slate-400 leading-none">{label}</p>
-        <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function ObstetricStat({ value, label, sub, color }: { value: string; label: string; sub: string; color: string }) {
-  const cls: Record<string, string> = {
-    purple: 'bg-purple-50 border-purple-100 text-purple-700',
-    pink: 'bg-pink-50   border-pink-100   text-pink-700',
-    slate: 'bg-slate-50  border-slate-200  text-slate-600',
-  };
-  return (
-    <div className={`rounded-xl border px-4 py-3 text-center ${cls[color] ?? cls.slate}`}>
-      <p className="text-3xl font-black">{value}</p>
-      <p className="text-xs font-bold mt-1 tracking-wide">{label}</p>
-      <p className="text-[10px] opacity-60 mt-0.5">{sub}</p>
-    </div>
-  );
-}
-
-const NAV_ACCENT: Record<string, string> = {
-  purple: 'hover:bg-purple-50 hover:text-purple-800 [&_svg.icon]:group-hover:text-purple-500',
-  teal: 'hover:bg-teal-50   hover:text-teal-800   [&_svg.icon]:group-hover:text-teal-500',
-  blue: 'hover:bg-blue-50   hover:text-blue-800   [&_svg.icon]:group-hover:text-blue-500',
-  rose: 'hover:bg-rose-50   hover:text-rose-800   [&_svg.icon]:group-hover:text-rose-500',
-  amber: 'hover:bg-amber-50  hover:text-amber-800  [&_svg.icon]:group-hover:text-amber-500',
-};
-
-function NavCell({ icon: Icon, label, meta, accent, onClick }: {
-  icon: React.ElementType; label: string; meta: string; accent: string; onClick: () => void;
+function Shortcut({
+  icon: Icon,
+  label,
+  meta,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  meta: string;
+  onClick: () => void;
 }) {
   return (
     <button
       onClick={onClick}
-      className={`group flex items-center gap-3 px-4 py-3.5 w-full text-left transition-all text-slate-600 ${NAV_ACCENT[accent] ?? ''}`}
+      className="w-full flex items-center justify-between gap-3 px-3 py-3 rounded-xl hover:bg-slate-50 transition-colors text-left"
     >
-      <Icon className="icon w-4 h-4 text-slate-400 shrink-0 transition-colors" />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-bold leading-none">{label}</p>
-        <p className="text-[10px] text-slate-400 mt-0.5 truncate">{meta}</p>
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+          <Icon className="w-4 h-4" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-800">{label}</p>
+          <p className="text-xs text-slate-400">{meta}</p>
+        </div>
       </div>
-      <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 shrink-0 transition-colors" />
+      <ChevronRight className="w-4 h-4 text-slate-300" />
     </button>
   );
 }
 
-function StatusBadge({ status }: { status?: string }) {
-  const map: Record<string, string> = {
-    active: 'bg-emerald-100 text-emerald-700',
-    postpartum: 'bg-blue-100    text-blue-700',
-    completed: 'bg-slate-100   text-slate-600',
-    inactive: 'bg-red-100     text-red-600',
-  };
+function TypeBadge({ pregnant }: { pregnant: boolean }) {
   return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${map[status ?? ''] ?? 'bg-slate-100 text-slate-500'}`}>
-      {capitalize(status ?? 'unknown')}
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+        pregnant ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+      }`}
+    >
+      {pregnant ? 'Pregnant' : 'Regular'}
     </span>
   );
 }
 
-function fmtDate(d?: string | null): string {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' });
+function StatusBadge({ status }: { status?: string }) {
+  const normalized = status ?? 'unknown';
+
+  const styles: Record<string, string> = {
+    active: 'bg-emerald-100 text-emerald-700',
+    ongoing: 'bg-emerald-100 text-emerald-700',
+    inactive: 'bg-slate-100 text-slate-600',
+    postpartum: 'bg-purple-100 text-purple-700',
+    completed: 'bg-blue-100 text-blue-700',
+    converted: 'bg-amber-100 text-amber-700',
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+        styles[normalized] ?? 'bg-slate-100 text-slate-600'
+      }`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-current" />
+      {capitalize(normalized)}
+    </span>
+  );
 }
 
-function capitalize(s?: string): string {
-  if (!s) return '—';
-  return s.charAt(0).toUpperCase() + s.slice(1);
+function fmtDate(value?: string | null) {
+  if (!value) return '—';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
+}
+
+function capitalize(value?: string | null) {
+  if (!value) return '—';
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }
