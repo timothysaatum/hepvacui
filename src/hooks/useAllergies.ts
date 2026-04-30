@@ -41,6 +41,8 @@ export function useCreateAllergy(patientId: string, patientType?: PatientType) {
                 );
             }
             qc.invalidateQueries({ queryKey: allergyKeys.patient(patientId) });
+            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId, false) });
+            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId, true) });
             if (patientType) qc.invalidateQueries({ queryKey: patientKeys.detail(patientId, patientType) });
             qc.invalidateQueries({ queryKey: patientKeys.detailUnified(patientId) });
         },
@@ -64,6 +66,8 @@ export function useUpdateAllergy(patientId: string, patientType?: PatientType) {
                 },
             );
             qc.invalidateQueries({ queryKey: allergyKeys.patient(patientId) });
+            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId, false) });
+            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId, true) });
             if (patientType) qc.invalidateQueries({ queryKey: patientKeys.detail(patientId, patientType) });
             qc.invalidateQueries({ queryKey: patientKeys.detailUnified(patientId) });
         },

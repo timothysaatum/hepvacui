@@ -22,7 +22,9 @@ export const allergyService = {
         const response = await api.get(`/api/v1/patients/${patientId}/allergies`, {
             params: { active_only: activeOnly },
         });
-        return response.data;
+        if (Array.isArray(response.data)) return response.data;
+        if (Array.isArray(response.data?.items)) return response.data.items;
+        return [];
     },
 
     create: async (patientId: string, data: CreateAllergyPayload): Promise<PatientAllergy> => {

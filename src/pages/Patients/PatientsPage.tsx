@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X, SlidersHorizontal, Plus, Users, UserRound, ShieldCheck } from 'lucide-react';
 import { usePatients } from '../../hooks/usePatients';
 import { Button } from '../../components/common/Button';
-import { PageHeader, LoadingSpinner, EmptyState } from '../../components/common/index';
+import { PageHeader, LoadingSpinner, EmptyState, Input, Select } from '../../components/common/index';
 import type { PatientType, PatientStatus } from '../../types/patient';
 import { PatientCard } from '../../components/patients/PatientCard';
 
@@ -76,10 +76,19 @@ export function PatientsPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<PatientType | ''>('');
   const [statusFilter, setStatusFilter] = useState<PatientStatus | ''>('');
+  const [deliveryMode, setDeliveryMode] = useState<'expected' | 'actual' | ''>('');
+  const [deliveryAmount, setDeliveryAmount] = useState('');
+  const [deliveryUnit, setDeliveryUnit] = useState<'days' | 'months'>('days');
+
+  const deliveryValue = Number(deliveryAmount);
+  const hasDeliveryFilter = !!deliveryMode && deliveryAmount.trim() !== '' && Number.isFinite(deliveryValue) && deliveryValue >= 0;
 
   const { data, isLoading, isFetching } = usePatients({
     patient_type: typeFilter || undefined,
     patient_status: statusFilter || undefined,
+    delivery_date_field: hasDeliveryFilter ? deliveryMode : undefined,
+    delivery_window_days: hasDeliveryFilter && deliveryUnit === 'days' ? deliveryValue : undefined,
+    delivery_window_months: hasDeliveryFilter && deliveryUnit === 'months' ? deliveryValue : undefined,
     page,
     page_size: 15,
   });
@@ -94,11 +103,14 @@ export function PatientsPage() {
     )
     : patients;
 
-  const hasActiveFilters = !!(typeFilter || statusFilter || search.trim());
+  const hasActiveFilters = !!(typeFilter || statusFilter || search.trim() || hasDeliveryFilter);
 
   const clearAll = () => {
     setTypeFilter('');
     setStatusFilter('');
+    setDeliveryMode('');
+    setDeliveryAmount('');
+    setDeliveryUnit('days');
     setSearch('');
     setPage(1);
   };
@@ -190,6 +202,41 @@ export function PatientsPage() {
               />
             ))}
           </div>
+
+          <div className="hidden sm:block w-px self-stretch bg-slate-200 mx-1" />
+
+          <div className="flex min-w-[280px] flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              Delivery
+            </span>
+            <Select
+              value={deliveryMode}
+              onChange={e => { setDeliveryMode(e.target.value as 'expected' | 'actual' | ''); setPage(1); }}
+              className="h-8 w-32 py-1 text-xs"
+            >
+              <option value="">Any</option>
+              <option value="expected">Due in</option>
+              <option value="actual">Delivered in</option>
+            </Select>
+            <Input
+              type="number"
+              min={0}
+              value={deliveryAmount}
+              onChange={e => { setDeliveryAmount(e.target.value); setPage(1); }}
+              placeholder="0"
+              className="h-8 w-20 py-1 text-xs"
+              disabled={!deliveryMode}
+            />
+            <Select
+              value={deliveryUnit}
+              onChange={e => { setDeliveryUnit(e.target.value as 'days' | 'months'); setPage(1); }}
+              className="h-8 w-24 py-1 text-xs"
+              disabled={!deliveryMode}
+            >
+              <option value="days">days</option>
+              <option value="months">months</option>
+            </Select>
+          </div>
         </div>
 
         {/* Active filter summary row */}
@@ -212,6 +259,12 @@ export function PatientsPage() {
               <ActiveChip
                 label={STATUS_OPTIONS.find(o => o.value === statusFilter)?.label ?? statusFilter}
                 onRemove={() => { setStatusFilter(''); setPage(1); }}
+              />
+            )}
+            {hasDeliveryFilter && (
+              <ActiveChip
+                label={`${deliveryMode === 'expected' ? 'Due in' : 'Delivered in'} ${deliveryValue} ${deliveryUnit}`}
+                onRemove={() => { setDeliveryMode(''); setDeliveryAmount(''); setDeliveryUnit('days'); setPage(1); }}
               />
             )}
             <button

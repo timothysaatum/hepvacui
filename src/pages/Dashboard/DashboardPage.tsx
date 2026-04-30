@@ -16,6 +16,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { useAuth } from '../../context/useAuth';
+import { usePublicSettings } from '../../hooks/useSettings';
 import { analyticsService, toNumber, type AcquisitionDay, type DashboardSummary, type RevenueDay, type UpcomingDelivery, type VaccineDoseCompletion } from '../../services/dashboardService';
 
 
@@ -73,6 +74,10 @@ export function DashboardPage() {
     const { user } = useAuth();
     const [trendDays, setTrendDays] = useState<7 | 30>(30);
     const isAdmin = user?.roles?.some(role => role.name.toLowerCase() === 'admin');
+    const { data: publicSettings } = usePublicSettings();
+    const dashboardRefetchInterval = publicSettings?.enable_dashboard_auto_refresh
+        ? publicSettings.dashboard_refresh_rate_seconds * 1000
+        : false;
     // ── API queries ─────────────────────────────────────────────────────────────
     const {
         data: summary,
@@ -81,6 +86,7 @@ export function DashboardPage() {
         queryKey: ['analytics-summary'],
         queryFn: analyticsService.getSummary,
         staleTime: 2 * 60 * 1000,
+        refetchInterval: dashboardRefetchInterval,
     });
 
     const {
@@ -90,6 +96,7 @@ export function DashboardPage() {
         queryKey: ['analytics-revenue', trendDays],
         queryFn: () => analyticsService.getRevenueTrend(trendDays),
         staleTime: 2 * 60 * 1000,
+        refetchInterval: dashboardRefetchInterval,
     });
 
     const {
@@ -99,6 +106,7 @@ export function DashboardPage() {
         queryKey: ['analytics-acquisition'],
         queryFn: () => analyticsService.getAcquisitionTrend(30),
         staleTime: 2 * 60 * 1000,
+        refetchInterval: dashboardRefetchInterval,
     });
 
     const {
@@ -108,6 +116,7 @@ export function DashboardPage() {
         queryKey: ['analytics-deliveries'],
         queryFn: () => analyticsService.getUpcomingDeliveries(30),
         staleTime: 2 * 60 * 1000,
+        refetchInterval: dashboardRefetchInterval,
     });
 
     // ── Derived values ──────────────────────────────────────────────────────────
