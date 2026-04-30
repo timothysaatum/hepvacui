@@ -8,6 +8,7 @@ import { VaccineSection } from '../../components/vaccines/VaccineSection';
 import { MedicationSection } from '../../components/medication/MedicationSection';
 import { ReminderSection } from '../../components/reminder/ReminderSection';
 import { DiagnosisSection } from '../../components/diagnosis/DiagnosisSection';
+import { LabTestSection } from '../../components/labtests/LabTestSection';
 import { AllergySection } from '../../components/patients/AllergySection';
 import { LoadingSpinner } from '../../components/common/index';
 import { isPregnantPatient } from '../../types/patient';
@@ -16,12 +17,12 @@ import {
   User, Phone, Calendar, Building2,
   ChevronRight,
   Baby, Syringe, Pill, Stethoscope, Bell,
-  MapPin, Contact, IdCard, ShieldAlert,
+  MapPin, Contact, IdCard, ShieldAlert, TestTube2,
 } from 'lucide-react';
 import { ReRegisterPregnantModal } from '../../components/patients/ReRegisterPregnantModal';
 import { getGravidaParaLabel } from '../../utils/formatters';
 
-type Tab = 'overview' | 'pregnancy' | 'safety' | 'vaccines' | 'medication' | 'diagnosis' | 'reminders';
+type Tab = 'overview' | 'pregnancy' | 'safety' | 'vaccines' | 'medication' | 'diagnosis' | 'tests' | 'reminders';
 
 const ALL_TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: User },
@@ -30,6 +31,7 @@ const ALL_TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'vaccines', label: 'Vaccines', icon: Syringe },
   { id: 'medication', label: 'Medication', icon: Pill },
   { id: 'diagnosis', label: 'Diagnosis', icon: Stethoscope },
+  { id: 'tests', label: 'Tests', icon: TestTube2 },
   { id: 'reminders', label: 'Reminders', icon: Bell },
 ];
 
@@ -96,6 +98,7 @@ export function PatientDetailPage() {
       {tab === 'vaccines' && <VaccineSection patient={patient} />}
       {tab === 'medication' && <MedicationSection patient={patient} />}
       {tab === 'diagnosis' && <DiagnosisSection patient={patient} />}
+      {tab === 'tests' && <LabTestSection patient={patient} />}
       {tab === 'reminders' && <ReminderSection patient={patient} />}
 
       {pregnant && (
@@ -187,7 +190,7 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
 
         {/* Section shortcuts — bottom row */}
         <div className={`border-t border-slate-100 grid divide-x divide-slate-100
-          ${pregnant ? 'grid-cols-2 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-5'}`}>
+          ${pregnant ? 'grid-cols-2 sm:grid-cols-7' : 'grid-cols-2 sm:grid-cols-6'}`}>
           {pregnant && (
             <NavCell icon={Baby} label="Pregnancy" meta={patient.active_pregnancy ? `${gravidaPara} · Active` : gravidaPara} accent="purple" onClick={() => onTabChange('pregnancy')} />
           )}
@@ -195,6 +198,7 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
           <NavCell icon={Syringe} label="Vaccines" meta="Doses & payments" accent="teal" onClick={() => onTabChange('vaccines')} />
           <NavCell icon={Pill} label="Medication" meta="Prescriptions" accent="blue" onClick={() => onTabChange('medication')} />
           <NavCell icon={Stethoscope} label="Diagnosis" meta="Clinical records" accent="rose" onClick={() => onTabChange('diagnosis')} />
+          <NavCell icon={TestTube2} label="Tests" meta="Hep B, RFT, LFT" accent="teal" onClick={() => onTabChange('tests')} />
           <NavCell icon={Bell} label="Reminders" meta="Pending alerts" accent="amber" onClick={() => onTabChange('reminders')} />
         </div>
       </div>
