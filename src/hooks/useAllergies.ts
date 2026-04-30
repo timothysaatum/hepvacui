@@ -5,6 +5,7 @@ import type { PatientType } from '../types/patient';
 
 export const allergyKeys = {
     all: ['allergies'] as const,
+    patient: (patientId: string) => ['allergies', patientId] as const,
     list: (patientId: string, activeOnly?: boolean) => ['allergies', patientId, activeOnly] as const,
 };
 
@@ -20,9 +21,26 @@ export function useCreateAllergy(patientId: string, patientType?: PatientType) {
     const qc = useQueryClient();
     return useMutation({
         mutationFn: (data: CreateAllergyPayload) => allergyService.create(patientId, data),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId) });
-            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId, true) });
+        onSuccess: (created) => {
+            qc.setQueryData(
+                allergyKeys.list(patientId, false),
+                (current: Awaited<ReturnType<typeof allergyService.list>> | undefined) => {
+                    if (!current) return [created];
+                    if (current.some(allergy => allergy.id === created.id)) return current;
+                    return [...current, created];
+                },
+            );
+            if (created.is_active !== false) {
+                qc.setQueryData(
+                    allergyKeys.list(patientId, true),
+                    (current: Awaited<ReturnType<typeof allergyService.list>> | undefined) => {
+                        if (!current) return [created];
+                        if (current.some(allergy => allergy.id === created.id)) return current;
+                        return [...current, created];
+                    },
+                );
+            }
+            qc.invalidateQueries({ queryKey: allergyKeys.patient(patientId) });
             if (patientType) qc.invalidateQueries({ queryKey: patientKeys.detail(patientId, patientType) });
             qc.invalidateQueries({ queryKey: patientKeys.detailUnified(patientId) });
         },
@@ -34,9 +52,18 @@ export function useUpdateAllergy(patientId: string, patientType?: PatientType) {
     return useMutation({
         mutationFn: ({ id, data }: { id: string; data: UpdateAllergyPayload }) =>
             allergyService.update(id, data),
-        onSuccess: () => {
-            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId) });
-            qc.invalidateQueries({ queryKey: allergyKeys.list(patientId, true) });
+        onSuccess: (updated) => {
+            const replace = (current: Awaited<ReturnType<typeof allergyService.list>> | undefined) =>
+                current?.map(allergy => allergy.id === updated.id ? updated : allergy);
+            qc.setQueryData(allergyKeys.list(patientId, false), replace);
+            qc.setQueryData(
+                allergyKeys.list(patientId, true),
+                (current: Awaited<ReturnType<typeof allergyService.list>> | undefined) => {
+                    const next = replace(current);
+                    return next?.filter(allergy => allergy.is_active !== false);
+                },
+            );
+            qc.invalidateQueries({ queryKey: allergyKeys.patient(patientId) });
             if (patientType) qc.invalidateQueries({ queryKey: patientKeys.detail(patientId, patientType) });
             qc.invalidateQueries({ queryKey: patientKeys.detailUnified(patientId) });
         },
