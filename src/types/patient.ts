@@ -14,7 +14,7 @@ export type PatientType = 'pregnant' | 'regular';
 /**
  * Backend enum: active | postpartum | completed | inactive
  */
-export type PatientStatus = 'active' | 'inactive' | 'postpartum' | 'completed';
+export type PatientStatus = 'active' | 'inactive' | 'postpartum' | 'completed' | 'converted';
 
 export type Sex = 'male' | 'female';
 
@@ -58,18 +58,51 @@ export interface PatientLinks {
 export interface BasePatient {
   id: string;
   name: string;
+  first_name: string | null;
+  last_name: string | null;
+  preferred_name: string | null;
+  medical_record_number: string | null;
   phone: string;
   age: number | null;
   sex: Sex;
   date_of_birth: string | null;
+  address_line: string | null;
+  city: string | null;
+  district: string | null;
+  region: string | null;
+  country: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
+  identifiers: PatientIdentifier[];
   patient_type: PatientType;
   status: PatientStatus;
+  accepts_messaging: boolean;
   facility: FacilityInfo;
   created_by: UserInfo | null;
   updated_by: UserInfo | null;
   created_at: string;
   updated_at: string;
   links: PatientLinks;
+}
+
+export interface PatientIdentifier {
+  id?: string;
+  identifier_type: string;
+  identifier_value: string;
+  issuer?: string | null;
+  is_primary?: boolean;
+}
+
+export type AllergySeverity = 'mild' | 'moderate' | 'severe' | 'life_threatening' | 'unknown';
+
+export interface PatientAllergy {
+  id?: string;
+  allergen: string;
+  reaction?: string | null;
+  severity?: AllergySeverity | null;
+  notes?: string | null;
+  is_active?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -106,14 +139,6 @@ export interface PregnantPatient extends BasePatient {
 
 export interface RegularPatient extends BasePatient {
   patient_type: 'regular';
-  diagnosis_date: string | null;
-  viral_load: string | null;
-  last_viral_load_date: string | null;
-  treatment_start_date: string | null;
-  treatment_regimen: string | null;
-  medical_history: string | null;
-  allergies: string | null;
-  notes: string | null;
 }
 
 /** Discriminated union — use isPregnantPatient() / isRegularPatient() to narrow. */
@@ -130,10 +155,24 @@ export type Patient = PregnantPatient | RegularPatient;
  * `facility_id` and `created_by_id` are set server-side from auth context.
  */
 export interface CreatePregnantPatientPayload {
-  name: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  preferred_name?: string;
+  medical_record_number?: string;
   phone: string;
   sex: 'female';
   date_of_birth?: string;       // ISO date — used to compute age server-side
+  address_line?: string;
+  city?: string;
+  district?: string;
+  region?: string;
+  country?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+  identifiers?: PatientIdentifier[];
+  accepts_messaging?: boolean;
 
   /**
    * REQUIRED: The first pregnancy episode for this patient.
@@ -148,18 +187,24 @@ export interface CreatePregnantPatientPayload {
  * `facility_id` and `created_by_id` are set server-side from auth context.
  */
 export interface CreateRegularPatientPayload {
-  name: string;
+  name?: string;
+  first_name?: string;
+  last_name?: string;
+  preferred_name?: string;
+  medical_record_number?: string;
   phone: string;
   sex: Sex;
   date_of_birth?: string;
-  diagnosis_date?: string;
-  viral_load?: string;
-  last_viral_load_date?: string;
-  treatment_start_date?: string;
-  treatment_regimen?: string;
-  medical_history?: string;
-  allergies?: string;
-  notes?: string;
+  address_line?: string;
+  city?: string;
+  district?: string;
+  region?: string;
+  country?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+  identifiers?: PatientIdentifier[];
+  accepts_messaging?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -174,9 +219,22 @@ export interface CreateRegularPatientPayload {
  */
 export interface UpdatePregnantPatientPayload {
   name?: string;
+  first_name?: string;
+  last_name?: string;
+  preferred_name?: string;
+  medical_record_number?: string;
   phone?: string;
   date_of_birth?: string;
+  address_line?: string;
+  city?: string;
+  district?: string;
+  region?: string;
+  country?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
   status?: PatientStatus;
+  accepts_messaging?: boolean;
 }
 
 /**
@@ -186,17 +244,22 @@ export interface UpdatePregnantPatientPayload {
  */
 export interface UpdateRegularPatientPayload {
   name?: string;
+  first_name?: string;
+  last_name?: string;
+  preferred_name?: string;
+  medical_record_number?: string;
   phone?: string;
   date_of_birth?: string;
-  diagnosis_date?: string;
-  viral_load?: string;
-  last_viral_load_date?: string;
-  treatment_start_date?: string;
-  treatment_regimen?: string;
-  medical_history?: string;
-  allergies?: string;
-  notes?: string;
+  address_line?: string;
+  city?: string;
+  district?: string;
+  region?: string;
+  country?: string;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
   status?: PatientStatus;
+  accepts_messaging?: boolean;
 }
 
 /**
@@ -209,7 +272,6 @@ export interface ConvertToRegularPayload {
   /** REQUIRED: the clinical outcome of the active pregnancy being closed. */
   outcome: PregnancyOutcome;
   actual_delivery_date?: string;
-  treatment_regimen?: string;
   notes?: string;
 }
 

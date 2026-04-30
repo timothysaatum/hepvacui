@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ElementType } from 'react';
 import type { PregnantPatient } from '../../types/patient';
 import type { Pregnancy } from '../../types/pregnancy';
 import type { Child } from '../../types/child';
@@ -31,15 +32,23 @@ export function PregnancySection({ patient }: Props) {
     const activePreg = pregnancies.find(p => p.is_active) ?? null;
     const pastPregs = pregnancies.filter(p => !p.is_active);
     const childForUpdate = children.find(c => c.id === updateChildId) ?? null;
+    const pendingChildChecks = children.filter(c => !c.six_month_checkup_completed);
+    const pendingHepBTests = children.filter(c => !c.hep_b_antibody_test_result || c.hep_b_antibody_test_result === 'pending');
 
     if (isLoading) return <LoadingSpinner />;
 
     return (
         <div className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-4">
+                <PregnancyMetric label="Active Pregnancy" value={activePreg ? `#${activePreg.pregnancy_number}` : 'None'} icon={HeartPulse} tone={activePreg ? 'purple' : 'slate'} />
+                <PregnancyMetric label="History" value={String(pastPregs.length)} icon={Calendar} />
+                <PregnancyMetric label="Children" value={String(children.length)} icon={Baby} tone={children.length ? 'pink' : 'slate'} />
+                <PregnancyMetric label="Follow-up Items" value={String(pendingChildChecks.length + pendingHepBTests.length)} icon={FlaskConical} tone={pendingChildChecks.length || pendingHepBTests.length ? 'amber' : 'slate'} />
+            </div>
 
             {/* ── No pregnancies at all ─────────────────────────────────── */}
             {!pregnancies.length && (
-                <div className="bg-white border border-slate-200 rounded-2xl p-8">
+                <div className="bg-white border border-slate-200 p-8">
                     <EmptyState
                         icon={<Baby className="w-8 h-8 text-slate-300" />}
                         title="No pregnancy records"
@@ -73,7 +82,7 @@ export function PregnancySection({ patient }: Props) {
                 <section>
                     <div className="flex items-center justify-between mb-3">
                         <div>
-                            <h3 className="text-sm font-bold text-slate-800">Children</h3>
+                            <h3 className="text-sm font-bold text-slate-800">Child Management</h3>
                             <p className="text-xs text-slate-400 mt-0.5">
                                 {children.length} child{children.length > 1 ? 'ren' : ''} on record
                             </p>
@@ -151,12 +160,12 @@ function ActivePregnancyPanel({
                 : 'text-emerald-700 bg-emerald-50 border-emerald-200';
 
     return (
-        <div className="bg-white border border-purple-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-purple-200 overflow-hidden shadow-sm">
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 px-5 py-4">
                 <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-purple-100 rounded-xl flex items-center justify-center">
+                        <div className="w-9 h-9 bg-purple-100 flex items-center justify-center">
                             <HeartPulse className="w-5 h-5 text-purple-600" />
                         </div>
                         <div>
@@ -374,7 +383,7 @@ function PastPregnancyRow({ pregnancy }: { pregnancy: Pregnancy }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DateCell({ icon: Icon, label, value, accent = false }: {
-    icon: React.ElementType; label: string; value: string; accent?: boolean;
+    icon: ElementType; label: string; value: string; accent?: boolean;
 }) {
     return (
         <div className={`rounded-xl px-3 py-2.5 border ${accent ? 'bg-purple-50 border-purple-100' : 'bg-slate-50 border-slate-100'}`}>
@@ -383,6 +392,29 @@ function DateCell({ icon: Icon, label, value, accent = false }: {
                 <p className={`text-[10px] font-semibold uppercase tracking-wide ${accent ? 'text-purple-500' : 'text-slate-400'}`}>{label}</p>
             </div>
             <p className={`text-sm font-bold ${accent ? 'text-purple-800' : 'text-slate-800'}`}>{value || '—'}</p>
+        </div>
+    );
+}
+
+function PregnancyMetric({ label, value, icon: Icon, tone = 'slate' }: {
+    label: string;
+    value: string;
+    icon: ElementType;
+    tone?: 'slate' | 'purple' | 'pink' | 'amber';
+}) {
+    const colors = {
+        slate: 'border-slate-200 bg-white text-slate-700',
+        purple: 'border-purple-200 bg-purple-50 text-purple-700',
+        pink: 'border-pink-200 bg-pink-50 text-pink-700',
+        amber: 'border-amber-200 bg-amber-50 text-amber-700',
+    };
+    return (
+        <div className={`flex items-center justify-between border px-4 py-3 ${colors[tone]}`}>
+            <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide opacity-70">{label}</p>
+                <p className="mt-1 text-2xl font-semibold">{value}</p>
+            </div>
+            <Icon className="h-5 w-5 opacity-70" />
         </div>
     );
 }

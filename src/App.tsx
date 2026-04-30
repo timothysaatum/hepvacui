@@ -16,8 +16,10 @@ import { VaccinesPage } from './pages/Vaccines/VaccinesPage';
 import { PatientsPage } from './pages/Patients/PatientsPage';
 import { PatientDetailPage } from './pages/Patients/PatientDetailPage';
 import { EditPatientPage } from './pages/Patients/EditPatientPage';
+import { PatientRegistrationPage } from './pages/Patients/PatientRegistrationPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
+import { NotificationsPage } from './pages/Notifications/NotificationsPage';
 
 
 // Create a client
@@ -53,12 +55,14 @@ function App() {
                         <Routes>
                           <Route path="/" element={<Navigate to="/patients" replace />} />
                           <Route path="/patients" element={<PatientsPage />} />
+                          <Route path="/patients/register" element={<PatientRegistrationPage />} />
                           <Route path="/reports" element={<ReportsPage />} />
                           <Route path="/dashboard" element={<DashboardPage />} />
                           <Route path="/patients/:patientId/edit" element={<EditPatientPage />} />
                           <Route path="/patients/:patientId" element={<PatientDetailPage />} />
                           <Route path="/vaccines" element={<VaccinesPage />} />
                           <Route path="/records" element={<SearchPage />} />
+                          <Route path="/notifications" element={<NotificationsPage />} />
                           <Route path="/facilities" element={<FacilitiesPage />} />
                           <Route path="/staff" element={<UsersPage />} />
                           <Route path="/devices" element={<DevicesPage />} />

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 import { usePatient } from '../../hooks/usePatient';
 import { PatientHeader } from '../../components/patients/PatientHeader';
 import { ConvertPatientModal } from '../../components/patients/ConvertPatientModal';
@@ -9,21 +8,25 @@ import { VaccineSection } from '../../components/vaccines/VaccineSection';
 import { MedicationSection } from '../../components/medication/MedicationSection';
 import { ReminderSection } from '../../components/reminder/ReminderSection';
 import { DiagnosisSection } from '../../components/diagnosis/DiagnosisSection';
+import { AllergySection } from '../../components/patients/AllergySection';
 import { LoadingSpinner } from '../../components/common/index';
 import { isPregnantPatient } from '../../types/patient';
 import type { PatientType } from '../../types/patient';
 import {
-  User, Phone, Calendar, Building2, Activity,
-  AlertTriangle, FileText, ChevronRight,
+  User, Phone, Calendar, Building2,
+  ChevronRight,
   Baby, Syringe, Pill, Stethoscope, Bell,
+  MapPin, Contact, IdCard, ShieldAlert,
 } from 'lucide-react';
 import { ReRegisterPregnantModal } from '../../components/patients/ReRegisterPregnantModal';
+import { getGravidaParaLabel } from '../../utils/formatters';
 
-type Tab = 'overview' | 'pregnancy' | 'vaccines' | 'medication' | 'diagnosis' | 'reminders';
+type Tab = 'overview' | 'pregnancy' | 'safety' | 'vaccines' | 'medication' | 'diagnosis' | 'reminders';
 
 const ALL_TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: User },
   { id: 'pregnancy', label: 'Pregnancy', icon: Baby },
+  { id: 'safety', label: 'Safety', icon: ShieldAlert },
   { id: 'vaccines', label: 'Vaccines', icon: Syringe },
   { id: 'medication', label: 'Medication', icon: Pill },
   { id: 'diagnosis', label: 'Diagnosis', icon: Stethoscope },
@@ -33,22 +36,9 @@ const ALL_TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
 export function PatientDetailPage() {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
-  const qc = useQueryClient();
-
-  // FIX: The old code used qc.getQueryData(['patients']) which always returns
-  // undefined — the real list keys are ['patients', 'list', filters].
-  // getQueriesData with the prefix searches across all cached list queries.
   const typeParam = new URLSearchParams(window.location.search).get('type') as PatientType | null;
-  const type: PatientType = (() => {
-    const entries = qc.getQueriesData<any>({ queryKey: ['patients', 'list'] });
-    for (const [, data] of entries) {
-      const found = data?.items?.find((p: any) => p.id === patientId);
-      if (found?.patient_type) return found.patient_type as PatientType;
-    }
-    return typeParam ?? 'pregnant';
-  })();
 
-  const { data: patient, isLoading, isError } = usePatient(patientId!, type);
+  const { data: patient, isLoading, isError } = usePatient(patientId!, typeParam);
   const [tab, setTab] = useState<Tab>('overview');
   const [convertOpen, setConvertOpen] = useState(false);
   const [reRegisterOpen, setReRegisterOpen] = useState(false);
@@ -66,17 +56,18 @@ export function PatientDetailPage() {
 
   const pregnant = isPregnantPatient(patient);
   const tabs = pregnant ? ALL_TABS : ALL_TABS.filter(t => t.id !== 'pregnancy');
+  const canReRegisterPregnant = !pregnant && patient.sex === 'female';
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="mx-auto max-w-7xl px-4 py-5">
       <PatientHeader
         patient={patient}
         onConvert={pregnant ? () => setConvertOpen(true) : undefined}
-        onReRegisterPregnant={!pregnant ? () => setReRegisterOpen(true) : undefined}
+        onReRegisterPregnant={canReRegisterPregnant ? () => setReRegisterOpen(true) : undefined}
       />
 
       {/* Tab bar */}
-      <div className="border-b border-slate-200 mb-6 mt-2">
+      <div className="border-b border-slate-200 mb-5 mt-2 bg-white px-2">
         <nav className="flex -mb-px overflow-x-auto">
           {tabs.map(t => {
             const Icon = t.icon;
@@ -101,6 +92,7 @@ export function PatientDetailPage() {
 
       {tab === 'overview' && <OverviewTab patient={patient} onTabChange={setTab} pregnant={pregnant} />}
       {tab === 'pregnancy' && pregnant && <PregnancySection patient={patient} />}
+      {tab === 'safety' && <AllergySection patient={patient} />}
       {tab === 'vaccines' && <VaccineSection patient={patient} />}
       {tab === 'medication' && <MedicationSection patient={patient} />}
       {tab === 'diagnosis' && <DiagnosisSection patient={patient} />}
@@ -118,7 +110,7 @@ export function PatientDetailPage() {
         />
       )}
 
-      {!pregnant && (
+      {canReRegisterPregnant && (
         <ReRegisterPregnantModal
           open={reRegisterOpen}
           onClose={() => setReRegisterOpen(false)}
@@ -140,24 +132,25 @@ export function PatientDetailPage() {
 function OverviewTab({ patient, onTabChange, pregnant }: {
   patient: any; onTabChange: (t: Tab) => void; pregnant: boolean;
 }) {
+  const gravidaPara = getGravidaParaLabel(patient.gravida, patient.para);
+  const gravidaValue = typeof patient.gravida === 'number' && Number.isFinite(patient.gravida) ? String(patient.gravida) : '—';
+  const paraValue = typeof patient.para === 'number' && Number.isFinite(patient.para) ? String(patient.para) : '—';
+  const pregnancyHistory = Array.isArray(patient.pregnancy_history) ? patient.pregnancy_history : [];
+  const createdBy = patient.created_by?.name ?? patient.created_by?.full_name ?? '—';
+  const updatedBy = patient.updated_by?.name ?? patient.updated_by?.full_name ?? '—';
+
   return (
     <div className="space-y-4">
 
       {/* ── Identity card ──────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-        {/* Colour accent bar */}
-        <div className={`h-1 w-full ${pregnant
-          ? 'bg-gradient-to-r from-purple-400 via-pink-400 to-rose-300'
-          : 'bg-gradient-to-r from-teal-400 via-cyan-400 to-sky-300'}`}
-        />
-
+      <div className="overflow-hidden border border-slate-200 bg-white">
         <div className="p-5 sm:p-6">
           <div className="flex gap-4 items-start">
 
             {/* Avatar initials */}
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0
+            <div className={`w-14 h-14 rounded-md flex items-center justify-center shrink-0
               text-xl font-bold shadow-sm
-              ${pregnant ? 'bg-purple-100 text-purple-600' : 'bg-teal-100 text-teal-600'}`}>
+              ${pregnant ? 'bg-violet-100 text-violet-700' : 'bg-sky-100 text-sky-700'}`}>
               {patient.name?.charAt(0)?.toUpperCase() ?? '?'}
             </div>
 
@@ -167,16 +160,17 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
                 <div>
                   <h2 className="text-lg font-bold text-slate-900 leading-tight">{patient.name}</h2>
                   <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold
-                      ${pregnant ? 'bg-purple-100 text-purple-700' : 'bg-teal-100 text-teal-700'}`}>
-                      {pregnant ? '🤰 Pregnant' : '👤 Regular'}
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold
+                      ${pregnant ? 'bg-violet-100 text-violet-700' : 'bg-sky-100 text-sky-700'}`}>
+                      {pregnant ? 'Pregnant' : 'Regular'}
                     </span>
                     <StatusBadge status={patient.status} />
+                    {patient.medical_record_number && (
+                      <span className="border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+                        MRN {patient.medical_record_number}
+                      </span>
+                    )}
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">Record ID</p>
-                  <p className="text-[10px] font-mono text-slate-400 mt-0.5 max-w-[160px] truncate">{patient.id}</p>
                 </div>
               </div>
 
@@ -185,7 +179,7 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
                 <StatChip icon={Phone} label="Phone" value={patient.phone ?? '—'} />
                 <StatChip icon={Calendar} label="DOB" value={fmtDate(patient.date_of_birth)} />
                 <StatChip icon={User} label="Sex" value={capitalize(patient.sex)} />
-                <StatChip icon={Building2} label="Facility" value={patient.facility?.facility_name ?? patient.facility?.name ?? '—'} />
+                <StatChip icon={IdCard} label="MRN" value={patient.medical_record_number ?? '—'} />
               </div>
             </div>
           </div>
@@ -193,10 +187,11 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
 
         {/* Section shortcuts — bottom row */}
         <div className={`border-t border-slate-100 grid divide-x divide-slate-100
-          ${pregnant ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'}`}>
+          ${pregnant ? 'grid-cols-2 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-5'}`}>
           {pregnant && (
-            <NavCell icon={Baby} label="Pregnancy" meta={patient.active_pregnancy ? `G${patient.gravida} P${patient.para} · Active` : `G${patient.gravida} P${patient.para}`} accent="purple" onClick={() => onTabChange('pregnancy')} />
+            <NavCell icon={Baby} label="Pregnancy" meta={patient.active_pregnancy ? `${gravidaPara} · Active` : gravidaPara} accent="purple" onClick={() => onTabChange('pregnancy')} />
           )}
+          <NavCell icon={ShieldAlert} label="Safety" meta="Allergy records" accent="rose" onClick={() => onTabChange('safety')} />
           <NavCell icon={Syringe} label="Vaccines" meta="Doses & payments" accent="teal" onClick={() => onTabChange('vaccines')} />
           <NavCell icon={Pill} label="Medication" meta="Prescriptions" accent="blue" onClick={() => onTabChange('medication')} />
           <NavCell icon={Stethoscope} label="Diagnosis" meta="Clinical records" accent="rose" onClick={() => onTabChange('diagnosis')} />
@@ -205,35 +200,94 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
       </div>
 
       {/* ── Demographics ───────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-        <SectionHeader title="Demographics" />
-        <div className="divide-y divide-slate-100 sm:divide-y-0 sm:grid sm:grid-cols-3 sm:divide-x">
-          <FieldGroup title="Personal">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="overflow-hidden border border-slate-200 bg-white lg:col-span-2">
+          <SectionHeader title="Identity and Demographics" />
+          <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+            <FieldGroup title="Identity">
+            <Field label="First Name" value={patient.first_name ?? '—'} />
+            <Field label="Last Name" value={patient.last_name ?? '—'} />
+            <Field label="Preferred Name" value={patient.preferred_name ?? '—'} />
             <Field label="Full Name" value={patient.name} />
+            <Field label="Medical Record Number" value={patient.medical_record_number ?? '—'} />
+            </FieldGroup>
+            <FieldGroup title="Demographics">
             <Field label="Date of Birth" value={fmtDate(patient.date_of_birth)} />
             <Field label="Age" value={patient.age ? `${patient.age} years` : '—'} />
             <Field label="Sex" value={capitalize(patient.sex)} />
-          </FieldGroup>
+            <Field label="Messaging Consent" value={patient.accepts_messaging ? 'Recorded' : 'Not recorded'} />
+            </FieldGroup>
+          </div>
+        </div>
+
+        <div className="overflow-hidden border border-slate-200 bg-white">
+          <SectionHeader title="Registry" />
+          <div className="p-5">
+            <Field label="Facility" value={patient.facility?.facility_name ?? patient.facility?.name ?? '—'} icon={Building2} />
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <Field label="Registered" value={fmtDateTime(patient.created_at)} />
+              <Field label="Updated" value={fmtDateTime(patient.updated_at)} />
+              <Field label="Registered By" value={createdBy} />
+              <Field label="Updated By" value={updatedBy} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="overflow-hidden border border-slate-200 bg-white lg:col-span-2">
+          <SectionHeader title="Contact and Location" />
+          <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
           <FieldGroup title="Contact">
             <Field label="Phone" value={patient.phone ?? '—'} />
+            <Field label="Emergency Contact" value={patient.emergency_contact_name ?? '—'} icon={Contact} />
+            <Field label="Emergency Phone" value={patient.emergency_contact_phone ?? '—'} />
+            <Field label="Relationship" value={patient.emergency_contact_relationship ?? '—'} />
           </FieldGroup>
-          <FieldGroup title="Clinical Registration">
-            <Field label="Facility" value={patient.facility?.facility_name ?? patient.facility?.name ?? '—'} />
-            <Field label="Patient Type" value={capitalize(patient.patient_type)} />
-            <Field label="Status" value={capitalize(patient.status)} />
+          <FieldGroup title="Location">
+            <Field label="Address" value={patient.address_line ?? '—'} icon={MapPin} />
+            <Field label="City/Town" value={patient.city ?? '—'} />
+            <Field label="District" value={patient.district ?? '—'} />
+            <Field label="Region" value={patient.region ?? '—'} />
+            <Field label="Country" value={patient.country ?? '—'} />
           </FieldGroup>
+          </div>
+        </div>
+
+        <div className="overflow-hidden border border-slate-200 bg-white">
+          <SectionHeader title="Identifiers" />
+          <div className="p-5">
+            {patient.identifiers?.length ? (
+              <div className="space-y-2">
+                {patient.identifiers.map((identifier: any, index: number) => (
+                  <div key={identifier.id ?? index} className="border border-slate-200 px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-semibold text-slate-900">{formatIdentifierType(identifier.identifier_type)}</p>
+                      {identifier.is_primary && (
+                        <span className="bg-teal-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-teal-700">Primary</span>
+                      )}
+                    </div>
+                    <p className="font-mono text-xs text-slate-500">{identifier.identifier_value}</p>
+                    {identifier.issuer && <p className="mt-1 text-[11px] text-slate-400">{identifier.issuer}</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">No additional identifiers recorded.</p>
+            )}
+          </div>
         </div>
       </div>
 
       {/* ── Obstetric summary ──────────────────────────────────────── */}
       {pregnant && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <SectionHeader title="Obstetric Summary" badge={`G${patient.gravida} · P${patient.para}`} />
+        <div className="bg-white border border-slate-200 overflow-hidden shadow-sm">
+          <SectionHeader title="Obstetric Summary" badge={gravidaPara} />
           <div className="p-5 space-y-5">
             {/* G / P / A stat blocks */}
             <div className="grid grid-cols-2 gap-3 max-w-xs">
-              <ObstetricStat value={String(patient.gravida)} label="Gravida" sub="Total pregnancies" color="purple" />
-              <ObstetricStat value={String(patient.para)} label="Para" sub="Deliveries" color="pink" />
+              <ObstetricStat value={gravidaValue} label="Gravida" sub="Total pregnancies" color="purple" />
+              <ObstetricStat value={paraValue} label="Para" sub="Deliveries" color="pink" />
             </div>
 
             {patient.active_pregnancy ? (
@@ -246,62 +300,45 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
             ) : (
               <p className="text-sm text-slate-400 italic border-t border-slate-100 pt-4">No active pregnancy</p>
             )}
+
+            {pregnancyHistory.length > 0 && (
+              <div className="border-t border-slate-100 pt-4">
+                <p className="mb-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Completed Pregnancy Episodes</p>
+                <div className="space-y-2">
+                  {pregnancyHistory.map((episode: any) => (
+                    <div key={episode.id} className="grid gap-3 border border-slate-200 px-3 py-3 text-sm sm:grid-cols-[120px_1fr_1fr_1fr]">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-900">Pregnancy #{episode.pregnancy_number}</p>
+                        <p className="mt-0.5 text-[11px] text-slate-400">{episode.is_active ? 'Active' : 'Closed'}</p>
+                      </div>
+                      <Field label="Outcome" value={formatOutcome(episode.outcome)} />
+                      <Field label="Delivery Date" value={fmtDate(episode.actual_delivery_date)} />
+                      <Field label="Expected Delivery" value={fmtDate(episode.expected_delivery_date)} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* ── Clinical details (regular) ─────────────────────────────── */}
       {!pregnant && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <SectionHeader title="Clinical Details" />
-          <div className="p-5 space-y-5">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-8 gap-y-4">
-              <Field label="Diagnosis Date" value={fmtDate(patient.diagnosis_date)} />
-              <Field label="Treatment Start" value={fmtDate(patient.treatment_start_date)} />
-              <Field label="Treatment Regimen" value={patient.treatment_regimen ?? '—'} />
-              <Field label="Viral Load" value={patient.viral_load ?? '—'} />
-              <Field label="Last VL Date" value={fmtDate(patient.last_viral_load_date)} />
-            </div>
-
-            {patient.allergies && (
-              <div className="flex items-start gap-3 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-                <AlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-red-600 uppercase tracking-wide mb-0.5">Allergies</p>
-                  <p className="text-sm text-red-800">{patient.allergies}</p>
-                </div>
-              </div>
-            )}
-
-            {patient.medical_history && (
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <FileText className="w-3 h-3" /> Medical History
-                </p>
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{patient.medical_history}</p>
-              </div>
-            )}
-
-            {patient.notes && (
-              <div className="pt-4 border-t border-slate-100">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <Activity className="w-3 h-3" /> Notes
-                </p>
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{patient.notes}</p>
-              </div>
-            )}
+        <div className="border border-slate-200 bg-white p-5">
+          <SectionHeader title="Clinical Workspaces" />
+          <div className="grid gap-3 sm:grid-cols-4">
+            <NavCell icon={ShieldAlert} label="Safety" meta="Allergy records" accent="rose" onClick={() => onTabChange('safety')} />
+            <NavCell icon={Stethoscope} label="Diagnosis" meta="Clinical assessments" accent="rose" onClick={() => onTabChange('diagnosis')} />
+            <NavCell icon={Pill} label="Medication" meta="Prescriptions" accent="blue" onClick={() => onTabChange('medication')} />
+            <NavCell icon={Bell} label="Reminders" meta="Follow-up tasks" accent="amber" onClick={() => onTabChange('reminders')} />
           </div>
         </div>
       )}
 
       {/* Audit trail */}
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-400 px-1 pb-2">
-        {patient.created_by && (
-          <span>Registered by <span className="text-slate-500 font-medium">{patient.created_by.name ?? patient.created_by.full_name}</span></span>
-        )}
-        {patient.updated_by && (
-          <span>Last updated by <span className="text-slate-500 font-medium">{patient.updated_by.name ?? patient.updated_by.full_name}</span></span>
-        )}
+      <div className="flex flex-wrap gap-x-6 gap-y-1 px-1 pb-2 text-xs text-slate-400">
+        <span>Created <span className="font-medium text-slate-500">{fmtDateTime(patient.created_at)}</span></span>
+        <span>Updated <span className="font-medium text-slate-500">{fmtDateTime(patient.updated_at)}</span></span>
       </div>
     </div>
   );
@@ -403,6 +440,7 @@ function StatusBadge({ status }: { status?: string }) {
     active: 'bg-emerald-100 text-emerald-700',
     postpartum: 'bg-blue-100    text-blue-700',
     completed: 'bg-slate-100   text-slate-600',
+    converted: 'bg-purple-100  text-purple-700',
     inactive: 'bg-red-100     text-red-600',
   };
   return (
@@ -417,7 +455,26 @@ function fmtDate(d?: string | null): string {
   return new Date(d).toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function fmtDateTime(d?: string | null): string {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('en-GH', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 function capitalize(s?: string): string {
   if (!s) return '—';
-  return s.charAt(0).toUpperCase() + s.slice(1);
+  return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function formatIdentifierType(value?: string | null): string {
+  return capitalize(value ?? 'Identifier');
+}
+
+function formatOutcome(value?: string | null): string {
+  return value ? capitalize(value) : '—';
 }

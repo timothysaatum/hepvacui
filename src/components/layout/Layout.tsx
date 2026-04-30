@@ -6,6 +6,7 @@ import {
   Monitor, Settings, Bell, LogOut, ChevronLeft,
   ChevronRight, Menu, X, Search, BarChart2,
 } from 'lucide-react';
+import { NotificationBell } from '../notifications/NotificationBell';
 
 interface LayoutProps { children: React.ReactNode; }
 interface NavItem {
@@ -16,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Patients', path: '/patients', icon: Users },
   { name: 'Vaccines', path: '/vaccines', icon: Pill },
   { name: 'Records', path: '/records', icon: Search },
+  { name: 'Notifications', path: '/notifications', icon: Bell },
   { name: 'Reports', path: '/reports', icon: BarChart2, adminOnly: true },
   { name: 'Facilities', path: '/facilities', icon: Building2, adminOnly: true },
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -250,11 +252,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               </div>
             )}
 
-            {/* Notifications */}
-            <button className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors">
-              <Bell className="w-[18px] h-[18px]" />
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-teal-500 rounded-full ring-2 ring-white" />
-            </button>
+            <NotificationBell />
 
             {/* Sign out */}
             <button

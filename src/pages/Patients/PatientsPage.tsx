@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import type { ElementType } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, X, SlidersHorizontal, Plus, Users, UserRound, ShieldCheck } from 'lucide-react';
 import { usePatients } from '../../hooks/usePatients';
 import { Button } from '../../components/common/Button';
 import { PageHeader, LoadingSpinner, EmptyState } from '../../components/common/index';
 import type { PatientType, PatientStatus } from '../../types/patient';
 import { PatientCard } from '../../components/patients/PatientCard';
-import { RegisterPatientModal } from '../../components/patients/RegisterPatientModal';
 
 // ── Filter pill definitions ───────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ const STATUS_OPTIONS: { label: string; value: PatientStatus | '' }[] = [
   { label: 'Active', value: 'active' },
   { label: 'Postpartum', value: 'postpartum' },
   { label: 'Completed', value: 'completed' },
+  { label: 'Converted', value: 'converted' },
   { label: 'Inactive', value: 'inactive' },
 ];
 
@@ -69,12 +71,11 @@ function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }
 // ── Page ──────────────────────────────────────────────────────────────────
 
 export function PatientsPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<PatientType | ''>('');
   const [statusFilter, setStatusFilter] = useState<PatientStatus | ''>('');
-  const [registerOpen, setRegisterOpen] = useState(false);
-  const [registerType, setRegisterType] = useState<PatientType>('pregnant');
 
   const { data, isLoading, isFetching } = usePatients({
     patient_type: typeFilter || undefined,
@@ -103,29 +104,34 @@ export function PatientsPage() {
   };
 
   const openRegister = (type: PatientType) => {
-    setRegisterType(type);
-    setRegisterOpen(true);
+    navigate(`/patients/register?type=${type}`);
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="mx-auto max-w-7xl px-4 py-5">
       <PageHeader
-        title="Patients"
-        subtitle={pageInfo ? `${pageInfo.total_items} total patients` : ''}
+        title="Patient Management"
+        subtitle={pageInfo ? `${pageInfo.total_items} records · facility-scoped clinical registry` : 'Facility-scoped clinical registry'}
         action={
           <div className="flex gap-2">
             <Button size="sm" variant="secondary" onClick={() => openRegister('regular')}>
-              + Regular
+              <Plus className="mr-1 h-4 w-4" /> Regular
             </Button>
             <Button size="sm" onClick={() => openRegister('pregnant')}>
-              + Pregnant
+              <Plus className="mr-1 h-4 w-4" /> Pregnant
             </Button>
           </div>
         }
       />
 
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Metric label="Visible Records" value={String(filtered.length)} icon={Users} />
+        <Metric label="Pregnant" value={String(filtered.filter(p => p.patient_type === 'pregnant').length)} icon={UserRound} />
+        <Metric label="Active" value={String(filtered.filter(p => p.status === 'active').length)} icon={ShieldCheck} />
+      </div>
+
       {/* ── Filter panel ────────────────────────────────────────────── */}
-      <div className="mb-5 space-y-3">
+      <div className="mb-4 border border-slate-200 bg-white p-4">
 
         {/* Search bar — full width */}
         <div className="relative">
@@ -135,9 +141,9 @@ export function PatientsPage() {
             placeholder="Search by name or phone number…"
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl
+            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-300
                        text-slate-800 placeholder-slate-400 outline-none
-                       focus:border-slate-400 focus:ring-2 focus:ring-slate-100 transition-all"
+                       focus:border-slate-500 focus:ring-2 focus:ring-slate-100 transition-all"
           />
           {search && (
             <button
@@ -150,7 +156,7 @@ export function PatientsPage() {
         </div>
 
         {/* Filter strip */}
-        <div className="flex items-start gap-4 flex-wrap">
+        <div className="mt-3 flex items-start gap-4 flex-wrap">
 
           {/* Type toggles */}
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -235,7 +241,14 @@ export function PatientsPage() {
         />
       ) : (
         <>
-          <div className="space-y-2">
+          <div className="overflow-x-auto border border-slate-200 bg-white">
+            <div className="grid min-w-[760px] grid-cols-[minmax(220px,1.7fr)_130px_120px_minmax(130px,1fr)_36px] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">
+              <span>Patient</span>
+              <span>Type</span>
+              <span>Status</span>
+              <span>Care Context</span>
+              <span />
+            </div>
             {filtered.map(p => <PatientCard key={p.id} patient={p} />)}
           </div>
 
@@ -268,11 +281,18 @@ export function PatientsPage() {
         </>
       )}
 
-      <RegisterPatientModal
-        open={registerOpen}
-        onClose={() => setRegisterOpen(false)}
-        defaultType={registerType}
-      />
+    </div>
+  );
+}
+
+function Metric({ label, value, icon: Icon }: { label: string; value: string; icon: ElementType }) {
+  return (
+    <div className="flex items-center justify-between border border-slate-200 bg-white px-4 py-3">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+        <p className="mt-1 text-xl font-semibold text-slate-900">{value}</p>
+      </div>
+      <Icon className="h-5 w-5 text-slate-400" />
     </div>
   );
 }

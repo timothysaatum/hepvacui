@@ -71,11 +71,15 @@ export const usePatients = (filters: PatientFilters = {}) => {
  */
 export const usePatient = (
   patientId: string | null,
-  patientType: PatientType
+  patientType?: PatientType | null
 ) => {
   return useQuery({
-    queryKey: patientKeys.detail(patientId!, patientType),
-    queryFn: () => patientService.getPatientByType(patientId!, patientType),
+    queryKey: patientType
+      ? patientKeys.detail(patientId!, patientType)
+      : patientKeys.detailUnified(patientId!),
+    queryFn: () => patientType
+      ? patientService.getPatientByType(patientId!, patientType)
+      : patientService.getPatient(patientId!),
     enabled: !!patientId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

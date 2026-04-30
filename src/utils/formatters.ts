@@ -126,6 +126,7 @@ export const PATIENT_STATUS_LABELS: Record<string, string> = {
   inactive: 'Inactive',
   postpartum: 'Postpartum',
   completed: 'Completed',
+  converted: 'Converted',
 };
 
 export const PATIENT_STATUS_COLORS: Record<string, string> = {
@@ -133,6 +134,7 @@ export const PATIENT_STATUS_COLORS: Record<string, string> = {
   inactive: 'bg-slate-100 text-slate-600',
   postpartum: 'bg-purple-100 text-purple-800',
   completed: 'bg-blue-100 text-blue-800',
+  converted: 'bg-slate-100 text-slate-800',
 };
 
 export const PATIENT_TYPE_LABELS: Record<string, string> = {
@@ -213,9 +215,12 @@ export const REMINDER_STATUS_COLORS: Record<string, string> = {
 // Misc patient helpers  (new — used by PatientCard, PatientHeader)
 // =============================================================================
 
-/** Returns a "G2 P1" style gravida/para label. */
-export const getGravidaParaLabel = (gravida: number, para: number): string =>
-  `G${gravida} P${para}`;
+/** Returns a "G2 P1" style gravida/para label when counts are available. */
+export const getGravidaParaLabel = (gravida?: number | null, para?: number | null): string => {
+  const hasGravida = typeof gravida === 'number' && Number.isFinite(gravida);
+  const hasPara = typeof para === 'number' && Number.isFinite(para);
+  return hasGravida || hasPara ? `G${hasGravida ? gravida : '-'} P${hasPara ? para : '-'}` : 'Pregnancy care';
+};
 
 /** Returns "Dose 1 / 2 / 3" label from API dose_number strings. */
 export const getDoseLabel = (dose: string): string => {

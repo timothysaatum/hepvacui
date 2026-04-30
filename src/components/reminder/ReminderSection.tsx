@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { ElementType } from 'react';
 import type { Patient } from '../../types/patient';
 import { SectionCard, EmptyState, LoadingSpinner } from '../common/index';
 import { Button } from '../common/Button';
@@ -9,17 +10,18 @@ import { useToast } from '../../context/ToastContext';
 import { formatDate, REMINDER_TYPE_LABELS } from '../../utils/formatters';
 import type { PatientReminder, ReminderType } from '../../types/reminder';
 import { useCreateReminder, useReminders, useUpdateReminder } from '../../hooks/useReminder';
+import { Baby, Bell, CalendarClock, CircleDollarSign, Pill, Plus, Syringe, XCircle } from 'lucide-react';
 
 const REMINDER_TYPES: ReminderType[] = [
     'delivery_week', 'child_6month_checkup', 'medication_due', 'payment_due', 'vaccination_due',
 ];
 
-const TYPE_ICONS: Record<ReminderType, string> = {
-    delivery_week: '🤰',
-    child_6month_checkup: '👶',
-    medication_due: '💊',
-    payment_due: '💰',
-    vaccination_due: '💉',
+const TYPE_ICONS: Record<ReminderType, ElementType> = {
+    delivery_week: Baby,
+    child_6month_checkup: Baby,
+    medication_due: Pill,
+    payment_due: CircleDollarSign,
+    vaccination_due: Syringe,
 };
 
 interface Props { patient: Patient; }
@@ -35,6 +37,13 @@ export function ReminderSection({ patient }: Props) {
 
     const pending = reminders.filter(r => r.status === 'pending');
     const past = reminders.filter(r => r.status !== 'pending');
+    const today = startOfToday();
+    const overdue = pending.filter(r => new Date(r.scheduled_date) < today);
+    const dueSoon = pending.filter(r => {
+        const due = new Date(r.scheduled_date);
+        const diff = Math.ceil((due.getTime() - today.getTime()) / 86_400_000);
+        return diff >= 0 && diff <= 7;
+    });
 
     const cancel = async (id: string) => {
         try {
@@ -45,17 +54,24 @@ export function ReminderSection({ patient }: Props) {
 
     return (
         <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-4">
+                <ReminderMetric label="Pending" value={String(pending.length)} icon={Bell} tone={pending.length ? 'blue' : 'slate'} />
+                <ReminderMetric label="Overdue" value={String(overdue.length)} icon={XCircle} tone={overdue.length ? 'red' : 'slate'} />
+                <ReminderMetric label="Due 7 Days" value={String(dueSoon.length)} icon={CalendarClock} tone={dueSoon.length ? 'amber' : 'slate'} />
+                <ReminderMetric label="History" value={String(past.length)} icon={Bell} />
+            </div>
+
             <SectionCard
-                title="Reminders"
-                subtitle={`${pending.length} pending`}
-                action={<Button size="sm" onClick={() => setAddOpen(true)}>+ Add Reminder</Button>}
+                title="Reminder Work Queue"
+                subtitle={`${pending.length} pending · ${overdue.length} overdue`}
+                action={<Button size="sm" onClick={() => setAddOpen(true)}><Plus className="mr-1 h-4 w-4" /> Add Reminder</Button>}
             >
                 {!reminders.length ? (
                     <EmptyState
-                        icon={<span className="text-xl">🔔</span>}
+                        icon={<Bell className="h-6 w-6" />}
                         title="No reminders"
                         description="Set up automated reminders for this patient."
-                        action={<Button size="sm" onClick={() => setAddOpen(true)}>+ Add Reminder</Button>}
+                        action={<Button size="sm" onClick={() => setAddOpen(true)}>Add Reminder</Button>}
                     />
                 ) : (
                     <div className="space-y-5">
@@ -64,33 +80,13 @@ export function ReminderSection({ patient }: Props) {
                                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Upcoming</p>
                                 <div className="space-y-2">
                                     {pending.map(r => (
-                                        <div key={r.id} className="flex items-start justify-between p-3 border border-amber-100 bg-amber-50 rounded-xl">
-                                            <div className="flex items-start gap-3">
-                                                <span className="text-lg">{TYPE_ICONS[r.reminder_type]}</span>
-                                                <div>
-                                                    <p className="text-sm font-medium text-slate-900">{REMINDER_TYPE_LABELS[r.reminder_type]}</p>
-                                                    <p className="text-xs text-slate-500 mt-0.5">{formatDate(r.scheduled_date)}</p>
-                                                    <p className="text-xs text-slate-600 mt-1">{r.message}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <ReminderStatusBadge status={r.status} />
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => setEditReminder(r)}
-                                                >
-                                                    Edit
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => cancel(r.id)}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                            </div>
-                                        </div>
+                                        <ReminderRow
+                                            key={r.id}
+                                            reminder={r}
+                                            tone={overdue.some(item => item.id === r.id) ? 'red' : dueSoon.some(item => item.id === r.id) ? 'amber' : 'blue'}
+                                            onEdit={() => setEditReminder(r)}
+                                            onCancel={() => cancel(r.id)}
+                                        />
                                     ))}
                                 </div>
                             </div>
@@ -101,16 +97,14 @@ export function ReminderSection({ patient }: Props) {
                                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">History</p>
                                 <div className="space-y-2">
                                     {past.map(r => (
-                                        <div key={r.id} className="flex items-center justify-between p-3 border border-slate-100 rounded-xl opacity-70">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-lg">{TYPE_ICONS[r.reminder_type]}</span>
-                                                <div>
-                                                    <p className="text-sm text-slate-700">{REMINDER_TYPE_LABELS[r.reminder_type]}</p>
-                                                    <p className="text-xs text-slate-500">{formatDate(r.scheduled_date)}</p>
-                                                </div>
-                                            </div>
-                                            <ReminderStatusBadge status={r.status} />
-                                        </div>
+                                        <ReminderRow
+                                            key={r.id}
+                                            reminder={r}
+                                            tone="slate"
+                                            compact
+                                            onEdit={() => setEditReminder(r)}
+                                            onCancel={() => cancel(r.id)}
+                                        />
                                     ))}
                                 </div>
                             </div>
@@ -135,6 +129,79 @@ export function ReminderSection({ patient }: Props) {
             )}
         </div>
     );
+}
+
+function ReminderRow({
+    reminder,
+    tone,
+    compact = false,
+    onEdit,
+    onCancel,
+}: {
+    reminder: PatientReminder;
+    tone: 'red' | 'amber' | 'blue' | 'slate';
+    compact?: boolean;
+    onEdit: () => void;
+    onCancel: () => void;
+}) {
+    const Icon = TYPE_ICONS[reminder.reminder_type];
+    const colors = {
+        red: 'border-red-200 bg-red-50',
+        amber: 'border-amber-200 bg-amber-50',
+        blue: 'border-blue-100 bg-blue-50',
+        slate: 'border-slate-100 bg-white opacity-75',
+    };
+
+    return (
+        <div className={`flex items-start justify-between border p-3 ${colors[tone]}`}>
+            <div className="flex items-start gap-3">
+                <Icon className="mt-0.5 h-5 w-5 text-slate-500" />
+                <div>
+                    <p className="text-sm font-medium text-slate-900">{REMINDER_TYPE_LABELS[reminder.reminder_type]}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{formatDate(reminder.scheduled_date)}</p>
+                    {!compact && <p className="text-xs text-slate-600 mt-1">{reminder.message}</p>}
+                </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+                <ReminderStatusBadge status={reminder.status} />
+                {!compact && (
+                    <>
+                        <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
+                        <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function ReminderMetric({ label, value, icon: Icon, tone = 'slate' }: {
+    label: string;
+    value: string;
+    icon: ElementType;
+    tone?: 'slate' | 'blue' | 'amber' | 'red';
+}) {
+    const colors = {
+        slate: 'border-slate-200 bg-white text-slate-700',
+        blue: 'border-blue-200 bg-blue-50 text-blue-700',
+        amber: 'border-amber-200 bg-amber-50 text-amber-700',
+        red: 'border-red-200 bg-red-50 text-red-700',
+    };
+    return (
+        <div className={`flex items-center justify-between border px-4 py-3 ${colors[tone]}`}>
+            <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide opacity-70">{label}</p>
+                <p className="mt-1 text-2xl font-semibold">{value}</p>
+            </div>
+            <Icon className="h-5 w-5 opacity-70" />
+        </div>
+    );
+}
+
+function startOfToday() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
 }
 
 // ── Add Reminder Modal ────────────────────────────────────────────────────────
@@ -197,7 +264,7 @@ function AddReminderModal({
                     <Select value={form.reminder_type} onChange={e => set('reminder_type', e.target.value)}>
                         <option value="">Select type…</option>
                         {REMINDER_TYPES.map(t => (
-                            <option key={t} value={t}>{TYPE_ICONS[t]} {REMINDER_TYPE_LABELS[t]}</option>
+                            <option key={t} value={t}>{REMINDER_TYPE_LABELS[t]}</option>
                         ))}
                     </Select>
                 </FormField>
@@ -277,7 +344,10 @@ function EditReminderModal({
             <div className="space-y-4">
                 <FormField label="Reminder Type">
                     <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600">
-                        <span>{TYPE_ICONS[reminder.reminder_type]}</span>
+                        {(() => {
+                            const Icon = TYPE_ICONS[reminder.reminder_type];
+                            return <Icon className="h-4 w-4 text-slate-400" />;
+                        })()}
                         <span>{REMINDER_TYPE_LABELS[reminder.reminder_type]}</span>
                     </div>
                 </FormField>

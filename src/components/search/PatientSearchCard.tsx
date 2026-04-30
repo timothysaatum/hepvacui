@@ -72,15 +72,6 @@ export const PatientSearchCard: React.FC<PatientSearchCardProps> = ({ patient })
                 </div>
             )}
 
-            {patient.patient_type === 'regular' && patient.diagnosis_date && (
-                <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                    <p className="text-xs font-medium text-gray-600 mb-1">Diagnosis Date</p>
-                    <p className="text-sm font-semibold text-black">
-                        {formatDate(patient.diagnosis_date)}
-                    </p>
-                </div>
-            )}
-
             <div className="flex items-center justify-end mt-4 pt-4 border-t border-gray-200">
                 <span className="text-sm text-gray-600 flex items-center gap-1 group-hover:text-black transition-colors">
                     View Details

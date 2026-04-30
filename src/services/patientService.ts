@@ -159,6 +159,15 @@ export const patientService = {
   // -------------------------------------------------------------------------
 
   /**
+   * Get a patient by ID using the backend's polymorphic endpoint.
+   * Prefer this for direct detail routes where the type is not already known.
+   */
+  getPatient: async (patientId: string): Promise<Patient> => {
+    const response = await api.get(`/api/v1/patients/${patientId}`);
+    return response.data.data;
+  },
+
+  /**
    * Get a paginated, filtered list of patients.
    * GET /api/v1/patients
    */

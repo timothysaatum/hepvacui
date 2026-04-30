@@ -31,7 +31,6 @@ export function ConvertPatientModal({ open, onClose, patient, onSuccess }: Props
   const [form, setForm] = useState({
     outcome: '' as PregnancyOutcome | '',
     actual_delivery_date: '',
-    treatment_regimen: '',
     notes: '',
   });
 
@@ -41,12 +40,11 @@ export function ConvertPatientModal({ open, onClose, patient, onSuccess }: Props
     if (!form.outcome) return;
     await convert.mutateAsync({
       patientId: patient.id,
-      data: {
-        outcome: form.outcome as PregnancyOutcome,
-        actual_delivery_date: form.actual_delivery_date || undefined,
-        treatment_regimen: form.treatment_regimen || undefined,
-        notes: form.notes || undefined,
-      },
+        data: {
+          outcome: form.outcome as PregnancyOutcome,
+          actual_delivery_date: form.actual_delivery_date || undefined,
+          notes: form.notes || undefined,
+        },
     });
   };
 
@@ -92,14 +90,6 @@ export function ConvertPatientModal({ open, onClose, patient, onSuccess }: Props
             type="date"
             value={form.actual_delivery_date}
             onChange={e => set('actual_delivery_date', e.target.value)}
-          />
-        </FormField>
-
-        <FormField label="Treatment Regimen" hint="For ongoing HIV treatment (optional)">
-          <Input
-            placeholder="e.g. TDF/3TC/EFV"
-            value={form.treatment_regimen}
-            onChange={e => set('treatment_regimen', e.target.value)}
           />
         </FormField>
 

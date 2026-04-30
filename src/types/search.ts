@@ -25,9 +25,6 @@ export interface PatientSearchResult {
     created_at: string;
     expected_delivery_date?: string;
     actual_delivery_date?: string;
-    diagnosis_date?: string;
-    treatment_start_date?: string;
-    viral_load?: string;
 }
 
 export interface PatientSearchResponse {

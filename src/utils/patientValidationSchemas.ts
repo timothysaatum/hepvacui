@@ -1,13 +1,54 @@
 import { z } from 'zod';
 
-const patientStatus = z.enum(['active', 'inactive', 'postpartum', 'completed']);
+const patientStatus = z.enum(['active', 'inactive', 'postpartum', 'completed', 'converted']);
+const phoneSchema = z
+  .string()
+  .trim()
+  .refine((value) => !/[a-z]/i.test(value), 'Phone number must not contain letters')
+  .refine((value) => {
+    const digits = value.replace(/\D/g, '');
+    return digits.length >= 10 && digits.length <= 15;
+  }, 'Phone number must contain 10 to 15 digits');
+const optionalText = (max = 255) => z.string().trim().max(max).optional();
+const identityFields = {
+  name: optionalText(255),
+  first_name: z.string().trim().min(2, 'First name is required').max(100),
+  last_name: z.string().trim().min(2, 'Last name is required').max(100),
+  preferred_name: optionalText(100),
+  medical_record_number: optionalText(64),
+  address_line: optionalText(255),
+  city: optionalText(100),
+  district: optionalText(100),
+  region: optionalText(100),
+  country: optionalText(100),
+  emergency_contact_name: optionalText(255),
+  emergency_contact_phone: phoneSchema.optional().or(z.literal('')),
+  emergency_contact_relationship: optionalText(100),
+};
+
+const identityUpdateFields = {
+  name: optionalText(255),
+  first_name: z.string().trim().min(2).max(100).optional(),
+  last_name: z.string().trim().min(2).max(100).optional(),
+  preferred_name: optionalText(100),
+  medical_record_number: optionalText(64),
+  address_line: optionalText(255),
+  city: optionalText(100),
+  district: optionalText(100),
+  region: optionalText(100),
+  country: optionalText(100),
+  emergency_contact_name: optionalText(255),
+  emergency_contact_phone: phoneSchema.optional().or(z.literal('')),
+  emergency_contact_relationship: optionalText(100),
+};
 
 // Pregnant Patient Schema
 export const createPregnantPatientSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Phone number is too long'),
+  ...identityFields,
+  phone: phoneSchema,
   sex: z.literal('female'),
   date_of_birth: z.string().optional(),
+  accepts_messaging: z.boolean().optional(),
   first_pregnancy: z.object({
     lmp_date: z.string().optional(),
     expected_delivery_date: z.string().optional(),
@@ -18,47 +59,34 @@ export const createPregnantPatientSchema = z.object({
 });
 
 export const updatePregnantPatientSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100).optional(),
-  phone: z.string().min(10).max(15).optional(),
+  ...identityUpdateFields,
+  phone: phoneSchema.optional(),
   date_of_birth: z.string().optional(),
   status: patientStatus.optional(),
+  accepts_messaging: z.boolean().optional(),
 });
 
 // Regular Patient Schema
 export const createRegularPatientSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(100, 'Name is too long'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits').max(15, 'Phone number is too long'),
+  ...identityFields,
+  phone: phoneSchema,
   sex: z.enum(['male', 'female']),
   date_of_birth: z.string().optional(),
-  diagnosis_date: z.string().optional(),
-  viral_load: z.string().max(50).optional(),
-  last_viral_load_date: z.string().optional(),
-  treatment_start_date: z.string().optional(),
-  treatment_regimen: z.string().max(200).optional(),
-  medical_history: z.string().max(1000).optional(),
-  allergies: z.string().max(500).optional(),
-  notes: z.string().max(1000).optional(),
+  accepts_messaging: z.boolean().optional(),
 });
 
 export const updateRegularPatientSchema = z.object({
-  name: z.string().min(2).max(100).optional(),
-  phone: z.string().min(10).max(15).optional(),
+  ...identityUpdateFields,
+  phone: phoneSchema.optional(),
   date_of_birth: z.string().optional(),
-  diagnosis_date: z.string().optional(),
-  viral_load: z.string().max(50).optional(),
-  last_viral_load_date: z.string().optional(),
-  treatment_start_date: z.string().optional(),
-  treatment_regimen: z.string().max(200).optional(),
-  medical_history: z.string().max(1000).optional(),
-  allergies: z.string().max(500).optional(),
-  notes: z.string().max(1000).optional(),
   status: patientStatus.optional(),
+  accepts_messaging: z.boolean().optional(),
 });
 
 // Convert to Regular Schema
 export const convertToRegularSchema = z.object({
+  outcome: z.enum(['live_birth', 'stillbirth', 'miscarriage', 'abortion', 'ectopic']),
   actual_delivery_date: z.string().min(1, 'Actual delivery date is required'),
-  treatment_regimen: z.string().max(200).optional(),
 });
 
 // Type exports

@@ -21,7 +21,7 @@ export interface ReportFilters {
 
     // Patient scope
     patient_type?: 'pregnant' | 'regular' | '';
-    patient_status?: 'active' | 'inactive' | 'postpartum' | 'completed' | '';
+    patient_status?: 'active' | 'inactive' | 'postpartum' | 'completed' | 'converted' | '';
     facility_id?: string;
 
     // Sheet toggles
