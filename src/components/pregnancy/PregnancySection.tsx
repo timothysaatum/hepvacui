@@ -111,7 +111,11 @@ export function PregnancySection({ patient }: Props) {
                     </div>
                     <div className="space-y-2">
                         {pastPregs.map(preg => (
-                            <PastPregnancyRow key={preg.id} pregnancy={preg} />
+                            <PastPregnancyRow
+                                key={preg.id}
+                                pregnancy={preg}
+                                onAddChild={() => setAddChildTarget(preg)}
+                            />
                         ))}
                     </div>
                 </section>
@@ -317,8 +321,9 @@ function ChildCard({ child, onUpdate }: { child: Child; onUpdate: () => void }) 
 // Past Pregnancy Row (collapsible)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PastPregnancyRow({ pregnancy }: { pregnancy: Pregnancy }) {
+function PastPregnancyRow({ pregnancy, onAddChild }: { pregnancy: Pregnancy; onAddChild: () => void }) {
     const [expanded, setExpanded] = useState(false);
+    const childEntry = getClosedPregnancyChildEntryState(pregnancy);
 
     const outcomeColor: Record<string, string> = {
         live_birth: 'bg-emerald-100 text-emerald-700',
@@ -372,10 +377,45 @@ function PastPregnancyRow({ pregnancy }: { pregnancy: Pregnancy }) {
                     {pregnancy.notes && (
                         <p className="text-xs text-slate-500 italic">{pregnancy.notes}</p>
                     )}
+
+                    {pregnancy.outcome === 'live_birth' && (
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                            <p className="text-xs text-slate-500">{childEntry.message}</p>
+                            {childEntry.canAdd && (
+                                <Button size="sm" variant="outline" onClick={onAddChild}>
+                                    <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Child
+                                </Button>
+                            )}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
     );
+}
+
+function getClosedPregnancyChildEntryState(pregnancy: Pregnancy): { canAdd: boolean; message: string } {
+    if (pregnancy.is_active || pregnancy.outcome !== 'live_birth' || !pregnancy.actual_delivery_date) {
+        return { canAdd: false, message: '' };
+    }
+
+    const delivered = new Date(`${pregnancy.actual_delivery_date}T00:00:00`);
+    const deadline = new Date(delivered);
+    deadline.setDate(deadline.getDate() + 7);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (today <= deadline) {
+        return {
+            canAdd: true,
+            message: `Child registration available until ${formatDate(deadline.toISOString().slice(0, 10))}.`,
+        };
+    }
+
+    return {
+        canAdd: false,
+        message: 'Child registration window has ended. Admin access is required for late birth records.',
+    };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
