@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Beaker, ChevronRight, FilePlus2, Search, Save } from 'lucide-react';
+import { AlertTriangle, Beaker, CheckCircle2, ChevronRight, ClipboardCheck, FileCheck2, FilePlus2, Printer, Search, Save } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FormField, Input, Textarea } from '../common';
 import { Modal } from '../common/Modal';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { useAddLabResult, useCreateLabTest, useLabTestDefinitions, useLabTests, useUpdateLabResult } from '../../hooks/useLabTests';
+import { useAddLabResult, useCreateLabTest, useLabTestDefinitions, useLabTests, useUpdateLabResult, useUpdateLabTest } from '../../hooks/useLabTests';
 import { getErrorMessage } from '../../utils/errorUtils';
 import type { Patient } from '../../types/patient';
 import type { LabResult, LabResultFlag, LabResultPayload, LabTest, LabTestDefinition, LabTestParameterDefinition } from '../../services/labTestService';
+
+type LabWorkflowStage = 'draft' | 'filed' | 'verified';
 
 function formatDateTime(iso?: string | null) {
     if (!iso) return '—';
@@ -28,6 +31,40 @@ function formatParameterRange(parameter: LabTestParameterDefinition) {
     if (min !== null && max !== null) return `${min} - ${max} ${unit}`.trim();
     if (min !== null) return `>= ${min} ${unit}`.trim();
     return `<= ${max} ${unit}`.trim();
+}
+
+function getLabWorkflowStage(test: LabTest): LabWorkflowStage {
+    if (test.status === 'verified' || test.reviewed_by) return 'verified';
+    if (test.status === 'filed' || test.status === 'completed' || test.reported_at) return 'filed';
+    return 'draft';
+}
+
+function getStageMeta(stage: LabWorkflowStage) {
+    switch (stage) {
+        case 'verified':
+            return {
+                label: 'Verified',
+                tone: 'bg-emerald-100 text-emerald-700',
+                description: 'Signed and ready for clinical use.',
+            };
+        case 'filed':
+            return {
+                label: 'Filed',
+                tone: 'bg-sky-100 text-sky-700',
+                description: 'Filed by staff and awaiting supervisor/admin signature.',
+            };
+        default:
+            return {
+                label: 'Draft',
+                tone: 'bg-amber-100 text-amber-700',
+                description: 'Editable result entry in progress.',
+            };
+    }
+}
+
+function canSignLabResults(userRoles: string[]) {
+    const elevatedRoles = ['admin', 'superadmin', 'super_admin', 'supervisor', 'lab_supervisor', 'manager'];
+    return userRoles.some(role => elevatedRoles.includes(role.toLowerCase()));
 }
 
 function numericConfigValue(value: string | number | null) {
@@ -109,7 +146,7 @@ export function LabTestSection({ patient }: { patient: Patient }) {
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100">
-                        {tests.map(test => <LabTestRow key={test.id} patientId={patient.id} test={test} />)}
+                        {tests.map(test => <LabTestRow key={test.id} patient={patient} test={test} />)}
                     </div>
                 )}
             </section>
@@ -126,10 +163,11 @@ export function LabTestSection({ patient }: { patient: Patient }) {
     );
 }
 
-function LabTestRow({ patientId, test }: { patientId: string; test: LabTest }) {
+function LabTestRow({ patient, test }: { patient: Patient; test: LabTest }) {
     const [detailOpen, setDetailOpen] = useState(false);
     const definition = test.test_definition;
-    const statusTone = test.status === 'completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
+    const stage = getLabWorkflowStage(test);
+    const stageMeta = getStageMeta(stage);
 
     return (
         <>
@@ -145,10 +183,13 @@ function LabTestRow({ patientId, test }: { patientId: string; test: LabTest }) {
                             <span className="bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                                 {definition?.short_name ?? definition?.code ?? test.test_type ?? 'Custom'}
                             </span>
-                            <span className={`px-2 py-0.5 text-[11px] font-semibold capitalize ${statusTone}`}>{test.status.replace('_', ' ')}</span>
+                            <span className={`px-2 py-0.5 text-[11px] font-semibold ${stageMeta.tone}`}>{stageMeta.label}</span>
+                            {test.has_abnormal_results && (
+                                <span className="bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Abnormal</span>
+                            )}
                         </div>
                         <p className="mt-1 text-xs text-slate-400">
-                            Ordered {formatDateTime(test.ordered_at)} · Reported {formatDateTime(test.reported_at)}
+                            Ordered {formatDateTime(test.ordered_at)} · Filed {formatDateTime(test.reported_at)}
                         </p>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-slate-500">
@@ -162,7 +203,7 @@ function LabTestRow({ patientId, test }: { patientId: string; test: LabTest }) {
                 <LabTestDetailModal
                     open={detailOpen}
                     onClose={() => setDetailOpen(false)}
-                    patientId={patientId}
+                    patient={patient}
                     test={test}
                 />
             )}
@@ -224,6 +265,7 @@ function LabTestModal({
                 await createMutation.mutateAsync({
                     test_definition_id: definition.id,
                     test_name: definition.name,
+                    status: 'draft',
                     notes: notes.trim() || undefined,
                 });
             }
@@ -304,25 +346,32 @@ type ResultDraft = {
 function LabTestDetailModal({
     open,
     onClose,
-    patientId,
+    patient,
     test,
 }: {
     open: boolean;
     onClose: () => void;
-    patientId: string;
+    patient: Patient;
     test: LabTest;
 }) {
     const { showSuccess, showError } = useToast();
-    const addMutation = useAddLabResult(patientId);
-    const updateMutation = useUpdateLabResult(patientId);
+    const { user } = useAuth();
+    const addMutation = useAddLabResult(patient.id);
+    const updateMutation = useUpdateLabResult(patient.id);
+    const updateTestMutation = useUpdateLabTest(patient.id);
     const definition = test.test_definition;
+    const stage = getLabWorkflowStage(test);
+    const stageMeta = getStageMeta(stage);
+    const userRoles = user?.roles?.map(role => role.name) ?? [];
+    const canVerify = canSignLabResults(userRoles);
+    const canEditResults = stage === 'draft';
     const parameters = useMemo(
         () => (definition?.parameters ?? [])
             .filter(parameter => parameter.is_active)
             .sort((a, b) => a.display_order - b.display_order),
         [definition],
     );
-    const busy = addMutation.isPending || updateMutation.isPending;
+    const busy = addMutation.isPending || updateMutation.isPending || updateTestMutation.isPending;
 
     const resultsByParameter = useMemo(() => {
         const map = new Map<string, LabResult>();
@@ -336,7 +385,7 @@ function LabTestDetailModal({
         buildInitialDrafts(parameters, resultsByParameter)
     );
 
-    const handleSubmit = async () => {
+    const handleSaveResults = async (nextStage: 'draft' | 'filed') => {
         const entries = parameters
             .map(parameter => ({ parameter, draft: drafts[parameter.id] ?? emptyResultDraft() }))
             .filter(({ parameter, draft }) => {
@@ -347,6 +396,19 @@ function LabTestDetailModal({
         if (!entries.length) {
             showError('Enter at least one result value.');
             return;
+        }
+
+        if (nextStage === 'filed') {
+            const missingRequired = parameters.filter(parameter => {
+                if (!parameter.is_required) return false;
+                const draft = drafts[parameter.id] ?? emptyResultDraft();
+                return !draft.value_numeric.trim() && !draft.value_text.trim();
+            });
+
+            if (missingRequired.length) {
+                showError(`Complete required parameter${missingRequired.length === 1 ? '' : 's'} before filing: ${missingRequired.map(item => item.name).join(', ')}.`);
+                return;
+            }
         }
 
         try {
@@ -372,10 +434,37 @@ function LabTestDetailModal({
                     await addMutation.mutateAsync({ testId: test.id, data: payload });
                 }
             }
-            showSuccess('Results saved.');
+            await updateTestMutation.mutateAsync({
+                id: test.id,
+                data: nextStage === 'filed'
+                    ? { status: 'filed', reported_at: test.reported_at ?? new Date().toISOString() }
+                    : { status: 'draft' },
+            });
+            showSuccess(nextStage === 'filed' ? 'Results filed for verification.' : 'Draft results saved.');
             onClose();
         } catch (e: unknown) {
-            showError(getErrorMessage(e, 'Failed to save results.'));
+            showError(getErrorMessage(e, nextStage === 'filed' ? 'Failed to file results.' : 'Failed to save draft results.'));
+        }
+    };
+
+    const handleVerify = async () => {
+        if (!canVerify) {
+            showError('Only a supervisor or administrator can sign and verify filed results.');
+            return;
+        }
+        if (stage === 'draft') {
+            showError('File the results before signing them.');
+            return;
+        }
+        try {
+            await updateTestMutation.mutateAsync({
+                id: test.id,
+                data: { status: 'verified', reported_at: test.reported_at ?? new Date().toISOString() },
+            });
+            showSuccess('Results signed and verified.');
+            onClose();
+        } catch (e: unknown) {
+            showError(getErrorMessage(e, 'Failed to verify results.'));
         }
     };
 
@@ -394,19 +483,56 @@ function LabTestDetailModal({
             open={open}
             onClose={onClose}
             title={test.test_name}
-            subtitle={`Ordered ${formatDateTime(test.ordered_at)} · Reported ${formatDateTime(test.reported_at)}`}
+            subtitle={`Ordered ${formatDateTime(test.ordered_at)} · Filed ${formatDateTime(test.reported_at)}`}
             size="2xl"
             footer={
-                <>
-                    <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
-                    <Button onClick={handleSubmit} loading={busy}>
-                        <Save className="mr-1 h-4 w-4" />
-                        Save Results
+                <div className="flex w-full flex-wrap items-center justify-between gap-3">
+                    <Button variant="outline" onClick={() => printLabResult(patient, test, parameters, resultsByParameter)} disabled={busy}>
+                        <Printer className="mr-1 h-4 w-4" />
+                        Print
                     </Button>
-                </>
+                    <div className="flex flex-wrap justify-end gap-3">
+                        <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+                        {canEditResults && (
+                            <Button variant="secondary" onClick={() => handleSaveResults('draft')} loading={busy}>
+                                <Save className="mr-1 h-4 w-4" />
+                                Save Draft
+                            </Button>
+                        )}
+                        {canEditResults && (
+                            <Button onClick={() => handleSaveResults('filed')} loading={busy}>
+                                <FileCheck2 className="mr-1 h-4 w-4" />
+                                File Results
+                            </Button>
+                        )}
+                        {stage === 'filed' && (
+                            <Button onClick={handleVerify} loading={busy} disabled={!canVerify}>
+                                <ClipboardCheck className="mr-1 h-4 w-4" />
+                                Sign & Verify
+                            </Button>
+                        )}
+                    </div>
+                </div>
             }
         >
             <div className="space-y-5">
+                <div className="grid gap-3 border border-slate-200 bg-slate-50 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className={`px-2 py-0.5 text-[11px] font-semibold uppercase ${stageMeta.tone}`}>{stageMeta.label}</span>
+                            {test.reviewed_by && (
+                                <span className="text-xs text-slate-500">Signed by {test.reviewed_by.name}</span>
+                            )}
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">{stageMeta.description}</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                        <StageStep active done={stage !== 'draft'} label="Draft" />
+                        <StageStep active={stage !== 'draft'} done={stage === 'verified'} label="Filed" />
+                        <StageStep active={stage === 'verified'} done={stage === 'verified'} label="Verified" />
+                    </div>
+                </div>
+
                 {parameters.length === 0 ? (
                     <div className="border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
                         This test has no active configured parameters.
@@ -441,7 +567,7 @@ function LabTestDetailModal({
                                                     step="any"
                                                     value={draft.value_numeric}
                                                     onChange={e => updateDraft(parameter.id, { value_numeric: e.target.value })}
-                                                    disabled={parameter.value_type === 'text'}
+                                                    disabled={!canEditResults || parameter.value_type === 'text'}
                                                     className="min-w-28"
                                                 />
                                             </td>
@@ -449,7 +575,7 @@ function LabTestDetailModal({
                                                 <Input
                                                     value={draft.value_text}
                                                     onChange={e => updateDraft(parameter.id, { value_text: e.target.value })}
-                                                    disabled={parameter.value_type === 'numeric'}
+                                                    disabled={!canEditResults || parameter.value_type === 'numeric'}
                                                     className="min-w-32"
                                                 />
                                             </td>
@@ -463,6 +589,7 @@ function LabTestDetailModal({
                                                 <Input
                                                     value={draft.notes}
                                                     onChange={e => updateDraft(parameter.id, { notes: e.target.value })}
+                                                    disabled={!canEditResults}
                                                     className="min-w-36"
                                                 />
                                             </td>
@@ -529,4 +656,143 @@ function ResultFlag({ flag, abnormal }: { flag: LabResultFlag; abnormal: boolean
                 ? 'bg-fuchsia-100 text-fuchsia-700'
                 : 'bg-emerald-100 text-emerald-700';
     return <span className={`px-2 py-0.5 text-[11px] font-semibold uppercase ${tone}`}>{label}</span>;
+}
+
+function StageStep({ active, done, label }: { active: boolean; done: boolean; label: string }) {
+    return (
+        <span className={`inline-flex items-center gap-1 ${active ? 'text-slate-700' : 'text-slate-400'}`}>
+            {done ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+            ) : (
+                <span className={`h-2 w-2 rounded-full ${active ? 'bg-sky-500' : 'bg-slate-300'}`} />
+            )}
+            {label}
+        </span>
+    );
+}
+
+function printLabResult(
+    patient: Patient,
+    test: LabTest,
+    parameters: LabTestParameterDefinition[],
+    resultsByParameter: Map<string, LabResult>,
+) {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const stage = getLabWorkflowStage(test);
+    const verified = stage === 'verified';
+    const signedBy = test.reviewed_by?.name ?? (verified ? 'Verified supervisor/admin' : 'Pending');
+    const reportRows = parameters.map(parameter => {
+        const result = resultsByParameter.get(parameter.id) ?? resultsByParameter.get(parameter.code);
+        const value = formatPrintableResult(parameter, result, verified);
+        const flag = verified && result ? result.abnormal_flag.replace('_', ' ') : 'Pending';
+        return `
+            <tr>
+                <td>${escapeHtml(parameter.name)}<br><span>${escapeHtml(parameter.code)}</span></td>
+                <td>${escapeHtml(formatParameterRange(parameter))}</td>
+                <td>${escapeHtml(value)}</td>
+                <td>${escapeHtml(flag)}</td>
+                <td>${escapeHtml(verified ? result?.notes ?? '' : 'Pending')}</td>
+            </tr>
+        `;
+    }).join('');
+
+    printWindow.document.write(`
+        <!doctype html>
+        <html>
+            <head>
+                <title>${escapeHtml(test.test_name)} Result</title>
+                <style>
+                    * { box-sizing: border-box; }
+                    body { color: #0f172a; font-family: Arial, sans-serif; margin: 32px; }
+                    .header { border-bottom: 2px solid #0f766e; display: flex; justify-content: space-between; gap: 24px; padding-bottom: 16px; }
+                    h1 { font-size: 22px; margin: 0 0 4px; }
+                    h2 { font-size: 15px; margin: 24px 0 10px; }
+                    p { margin: 3px 0; }
+                    .muted { color: #64748b; font-size: 12px; }
+                    .status { border: 1px solid #cbd5e1; display: inline-block; font-size: 12px; font-weight: 700; padding: 5px 8px; text-transform: uppercase; }
+                    .status.pending { color: #b45309; }
+                    .status.verified { color: #047857; }
+                    .grid { display: grid; gap: 8px 24px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px; }
+                    .label { color: #64748b; display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+                    table { border-collapse: collapse; margin-top: 8px; width: 100%; }
+                    th, td { border: 1px solid #cbd5e1; font-size: 12px; padding: 9px; text-align: left; vertical-align: top; }
+                    th { background: #f8fafc; color: #475569; font-size: 11px; text-transform: uppercase; }
+                    td span { color: #64748b; font-size: 11px; }
+                    .signature { border-top: 1px solid #94a3b8; margin-top: 42px; padding-top: 8px; width: 280px; }
+                    .notice { background: #fffbeb; border: 1px solid #f59e0b; color: #92400e; margin-top: 18px; padding: 10px; }
+                    @media print { body { margin: 18mm; } button { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div>
+                        <h1>${escapeHtml(test.test_name)}</h1>
+                        <p class="muted">Laboratory result report</p>
+                    </div>
+                    <div>
+                        <span class="status ${verified ? 'verified' : 'pending'}">${verified ? 'Verified' : 'Pending verification'}</span>
+                    </div>
+                </div>
+
+                <div class="grid">
+                    <p><span class="label">Patient</span>${escapeHtml(patient.name)}</p>
+                    <p><span class="label">MRN</span>${escapeHtml(patient.medical_record_number ?? '-')}</p>
+                    <p><span class="label">Sex / Age</span>${escapeHtml(`${patient.sex}${patient.age ? ` / ${patient.age} years` : ''}`)}</p>
+                    <p><span class="label">Facility</span>${escapeHtml(patient.facility?.name ?? '-')}</p>
+                    <p><span class="label">Ordered</span>${escapeHtml(formatDateTime(test.ordered_at))}</p>
+                    <p><span class="label">Filed</span>${escapeHtml(formatDateTime(test.reported_at))}</p>
+                </div>
+
+                ${verified ? '' : '<div class="notice">This report has not been signed. Result parameters are shown as Pending until supervisor/admin verification.</div>'}
+
+                <h2>Parameters</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Reference Range</th>
+                            <th>Result</th>
+                            <th>Indicator</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>${reportRows || '<tr><td colspan="5">No configured parameters.</td></tr>'}</tbody>
+                </table>
+
+                <div class="signature">
+                    <p><span class="label">Signed by</span>${escapeHtml(signedBy)}</p>
+                    <p><span class="label">Printed</span>${escapeHtml(formatDateTime(new Date().toISOString()))}</p>
+                </div>
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+}
+
+function formatPrintableResult(
+    parameter: LabTestParameterDefinition,
+    result: LabResult | undefined,
+    verified: boolean,
+) {
+    if (!verified || !result) return 'Pending';
+    const values = [
+        result.value_numeric === null ? '' : String(result.value_numeric),
+        result.value_text ?? '',
+    ].filter(Boolean);
+    if (!values.length) return 'Pending';
+    const unit = result.unit ?? parameter.unit;
+    return `${values.join(' / ')}${unit ? ` ${unit}` : ''}`;
+}
+
+function escapeHtml(value: string) {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
