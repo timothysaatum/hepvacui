@@ -34,8 +34,8 @@ function formatParameterRange(parameter: LabTestParameterDefinition) {
 }
 
 function getLabWorkflowStage(test: LabTest): LabWorkflowStage {
-    if (test.status === 'verified' || test.reviewed_by) return 'verified';
-    if (test.status === 'filed' || test.status === 'completed' || test.reported_at) return 'filed';
+    if (test.reviewed_by) return 'verified';
+    if (test.status === 'completed' || test.reported_at) return 'filed';
     return 'draft';
 }
 
@@ -265,7 +265,7 @@ function LabTestModal({
                 await createMutation.mutateAsync({
                     test_definition_id: definition.id,
                     test_name: definition.name,
-                    status: 'draft',
+                    status: 'ordered',
                     notes: notes.trim() || undefined,
                 });
             }
@@ -437,8 +437,8 @@ function LabTestDetailModal({
             await updateTestMutation.mutateAsync({
                 id: test.id,
                 data: nextStage === 'filed'
-                    ? { status: 'filed', reported_at: test.reported_at ?? new Date().toISOString() }
-                    : { status: 'draft' },
+                    ? { status: 'completed', reported_at: test.reported_at ?? new Date().toISOString() }
+                    : { status: 'in_progress' },
             });
             showSuccess(nextStage === 'filed' ? 'Results filed for verification.' : 'Draft results saved.');
             onClose();
@@ -459,7 +459,7 @@ function LabTestDetailModal({
         try {
             await updateTestMutation.mutateAsync({
                 id: test.id,
-                data: { status: 'verified', reported_at: test.reported_at ?? new Date().toISOString() },
+                data: { status: 'completed', reported_at: test.reported_at ?? new Date().toISOString() },
             });
             showSuccess('Results signed and verified.');
             onClose();

@@ -1,7 +1,7 @@
 import api from './api';
 
 export type LabTestType = 'hep_b' | 'rft' | 'lft';
-export type LabTestStatus = 'draft' | 'filed' | 'verified' | 'ordered' | 'in_progress' | 'completed' | 'cancelled';
+export type LabTestStatus = 'ordered' | 'in_progress' | 'completed' | 'cancelled';
 export type LabResultFlag = 'normal' | 'low' | 'high' | 'critical_low' | 'critical_high' | 'abnormal';
 export type LabValueType = 'numeric' | 'text' | 'both';
 
