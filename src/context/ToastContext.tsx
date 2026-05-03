@@ -9,6 +9,16 @@ export interface Toast {
   duration?: number;
 }
 
+/**
+ * Ensures a message is a string, handling various input types
+ */
+function ensureStringMessage(message: any): string {
+  if (typeof message === 'string') return message;
+  if (message instanceof Error) return message.message;
+  if (typeof message?.toString === 'function') return message.toString();
+  return String(message);
+}
+
 interface ToastContextType {
   showToast: (message: string, type?: ToastType, duration?: number) => void;
   showSuccess: (message: string) => void;
@@ -28,7 +38,8 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const showToast = useCallback((message: string, type: ToastType = 'info', duration: number = 5000) => {
     const id = Math.random().toString(36).substr(2, 9);
-    const toast: Toast = { id, message, type, duration };
+    const safeMessage = ensureStringMessage(message);
+    const toast: Toast = { id, message: safeMessage, type, duration };
     
     setToasts((prev) => [...prev, toast]);
 

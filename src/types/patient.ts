@@ -308,6 +308,8 @@ export interface PatientFilters {
   delivery_date_field?: 'expected' | 'actual';
   delivery_window_days?: number;
   delivery_window_months?: number;
+  delivery_date_from?: string;
+  delivery_date_to?: string;
   page?: number;
   page_size?: number;
 }

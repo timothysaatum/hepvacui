@@ -14,10 +14,9 @@ import { LoadingSpinner } from '../../components/common/index';
 import { isPregnantPatient } from '../../types/patient';
 import type { PatientType } from '../../types/patient';
 import {
-  User, Phone, Calendar, Building2,
-  ChevronRight,
+  User, Building2,
   Baby, Syringe, Pill, Stethoscope, Bell,
-  MapPin, Contact, IdCard, ShieldAlert, TestTube2,
+  MapPin, Contact, ShieldAlert, TestTube2,
 } from 'lucide-react';
 import { ReRegisterPregnantModal } from '../../components/patients/ReRegisterPregnantModal';
 import { getGravidaParaLabel } from '../../utils/formatters';
@@ -92,7 +91,7 @@ export function PatientDetailPage() {
         </nav>
       </div>
 
-      {tab === 'overview' && <OverviewTab patient={patient} onTabChange={setTab} pregnant={pregnant} />}
+      {tab === 'overview' && <OverviewTab patient={patient} pregnant={pregnant} />}
       {tab === 'pregnancy' && pregnant && <PregnancySection patient={patient} />}
       {tab === 'safety' && <AllergySection patient={patient} />}
       {tab === 'vaccines' && <VaccineSection patient={patient} />}
@@ -132,8 +131,8 @@ export function PatientDetailPage() {
 // Overview Tab
 // ─────────────────────────────────────────────────────────────────────────────
 
-function OverviewTab({ patient, onTabChange, pregnant }: {
-  patient: any; onTabChange: (t: Tab) => void; pregnant: boolean;
+function OverviewTab({ patient, pregnant }: {
+  patient: any; pregnant: boolean;
 }) {
   const gravidaPara = getGravidaParaLabel(patient.gravida, patient.para);
   const gravidaValue = typeof patient.gravida === 'number' && Number.isFinite(patient.gravida) ? String(patient.gravida) : '—';
@@ -144,82 +143,23 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
 
   return (
     <div className="space-y-4">
-
-      {/* ── Identity card ──────────────────────────────────────────── */}
-      <div className="overflow-hidden border border-slate-200 bg-white">
-        <div className="p-5 sm:p-6">
-          <div className="flex gap-4 items-start">
-
-            {/* Avatar initials */}
-            <div className={`w-14 h-14 rounded-md flex items-center justify-center shrink-0
-              text-xl font-bold shadow-sm
-              ${pregnant ? 'bg-violet-100 text-violet-700' : 'bg-sky-100 text-sky-700'}`}>
-              {patient.name?.charAt(0)?.toUpperCase() ?? '?'}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              {/* Name + badges */}
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 leading-tight">{patient.name}</h2>
-                  <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold
-                      ${pregnant ? 'bg-violet-100 text-violet-700' : 'bg-sky-100 text-sky-700'}`}>
-                      {pregnant ? 'Pregnant' : 'Regular'}
-                    </span>
-                    <StatusBadge status={patient.status} />
-                    {patient.medical_record_number && (
-                      <span className="border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-                        MRN {patient.medical_record_number}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick-stats strip */}
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <StatChip icon={Phone} label="Phone" value={patient.phone ?? '—'} />
-                <StatChip icon={Calendar} label="DOB" value={fmtDate(patient.date_of_birth)} />
-                <StatChip icon={User} label="Sex" value={capitalize(patient.sex)} />
-                <StatChip icon={IdCard} label="MRN" value={patient.medical_record_number ?? '—'} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Section shortcuts — bottom row */}
-        <div className={`border-t border-slate-100 grid divide-x divide-slate-100
-          ${pregnant ? 'grid-cols-2 sm:grid-cols-7' : 'grid-cols-2 sm:grid-cols-6'}`}>
-          {pregnant && (
-            <NavCell icon={Baby} label="Pregnancy" meta={patient.active_pregnancy ? `${gravidaPara} · Active` : gravidaPara} accent="purple" onClick={() => onTabChange('pregnancy')} />
-          )}
-          <NavCell icon={ShieldAlert} label="Safety" meta="Allergy records" accent="rose" onClick={() => onTabChange('safety')} />
-          <NavCell icon={Syringe} label="Vaccines" meta="Doses & payments" accent="teal" onClick={() => onTabChange('vaccines')} />
-          <NavCell icon={Pill} label="Medication" meta="Prescriptions" accent="blue" onClick={() => onTabChange('medication')} />
-          <NavCell icon={Stethoscope} label="Diagnosis" meta="Clinical records" accent="rose" onClick={() => onTabChange('diagnosis')} />
-          <NavCell icon={TestTube2} label="Tests" meta="Hep B, RFT, LFT" accent="teal" onClick={() => onTabChange('tests')} />
-          <NavCell icon={Bell} label="Reminders" meta="Pending alerts" accent="amber" onClick={() => onTabChange('reminders')} />
-        </div>
-      </div>
-
       {/* ── Demographics ───────────────────────────────────────────── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="overflow-hidden border border-slate-200 bg-white lg:col-span-2">
           <SectionHeader title="Identity and Demographics" />
           <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
             <FieldGroup title="Identity">
-            <Field label="First Name" value={patient.first_name ?? '—'} />
-            <Field label="Last Name" value={patient.last_name ?? '—'} />
-            <Field label="Preferred Name" value={patient.preferred_name ?? '—'} />
-            <Field label="Full Name" value={patient.name} />
-            <Field label="Medical Record Number" value={patient.medical_record_number ?? '—'} />
+              <Field label="First Name" value={patient.first_name ?? '—'} />
+              <Field label="Last Name" value={patient.last_name ?? '—'} />
+              <Field label="Preferred Name" value={patient.preferred_name ?? '—'} />
+              <Field label="Full Name" value={patient.name} />
+              <Field label="Medical Record Number" value={patient.medical_record_number ?? '—'} />
             </FieldGroup>
             <FieldGroup title="Demographics">
-            <Field label="Date of Birth" value={fmtDate(patient.date_of_birth)} />
-            <Field label="Age" value={patient.age ? `${patient.age} years` : '—'} />
-            <Field label="Sex" value={capitalize(patient.sex)} />
-            <Field label="Messaging Consent" value={patient.accepts_messaging ? 'Recorded' : 'Not recorded'} />
+              <Field label="Date of Birth" value={fmtDate(patient.date_of_birth)} />
+              <Field label="Age" value={patient.age ? `${patient.age} years` : '—'} />
+              <Field label="Sex" value={capitalize(patient.sex)} />
+              <Field label="Messaging Consent" value={patient.accepts_messaging ? 'Recorded' : 'Not recorded'} />
             </FieldGroup>
           </div>
         </div>
@@ -242,19 +182,19 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
         <div className="overflow-hidden border border-slate-200 bg-white lg:col-span-2">
           <SectionHeader title="Contact and Location" />
           <div className="grid grid-cols-1 divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-          <FieldGroup title="Contact">
-            <Field label="Phone" value={patient.phone ?? '—'} />
-            <Field label="Emergency Contact" value={patient.emergency_contact_name ?? '—'} icon={Contact} />
-            <Field label="Emergency Phone" value={patient.emergency_contact_phone ?? '—'} />
-            <Field label="Relationship" value={patient.emergency_contact_relationship ?? '—'} />
-          </FieldGroup>
-          <FieldGroup title="Location">
-            <Field label="Address" value={patient.address_line ?? '—'} icon={MapPin} />
-            <Field label="City/Town" value={patient.city ?? '—'} />
-            <Field label="District" value={patient.district ?? '—'} />
-            <Field label="Region" value={patient.region ?? '—'} />
-            <Field label="Country" value={patient.country ?? '—'} />
-          </FieldGroup>
+            <FieldGroup title="Contact">
+              <Field label="Phone" value={patient.phone ?? '—'} />
+              <Field label="Emergency Contact" value={patient.emergency_contact_name ?? '—'} icon={Contact} />
+              <Field label="Emergency Phone" value={patient.emergency_contact_phone ?? '—'} />
+              <Field label="Relationship" value={patient.emergency_contact_relationship ?? '—'} />
+            </FieldGroup>
+            <FieldGroup title="Location">
+              <Field label="Address" value={patient.address_line ?? '—'} icon={MapPin} />
+              <Field label="City/Town" value={patient.city ?? '—'} />
+              <Field label="District" value={patient.district ?? '—'} />
+              <Field label="Region" value={patient.region ?? '—'} />
+              <Field label="Country" value={patient.country ?? '—'} />
+            </FieldGroup>
           </div>
         </div>
 
@@ -327,18 +267,6 @@ function OverviewTab({ patient, onTabChange, pregnant }: {
         </div>
       )}
 
-      {!pregnant && (
-        <div className="border border-slate-200 bg-white p-5">
-          <SectionHeader title="Clinical Workspaces" />
-          <div className="grid gap-3 sm:grid-cols-4">
-            <NavCell icon={ShieldAlert} label="Safety" meta="Allergy records" accent="rose" onClick={() => onTabChange('safety')} />
-            <NavCell icon={Stethoscope} label="Diagnosis" meta="Clinical assessments" accent="rose" onClick={() => onTabChange('diagnosis')} />
-            <NavCell icon={Pill} label="Medication" meta="Prescriptions" accent="blue" onClick={() => onTabChange('medication')} />
-            <NavCell icon={Bell} label="Reminders" meta="Follow-up tasks" accent="amber" onClick={() => onTabChange('reminders')} />
-          </div>
-        </div>
-      )}
-
       {/* Audit trail */}
       <div className="flex flex-wrap gap-x-6 gap-y-1 px-1 pb-2 text-xs text-slate-400">
         <span>Created <span className="font-medium text-slate-500">{fmtDateTime(patient.created_at)}</span></span>
@@ -386,18 +314,6 @@ function Field({ label, value, icon: Icon }: { label: string; value: string; ico
   );
 }
 
-function StatChip({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
-      <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-      <div className="min-w-0">
-        <p className="text-[10px] text-slate-400 leading-none">{label}</p>
-        <p className="text-xs font-semibold text-slate-700 truncate mt-0.5">{value}</p>
-      </div>
-    </div>
-  );
-}
-
 function ObstetricStat({ value, label, sub, color }: { value: string; label: string; sub: string; color: string }) {
   const cls: Record<string, string> = {
     purple: 'bg-purple-50 border-purple-100 text-purple-700',
@@ -410,47 +326,6 @@ function ObstetricStat({ value, label, sub, color }: { value: string; label: str
       <p className="text-xs font-bold mt-1 tracking-wide">{label}</p>
       <p className="text-[10px] opacity-60 mt-0.5">{sub}</p>
     </div>
-  );
-}
-
-const NAV_ACCENT: Record<string, string> = {
-  purple: 'hover:bg-purple-50 hover:text-purple-800 [&_svg.icon]:group-hover:text-purple-500',
-  teal: 'hover:bg-teal-50   hover:text-teal-800   [&_svg.icon]:group-hover:text-teal-500',
-  blue: 'hover:bg-blue-50   hover:text-blue-800   [&_svg.icon]:group-hover:text-blue-500',
-  rose: 'hover:bg-rose-50   hover:text-rose-800   [&_svg.icon]:group-hover:text-rose-500',
-  amber: 'hover:bg-amber-50  hover:text-amber-800  [&_svg.icon]:group-hover:text-amber-500',
-};
-
-function NavCell({ icon: Icon, label, meta, accent, onClick }: {
-  icon: React.ElementType; label: string; meta: string; accent: string; onClick: () => void;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`group flex items-center gap-3 px-4 py-3.5 w-full text-left transition-all text-slate-600 ${NAV_ACCENT[accent] ?? ''}`}
-    >
-      <Icon className="icon w-4 h-4 text-slate-400 shrink-0 transition-colors" />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-bold leading-none">{label}</p>
-        <p className="text-[10px] text-slate-400 mt-0.5 truncate">{meta}</p>
-      </div>
-      <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-400 shrink-0 transition-colors" />
-    </button>
-  );
-}
-
-function StatusBadge({ status }: { status?: string }) {
-  const map: Record<string, string> = {
-    active: 'bg-emerald-100 text-emerald-700',
-    postpartum: 'bg-blue-100    text-blue-700',
-    completed: 'bg-slate-100   text-slate-600',
-    converted: 'bg-purple-100  text-purple-700',
-    inactive: 'bg-red-100     text-red-600',
-  };
-  return (
-    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${map[status ?? ''] ?? 'bg-slate-100 text-slate-500'}`}>
-      {capitalize(status ?? 'unknown')}
-    </span>
   );
 }
 

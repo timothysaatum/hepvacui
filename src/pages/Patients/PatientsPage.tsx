@@ -77,18 +77,17 @@ export function PatientsPage() {
   const [typeFilter, setTypeFilter] = useState<PatientType | ''>('');
   const [statusFilter, setStatusFilter] = useState<PatientStatus | ''>('');
   const [deliveryMode, setDeliveryMode] = useState<'expected' | 'actual' | ''>('');
-  const [deliveryAmount, setDeliveryAmount] = useState('');
-  const [deliveryUnit, setDeliveryUnit] = useState<'days' | 'months'>('days');
+  const [deliveryFrom, setDeliveryFrom] = useState('');
+  const [deliveryTo, setDeliveryTo] = useState('');
 
-  const deliveryValue = Number(deliveryAmount);
-  const hasDeliveryFilter = !!deliveryMode && deliveryAmount.trim() !== '' && Number.isFinite(deliveryValue) && deliveryValue >= 0;
+  const hasDeliveryFilter = !!deliveryMode && (!!deliveryFrom || !!deliveryTo);
 
   const { data, isLoading, isFetching } = usePatients({
     patient_type: typeFilter || undefined,
     patient_status: statusFilter || undefined,
     delivery_date_field: hasDeliveryFilter ? deliveryMode : undefined,
-    delivery_window_days: hasDeliveryFilter && deliveryUnit === 'days' ? deliveryValue : undefined,
-    delivery_window_months: hasDeliveryFilter && deliveryUnit === 'months' ? deliveryValue : undefined,
+    delivery_date_from: hasDeliveryFilter ? deliveryFrom || undefined : undefined,
+    delivery_date_to: hasDeliveryFilter ? deliveryTo || undefined : undefined,
     page,
     page_size: 15,
   });
@@ -109,8 +108,8 @@ export function PatientsPage() {
     setTypeFilter('');
     setStatusFilter('');
     setDeliveryMode('');
-    setDeliveryAmount('');
-    setDeliveryUnit('days');
+    setDeliveryFrom('');
+    setDeliveryTo('');
     setSearch('');
     setPage(1);
   };
@@ -205,37 +204,34 @@ export function PatientsPage() {
 
           <div className="hidden sm:block w-px self-stretch bg-slate-200 mx-1" />
 
-          <div className="flex min-w-[280px] flex-wrap items-center gap-2">
+          <div className="flex min-w-[360px] flex-wrap items-center gap-2">
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
               Delivery
             </span>
             <Select
               value={deliveryMode}
               onChange={e => { setDeliveryMode(e.target.value as 'expected' | 'actual' | ''); setPage(1); }}
-              className="h-8 w-32 py-1 text-xs"
+              className="h-8 w-36 py-1 text-xs"
             >
               <option value="">Any</option>
-              <option value="expected">Due in</option>
-              <option value="actual">Delivered in</option>
+              <option value="expected">Expected date</option>
+              <option value="actual">Delivery date</option>
             </Select>
             <Input
-              type="number"
-              min={0}
-              value={deliveryAmount}
-              onChange={e => { setDeliveryAmount(e.target.value); setPage(1); }}
-              placeholder="0"
-              className="h-8 w-20 py-1 text-xs"
+              type="date"
+              value={deliveryFrom}
+              onChange={e => { setDeliveryFrom(e.target.value); setPage(1); }}
+              className="h-8 w-36 py-1 text-xs"
               disabled={!deliveryMode}
             />
-            <Select
-              value={deliveryUnit}
-              onChange={e => { setDeliveryUnit(e.target.value as 'days' | 'months'); setPage(1); }}
-              className="h-8 w-24 py-1 text-xs"
+            <span className="text-xs text-slate-400">to</span>
+            <Input
+              type="date"
+              value={deliveryTo}
+              onChange={e => { setDeliveryTo(e.target.value); setPage(1); }}
+              className="h-8 w-36 py-1 text-xs"
               disabled={!deliveryMode}
-            >
-              <option value="days">days</option>
-              <option value="months">months</option>
-            </Select>
+            />
           </div>
         </div>
 
@@ -263,8 +259,8 @@ export function PatientsPage() {
             )}
             {hasDeliveryFilter && (
               <ActiveChip
-                label={`${deliveryMode === 'expected' ? 'Due in' : 'Delivered in'} ${deliveryValue} ${deliveryUnit}`}
-                onRemove={() => { setDeliveryMode(''); setDeliveryAmount(''); setDeliveryUnit('days'); setPage(1); }}
+                label={`${deliveryMode === 'expected' ? 'Expected' : 'Delivered'} ${deliveryFrom || '...'} to ${deliveryTo || '...'}`}
+                onRemove={() => { setDeliveryMode(''); setDeliveryFrom(''); setDeliveryTo(''); setPage(1); }}
               />
             )}
             <button

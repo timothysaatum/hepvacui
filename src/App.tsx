@@ -18,6 +18,7 @@ import { PatientDetailPage } from './pages/Patients/PatientDetailPage';
 import { EditPatientPage } from './pages/Patients/EditPatientPage';
 import { PatientRegistrationPage } from './pages/Patients/PatientRegistrationPage';
 import { SettingsPage } from './pages/Settings/SettingsPage';
+import { TestsPage } from './pages/Tests/TestsPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
 import { NotificationsPage } from './pages/Notifications/NotificationsPage';
 
@@ -66,6 +67,7 @@ function App() {
                           <Route path="/facilities" element={<FacilitiesPage />} />
                           <Route path="/staff" element={<UsersPage />} />
                           <Route path="/devices" element={<DevicesPage />} />
+                          <Route path="/tests" element={<TestsPage />} />
                           <Route path="/settings" element={<SettingsPage />} />
                         </Routes>
                       </Layout>

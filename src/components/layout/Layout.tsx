@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Users, Pill, Building2, UserCog,
   Monitor, Settings, Bell, LogOut, ChevronLeft,
   ChevronRight, Menu, X, Search, BarChart2,
+  TestTube2,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
 
@@ -23,6 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Staff', path: '/staff', icon: UserCog, adminOnly: true },
   { name: 'Devices', path: '/devices', icon: Monitor, adminOnly: true },
+  { name: 'Tests', path: '/tests', icon: TestTube2, adminOnly: true },
   { name: 'Settings', path: '/settings', icon: Settings, adminOnly: true },
 ];
 

@@ -180,6 +180,8 @@ export const patientService = {
         delivery_date_field: filters.delivery_date_field,
         delivery_window_days: filters.delivery_window_days,
         delivery_window_months: filters.delivery_window_months,
+        delivery_date_from: filters.delivery_date_from,
+        delivery_date_to: filters.delivery_date_to,
         page: filters.page ?? 1,
         page_size: filters.page_size ?? 10,
       },

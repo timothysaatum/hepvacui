@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
     labTestService,
     type CreateLabTestPayload,
+    type LabTestDefinitionPayload,
+    type LabTestParameterDefinitionPayload,
     type LabResultPayload,
     type LabTestType,
     type UpdateLabResultPayload,
@@ -13,6 +15,13 @@ export function useLabTests(patientId: string, testType?: LabTestType) {
         queryKey: ['lab-tests', patientId, testType ?? 'all'],
         queryFn: () => labTestService.list(patientId, testType),
         enabled: !!patientId,
+    });
+}
+
+export function useLabTestDefinitions(includeInactive = false) {
+    return useQuery({
+        queryKey: ['lab-test-definitions', includeInactive],
+        queryFn: () => labTestService.listDefinitions(includeInactive),
     });
 }
 
@@ -48,5 +57,40 @@ export function useUpdateLabResult(patientId: string) {
         mutationFn: ({ resultId, data }: { resultId: string; data: UpdateLabResultPayload }) =>
             labTestService.updateResult(resultId, data),
         onSuccess: () => qc.invalidateQueries({ queryKey: ['lab-tests', patientId] }),
+    });
+}
+
+export function useCreateLabTestDefinition() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (data: LabTestDefinitionPayload) => labTestService.createDefinition(data),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['lab-test-definitions'] }),
+    });
+}
+
+export function useUpdateLabTestDefinition() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<LabTestDefinitionPayload> }) =>
+            labTestService.updateDefinition(id, data),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['lab-test-definitions'] }),
+    });
+}
+
+export function useCreateLabTestParameter() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ testDefinitionId, data }: { testDefinitionId: string; data: LabTestParameterDefinitionPayload }) =>
+            labTestService.createParameter(testDefinitionId, data),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['lab-test-definitions'] }),
+    });
+}
+
+export function useUpdateLabTestParameter() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<LabTestParameterDefinitionPayload> }) =>
+            labTestService.updateParameter(id, data),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['lab-test-definitions'] }),
     });
 }
