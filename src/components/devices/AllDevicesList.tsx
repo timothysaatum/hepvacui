@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { deviceService } from '../../services/deviceService';
 import type { Device, DeviceStatus } from '../../types/device';
 import { useToast } from '../../context/ToastContext';
+import { useActiveFacility } from '../../hooks/useActiveFacility';
 import {
     Smartphone, Tablet, Monitor, Laptop, Globe, Wifi,
     Calendar, Clock, CheckCircle2, AlertTriangle, XCircle,
-    Shield, Trash2, Loader2
+    Shield, Trash2, Loader2, Search
 } from 'lucide-react';
 
 const STATUS_FILTERS: { label: string; value: DeviceStatus | undefined }[] = [
@@ -21,25 +22,27 @@ export const AllDevicesList: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [statusFilter, setStatusFilter] = useState<DeviceStatus | undefined>(undefined);
+    const [search, setSearch] = useState('');
     const [processingId, setProcessingId] = useState<string | null>(null);
     const { showSuccess, showError } = useToast();
+    const { activeFacilityId } = useActiveFacility();
 
-    const fetchDevices = async () => {
+    const fetchDevices = useCallback(async () => {
         try {
             setLoading(true);
-            const data = await deviceService.getAllDevices(statusFilter);
+            const data = await deviceService.getAllDevices(statusFilter, activeFacilityId || undefined);
             setDevices(data);
             setError('');
-        } catch (err: any) {
+        } catch {
             setError('Failed to fetch devices');
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeFacilityId, statusFilter]);
 
     useEffect(() => {
         fetchDevices();
-    }, [statusFilter]);
+    }, [fetchDevices]);
 
     const handleApprove = async (deviceId: string) => {
         try {
@@ -110,9 +113,32 @@ export const AllDevicesList: React.FC = () => {
 
     // Count pending devices for badge — only meaningful when showing all
     const pendingCount = devices.filter(d => d.status === 'pending').length;
+    const searchTerm = search.trim().toLowerCase();
+    const filteredDevices = searchTerm
+        ? devices.filter(device =>
+            [
+                device.device_name,
+                device.browser,
+                device.os,
+                device.device_type,
+                device.last_ip_address,
+                device.status,
+            ].some(value => value?.toLowerCase().includes(searchTerm)),
+        )
+        : devices;
 
     return (
         <div className="space-y-4">
+            <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <input
+                    type="text"
+                    value={search}
+                    onChange={event => setSearch(event.target.value)}
+                    placeholder="Search devices, browser, OS, IP..."
+                    className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-black focus:ring-2 focus:ring-gray-100"
+                />
+            </div>
             {/* Status filter tabs */}
             <div className="flex gap-2 flex-wrap">
                 {STATUS_FILTERS.map(({ label, value }) => (
@@ -144,7 +170,7 @@ export const AllDevicesList: React.FC = () => {
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <p className="text-sm text-red-700">{error}</p>
                 </div>
-            ) : devices.length === 0 ? (
+            ) : filteredDevices.length === 0 ? (
                 <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Shield className="w-8 h-8 text-gray-400" />
@@ -171,7 +197,7 @@ export const AllDevicesList: React.FC = () => {
                     </div>
 
                     <div className="divide-y divide-gray-100">
-                        {devices.map((device) => {
+                        {filteredDevices.map((device) => {
                             const DeviceIcon = getDeviceIcon(device.device_type);
                             const statusDisplay = getStatusDisplay(device.status);
                             const StatusIcon = statusDisplay.icon;

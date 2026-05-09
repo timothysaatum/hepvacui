@@ -99,9 +99,18 @@ export interface LabTest {
     reported_at: string | null;
     has_abnormal_results: boolean;
     notes: string | null;
+    clinical_history: string | null;
+    attachments: LabTestAttachment[];
     results: LabResult[];
     created_at: string;
     updated_at: string;
+}
+
+export interface LabTestAttachment {
+    file_name: string;
+    content_type: string;
+    size: number;
+    description?: string;
 }
 
 export interface LabResultPayload {
@@ -126,6 +135,8 @@ export interface CreateLabTestPayload {
     reported_at?: string;
     status?: LabTestStatus;
     notes?: string;
+    clinical_history?: string;
+    attachments?: LabTestAttachment[];
     results?: LabResultPayload[];
 }
 

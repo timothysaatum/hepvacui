@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Plus, Save, Settings2, X } from 'lucide-react';
+import { ChevronRight, Plus, Save, Search, Settings2, X } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FormField, Input, Select, Textarea } from '../common';
 import { Modal } from '../common/Modal';
@@ -90,12 +90,27 @@ function formatRange(parameter: LabTestParameterDefinition) {
 export function LabTestDefinitionManager() {
     const { data, isLoading } = useLabTestDefinitions(true);
     const definitions = useMemo(() => Array.isArray(data) ? data : [], [data]);
+    const [search, setSearch] = useState('');
     const [createOpen, setCreateOpen] = useState(false);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const selected = useMemo(
         () => definitions.find(definition => definition.id === selectedId) ?? null,
         [definitions, selectedId],
     );
+    const filteredDefinitions = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        if (!term) return definitions;
+        return definitions.filter(definition =>
+            [
+                definition.name,
+                definition.code,
+                definition.short_name,
+                definition.category,
+                definition.specimen,
+                definition.method,
+            ].some(value => value?.toLowerCase().includes(term)),
+        );
+    }, [definitions, search]);
 
     return (
         <section className="border border-slate-200 bg-white">
@@ -113,10 +128,21 @@ export function LabTestDefinitionManager() {
             </div>
 
             <div className="p-5">
+                <div className="relative mb-4">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                        value={search}
+                        onChange={event => setSearch(event.target.value)}
+                        placeholder="Search tests by name, code, category, specimen..."
+                        className="pl-9"
+                    />
+                </div>
                 {isLoading ? (
                     <div className="py-12 text-center text-sm text-slate-400">Loading test definitions...</div>
-                ) : definitions.length === 0 ? (
-                    <div className="py-12 text-center text-sm text-slate-500">No lab tests configured yet.</div>
+                ) : filteredDefinitions.length === 0 ? (
+                    <div className="py-12 text-center text-sm text-slate-500">
+                        {definitions.length === 0 ? 'No lab tests configured yet.' : 'No lab tests match your search.'}
+                    </div>
                 ) : (
                     <div className="overflow-hidden border border-slate-200">
                         <div className="overflow-x-auto">
@@ -132,7 +158,7 @@ export function LabTestDefinitionManager() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 bg-white">
-                                    {definitions.map(definition => (
+                                    {filteredDefinitions.map(definition => (
                                         <tr
                                             key={definition.id}
                                             onClick={() => setSelectedId(definition.id)}

@@ -8,6 +8,8 @@ import {
   TestTube2,
 } from 'lucide-react';
 import { NotificationBell } from '../notifications/NotificationBell';
+import { useFacilities } from '../../hooks/useFacilities';
+import { useActiveFacility } from '../../hooks/useActiveFacility';
 
 interface LayoutProps { children: React.ReactNode; }
 interface NavItem {
@@ -41,6 +43,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const isAdmin = user?.roles?.some(r => r.name.toLowerCase() === 'admin');
+  const { activeFacilityId, setActiveFacilityId } = useActiveFacility();
+  const { data: facilitiesData } = useFacilities(1, 100, undefined, Boolean(isAdmin));
   const filteredNav = NAV_ITEMS.filter(item => !item.adminOnly || isAdmin);
   const mainNav = filteredNav.filter(i => !i.adminOnly && i.path !== '/settings');
   const adminNav = filteredNav.filter(i => i.adminOnly && i.path !== '/settings');
@@ -244,8 +248,24 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Facility badge */}
-            {user?.facility && (
+            {isAdmin && facilitiesData?.items?.length ? (
+              <div className="hidden md:flex items-center gap-1.5 border border-slate-200 bg-slate-50 px-2 py-1.5">
+                <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                <select
+                  value={activeFacilityId}
+                  onChange={event => setActiveFacilityId(event.target.value)}
+                  className="max-w-[220px] bg-transparent text-xs font-medium text-slate-600 outline-none"
+                  title="Facility scope"
+                >
+                  <option value="">All facilities</option>
+                  {facilitiesData.items.map(facility => (
+                    <option key={facility.id} value={facility.id}>
+                      {facility.facility_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : user?.facility && (
               <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg">
                 <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span className="text-xs font-medium text-slate-600 max-w-[180px] truncate">

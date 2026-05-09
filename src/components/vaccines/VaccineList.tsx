@@ -1,5 +1,7 @@
 import React, { useState, memo, useEffect, useCallback, useRef } from 'react';
 import type { Vaccine } from '../../types/vaccine';
+import type { PaginatedVaccines } from '../../types/vaccine';
+import type { VaccineSearchResponse } from '../../types/search';
 import { useVaccines } from '../../hooks/useVaccines';
 import { useVaccineSearch } from '../../hooks/useSearch';
 import { useDeleteVaccine, usePublishVaccine } from '../../hooks/useVaccines';
@@ -299,8 +301,6 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
     return () => clearTimeout(t);
   }, [searchBatch]);
 
-  useEffect(() => { setCurrentPage(1); }, [debouncedName, debouncedBatch, publishedOnly, lowStockOnly, dateFrom, dateTo]);
-
   const hasSearchCriteria = debouncedName || debouncedBatch || publishedOnly || lowStockOnly || dateFrom || dateTo;
 
   const searchQuery = useVaccineSearch({
@@ -352,13 +352,37 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
   }, []);
 
   const hasActiveFilters = !!(searchName || searchBatch || publishedOnly || lowStockOnly || dateFrom || dateTo);
+  const updateSearchName = useCallback((value: string) => {
+    setSearchName(value);
+    setCurrentPage(1);
+  }, []);
+  const updateSearchBatch = useCallback((value: string) => {
+    setSearchBatch(value);
+    setCurrentPage(1);
+  }, []);
+  const updatePublishedOnly = useCallback((value: boolean) => {
+    setPublishedOnly(value);
+    setCurrentPage(1);
+  }, []);
+  const updateLowStockOnly = useCallback((value: boolean) => {
+    setLowStockOnly(value);
+    setCurrentPage(1);
+  }, []);
+  const updateDateFrom = useCallback((value: string) => {
+    setDateFrom(value);
+    setCurrentPage(1);
+  }, []);
+  const updateDateTo = useCallback((value: string) => {
+    setDateTo(value);
+    setCurrentPage(1);
+  }, []);
 
   // Normalise pagination across both response shapes
   const items = data?.items || [];
-  const isSearchResponse = (d: any): d is { items: any[]; total_count: number; page: number; total_pages: number; has_previous: boolean; has_next: boolean } =>
-    d && 'total_count' in d && 'page' in d;
-  const isPaginatedResponse = (d: any): d is { items: any[]; page_info: any } =>
-    d && 'page_info' in d;
+  const isSearchResponse = (d: VaccineSearchResponse | PaginatedVaccines | undefined): d is VaccineSearchResponse =>
+    Boolean(d && 'total_count' in d && 'page' in d);
+  const isPaginatedResponse = (d: VaccineSearchResponse | PaginatedVaccines | undefined): d is PaginatedVaccines =>
+    Boolean(d && 'page_info' in d);
 
   let totalCount = 0, page = 1, totalPages = 1;
   let hasPrevious = false, hasNext = false;
@@ -396,12 +420,12 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
   return (
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <FilterBar
-        searchName={searchName} setSearchName={setSearchName}
-        searchBatch={searchBatch} setSearchBatch={setSearchBatch}
-        publishedOnly={publishedOnly} setPublishedOnly={setPublishedOnly}
-        lowStockOnly={lowStockOnly} setLowStockOnly={setLowStockOnly}
-        dateFrom={dateFrom} setDateFrom={setDateFrom}
-        dateTo={dateTo} setDateTo={setDateTo}
+        searchName={searchName} setSearchName={updateSearchName}
+        searchBatch={searchBatch} setSearchBatch={updateSearchBatch}
+        publishedOnly={publishedOnly} setPublishedOnly={updatePublishedOnly}
+        lowStockOnly={lowStockOnly} setLowStockOnly={updateLowStockOnly}
+        dateFrom={dateFrom} setDateFrom={updateDateFrom}
+        dateTo={dateTo} setDateTo={updateDateTo}
         onClear={handleClearAllFilters}
         hasActiveFilters={hasActiveFilters}
         isFetching={isFetching}
@@ -455,14 +479,14 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => setCurrentPage(p => p - 1)}
+                onClick={() => setCurrentPage(Math.max(1, page - 1))}
                 disabled={!hasPrevious || isFetching}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-3.5 h-3.5" /> Previous
               </button>
               <button
-                onClick={() => setCurrentPage(p => p + 1)}
+                onClick={() => setCurrentPage(page + 1)}
                 disabled={!hasNext || isFetching}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-slate-200 rounded-lg bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >

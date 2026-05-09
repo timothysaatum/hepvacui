@@ -226,7 +226,8 @@ function LabTestModal({
     const createMutation = useCreateLabTest(patientId);
     const [search, setSearch] = useState('');
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
-    const [notes, setNotes] = useState('');
+    const [clinicalHistory, setClinicalHistory] = useState('');
+    const [attachments, setAttachments] = useState<{ file_name: string; content_type: string; size: number }[]>([]);
     const busy = createMutation.isPending;
     const filteredDefinitions = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -250,7 +251,8 @@ function LabTestModal({
     const handleClose = () => {
         setSearch('');
         setSelectedIds([]);
-        setNotes('');
+        setClinicalHistory('');
+        setAttachments([]);
         onClose();
     };
 
@@ -266,7 +268,8 @@ function LabTestModal({
                     test_definition_id: definition.id,
                     test_name: definition.name,
                     status: 'ordered',
-                    notes: notes.trim() || undefined,
+                    clinical_history: clinicalHistory.trim() || undefined,
+                    attachments: attachments.length ? attachments : undefined,
                 });
             }
             showSuccess(`${selectedDefinitions.length} lab test${selectedDefinitions.length === 1 ? '' : 's'} added.`);
@@ -329,8 +332,37 @@ function LabTestModal({
                         </div>
                     )}
                 </div>
-                <FormField label="Notes">
-                    <Textarea value={notes} onChange={e => setNotes(e.target.value)} />
+                <FormField label="Clinical History">
+                    <Textarea
+                        value={clinicalHistory}
+                        onChange={e => setClinicalHistory(e.target.value)}
+                        placeholder="Relevant symptoms, treatment history, pregnancy context, or clinical indication"
+                    />
+                </FormField>
+                <FormField label="Attachments">
+                    <Input
+                        type="file"
+                        multiple
+                        accept="image/*,.pdf,.doc,.docx"
+                        onChange={e => {
+                            const files = Array.from(e.target.files ?? []);
+                            setAttachments(files.map(file => ({
+                                file_name: file.name,
+                                content_type: file.type || 'application/octet-stream',
+                                size: file.size,
+                            })));
+                        }}
+                    />
+                    {attachments.length > 0 && (
+                        <div className="mt-2 space-y-1 text-xs text-slate-500">
+                            {attachments.map(file => (
+                                <div key={`${file.file_name}-${file.size}`} className="flex justify-between gap-3 border border-slate-100 bg-slate-50 px-2 py-1">
+                                    <span className="truncate">{file.file_name}</span>
+                                    <span>{Math.ceil(file.size / 1024)} KB</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </FormField>
             </div>
         </Modal>
@@ -532,6 +564,30 @@ function LabTestDetailModal({
                         <StageStep active={stage === 'verified'} done={stage === 'verified'} label="Verified" />
                     </div>
                 </div>
+
+                {(test.clinical_history || test.attachments?.length) && (
+                    <div className="grid gap-3 border border-slate-200 bg-white px-4 py-3 sm:grid-cols-2">
+                        {test.clinical_history && (
+                            <div>
+                                <p className="text-xs font-semibold uppercase text-slate-500">Clinical History</p>
+                                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{test.clinical_history}</p>
+                            </div>
+                        )}
+                        {(test.attachments?.length ?? 0) > 0 && (
+                            <div>
+                                <p className="text-xs font-semibold uppercase text-slate-500">Attachments</p>
+                                <div className="mt-2 space-y-1">
+                                    {test.attachments.map(file => (
+                                        <div key={`${file.file_name}-${file.size}`} className="flex justify-between gap-3 border border-slate-100 bg-slate-50 px-2 py-1 text-xs text-slate-600">
+                                            <span className="truncate">{file.file_name}</span>
+                                            <span>{Math.ceil(file.size / 1024)} KB</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {parameters.length === 0 ? (
                     <div className="border border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">

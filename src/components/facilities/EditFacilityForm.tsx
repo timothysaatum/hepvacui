@@ -46,10 +46,10 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
   useEffect(() => {
     if (facility) {
       reset({
-        facility_name: facility.facility_name,
-        phone: facility.phone,
-        email: facility.email,
-        address: facility.address,
+        facility_name: facility.facility_name ?? "",
+        phone: facility.phone ?? "",
+        email: facility.email ?? "",
+        address: facility.address ?? "",
       });
     }
   }, [facility, reset]);

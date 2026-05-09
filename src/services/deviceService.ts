@@ -2,13 +2,17 @@ import api from './api';
 import type { Device, ApproveDevicePayload, DeviceStatus } from '../types/device';
 
 export const deviceService = {
-  getPendingDevices: async (): Promise<Device[]> => {
-    const response = await api.get('/api/v1/security/devices/pending');
+  getPendingDevices: async (facilityId?: string): Promise<Device[]> => {
+    const params = facilityId ? { facility_id: facilityId } : {};
+    const response = await api.get('/api/v1/security/devices/pending', { params });
     return response.data;
   },
 
-  getAllDevices: async (status?: DeviceStatus): Promise<Device[]> => {
-    const params = status ? { status } : {};
+  getAllDevices: async (status?: DeviceStatus, facilityId?: string): Promise<Device[]> => {
+    const params = {
+      ...(status ? { status } : {}),
+      ...(facilityId ? { facility_id: facilityId } : {}),
+    };
     const response = await api.get('/api/v1/security/devices', { params });
     return response.data;
   },

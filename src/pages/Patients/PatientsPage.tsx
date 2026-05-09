@@ -4,9 +4,10 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X, SlidersHorizontal, Plus, Users, UserRound, ShieldCheck } from 'lucide-react';
 import { usePatients } from '../../hooks/usePatients';
 import { Button } from '../../components/common/Button';
-import { PageHeader, LoadingSpinner, EmptyState, Input, Select } from '../../components/common/index';
+import { PageHeader, LoadingSpinner, EmptyState } from '../../components/common/index';
 import type { PatientType, PatientStatus } from '../../types/patient';
 import { PatientCard } from '../../components/patients/PatientCard';
+import { useActiveFacility } from '../../hooks/useActiveFacility';
 
 // ── Filter pill definitions ───────────────────────────────────────────────
 
@@ -75,14 +76,16 @@ export function PatientsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<PatientType | ''>('');
-  const [statusFilter, setStatusFilter] = useState<PatientStatus | ''>('');
+  const [statusFilter, setStatusFilter] = useState<PatientStatus | ''>('active');
   const [deliveryMode, setDeliveryMode] = useState<'expected' | 'actual' | ''>('');
   const [deliveryFrom, setDeliveryFrom] = useState('');
   const [deliveryTo, setDeliveryTo] = useState('');
+  const { activeFacilityId } = useActiveFacility();
 
   const hasDeliveryFilter = !!deliveryMode && (!!deliveryFrom || !!deliveryTo);
 
   const { data, isLoading, isFetching } = usePatients({
+    facility_id: activeFacilityId || undefined,
     patient_type: typeFilter || undefined,
     patient_status: statusFilter || undefined,
     delivery_date_field: hasDeliveryFilter ? deliveryMode : undefined,
@@ -106,7 +109,7 @@ export function PatientsPage() {
 
   const clearAll = () => {
     setTypeFilter('');
-    setStatusFilter('');
+    setStatusFilter('active');
     setDeliveryMode('');
     setDeliveryFrom('');
     setDeliveryTo('');
@@ -167,7 +170,7 @@ export function PatientsPage() {
         </div>
 
         {/* Filter strip */}
-        <div className="mt-3 flex items-start gap-4 flex-wrap">
+        <div className="mt-3 flex min-w-0 flex-wrap items-center gap-x-4 gap-y-3">
 
           {/* Type toggles */}
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -204,32 +207,40 @@ export function PatientsPage() {
 
           <div className="hidden sm:block w-px self-stretch bg-slate-200 mx-1" />
 
-          <div className="flex min-w-[360px] flex-wrap items-center gap-2">
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="grid w-full min-w-0 gap-2 sm:w-auto sm:grid-cols-[auto_7.5rem_8.75rem_auto_8.75rem] sm:items-center">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider sm:justify-self-start">
               Delivery
             </span>
-            <Select
+            <select
               value={deliveryMode}
-              onChange={e => { setDeliveryMode(e.target.value as 'expected' | 'actual' | ''); setPage(1); }}
-              className="h-8 w-36 py-1 text-xs"
+              onChange={e => {
+                const nextMode = e.target.value as 'expected' | 'actual' | '';
+                setDeliveryMode(nextMode);
+                if (!nextMode) {
+                  setDeliveryFrom('');
+                  setDeliveryTo('');
+                }
+                setPage(1);
+              }}
+              className="h-8 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 outline-none transition-all focus:border-slate-500 focus:ring-2 focus:ring-slate-100 sm:w-[7.5rem]"
             >
               <option value="">Any</option>
               <option value="expected">Expected date</option>
               <option value="actual">Delivery date</option>
-            </Select>
-            <Input
+            </select>
+            <input
               type="date"
               value={deliveryFrom}
               onChange={e => { setDeliveryFrom(e.target.value); setPage(1); }}
-              className="h-8 w-36 py-1 text-xs"
+              className="h-8 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 outline-none transition-all focus:border-slate-500 focus:ring-2 focus:ring-slate-100 disabled:bg-slate-50 disabled:text-slate-400 sm:w-[8.75rem]"
               disabled={!deliveryMode}
             />
             <span className="text-xs text-slate-400">to</span>
-            <Input
+            <input
               type="date"
               value={deliveryTo}
               onChange={e => { setDeliveryTo(e.target.value); setPage(1); }}
-              className="h-8 w-36 py-1 text-xs"
+              className="h-8 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 outline-none transition-all focus:border-slate-500 focus:ring-2 focus:ring-slate-100 disabled:bg-slate-50 disabled:text-slate-400 sm:w-[8.75rem]"
               disabled={!deliveryMode}
             />
           </div>
@@ -312,7 +323,7 @@ export function PatientsPage() {
                   variant="outline"
                   size="sm"
                   disabled={!pageInfo.has_previous || isFetching}
-                  onClick={() => setPage(p => p - 1)}
+                  onClick={() => setPage(pageInfo.previous_page ?? Math.max(1, page - 1))}
                 >
                   ← Previous
                 </Button>
@@ -320,7 +331,7 @@ export function PatientsPage() {
                   variant="outline"
                   size="sm"
                   disabled={!pageInfo.has_next || isFetching}
-                  onClick={() => setPage(p => p + 1)}
+                  onClick={() => setPage(pageInfo.next_page ?? page + 1)}
                 >
                   Next →
                 </Button>

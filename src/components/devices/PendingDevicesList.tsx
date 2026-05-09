@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { deviceService } from '../../services/deviceService';
 import type { Device } from '../../types/device';
 import { useToast } from '../../context/ToastContext';
 import { useConfirm } from '../../components/common/ConfirmDialog';
+import { useActiveFacility } from '../../hooks/useActiveFacility';
 import {
   Smartphone,
   Tablet,
@@ -29,24 +30,25 @@ export const PendingDevicesList: React.FC<PendingDevicesListProps> = ({ onApprov
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const { showSuccess, showError } = useToast();
   const { confirm } = useConfirm();
+  const { activeFacilityId } = useActiveFacility();
 
-  const fetchDevices = async () => {
+  const fetchDevices = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await deviceService.getPendingDevices();
+      const data = await deviceService.getPendingDevices(activeFacilityId || undefined);
       setDevices(data);
       setError('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError('Failed to fetch pending devices');
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeFacilityId]);
 
   useEffect(() => {
     fetchDevices();
-  }, []);
+  }, [fetchDevices]);
 
   const handleApprove = async (deviceId: string) => {
     try {
@@ -58,7 +60,7 @@ export const PendingDevicesList: React.FC<PendingDevicesListProps> = ({ onApprov
       showSuccess('Device approved successfully');
       fetchDevices();
       if (onApprove) onApprove(deviceId);
-    } catch (err) {
+    } catch {
       showError('Failed to approve device. Please try again.');
     } finally {
       setApprovingId(null);
@@ -84,7 +86,7 @@ export const PendingDevicesList: React.FC<PendingDevicesListProps> = ({ onApprov
       });
       showSuccess('Device access denied');
       fetchDevices();
-    } catch (err) {
+    } catch {
       showError('Failed to deny device access');
     } finally {
       setApprovingId(null);

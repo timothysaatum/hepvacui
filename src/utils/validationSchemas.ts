@@ -13,7 +13,7 @@ export const createUserSchema = z.object({
   
   phone: z.string()
     .min(10, 'Phone number must be at least 10 digits')
-    .regex(/^[\d\s\-\+\(\)]+$/, 'Invalid phone number format'),
+    .regex(/^[\d\s\-+()]+$/, 'Invalid phone number format'),
   
   email: z.string()
     .email('Invalid email address')
@@ -27,6 +27,7 @@ export const createUserSchema = z.object({
     ),
   
   password_confirm: z.string(),
+  facility_id: z.string().uuid('Select a valid facility').optional().or(z.literal('')),
 }).refine((data) => data.password === data.password_confirm, {
   message: "Passwords don't match",
   path: ["password_confirm"],
@@ -47,7 +48,7 @@ export const updateUserSchema = z.object({
   
   phone: z.string()
     .min(10, 'Phone number must be at least 10 digits')
-    .regex(/^[\d\s\-\+\(\)]+$/, 'Invalid phone number format')
+    .regex(/^[\d\s\-+()]+$/, 'Invalid phone number format')
     .optional(),
   
   email: z.string()
@@ -68,7 +69,7 @@ export const createFacilitySchema = z.object({
   
   phone: z.string()
     .min(10, 'Phone number must be at least 10 digits')
-    .regex(/^[\d\s\-\+\(\)]+$/, 'Invalid phone number format'),
+    .regex(/^[\d\s\-+()]+$/, 'Invalid phone number format'),
   
   email: z.string()
     .email('Invalid email address')
@@ -88,7 +89,7 @@ export const updateFacilitySchema = z.object({
   
   phone: z.string()
     .min(10, 'Phone number must be at least 10 digits')
-    .regex(/^[\d\s\-\+\(\)]+$/, 'Invalid phone number format')
+    .regex(/^[\d\s\-+()]+$/, 'Invalid phone number format')
     .optional(),
   
   email: z.string()

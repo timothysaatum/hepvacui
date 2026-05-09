@@ -4,6 +4,14 @@ import type { CreateFacilityPayload, UpdateFacilityPayload } from '../types/faci
 import { useToast } from '../context/ToastContext';
 import { keepPreviousData } from '@tanstack/react-query';
 
+const getErrorDetail = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const response = (error as { response?: { data?: { detail?: unknown } } }).response;
+    if (typeof response?.data?.detail === 'string') return response.data.detail;
+  }
+  return fallback;
+};
+
 // Query Keys
 export const facilityKeys = {
   all: ['facilities'] as const,
@@ -16,10 +24,11 @@ export const facilityKeys = {
 };
 
 // Fetch Facilities List with Pagination and Search
-export const useFacilities = (page: number = 1, pageSize: number = 10, search?: string) => {
+export const useFacilities = (page: number = 1, pageSize: number = 10, search?: string, enabled = true) => {
   return useQuery({
     queryKey: facilityKeys.list(page, pageSize, search),
     queryFn: () => facilityService.getFacilities(page, pageSize, search),
+    enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     placeholderData: keepPreviousData,
   });
@@ -59,8 +68,8 @@ export const useCreateFacility = () => {
       });
       showSuccess('Facility created successfully');
     },
-    onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to create facility';
+    onError: (error: unknown) => {
+      const errorMsg = getErrorDetail(error, 'Failed to create facility');
       showError(errorMsg);
     },
   });
@@ -82,8 +91,8 @@ export const useUpdateFacility = () => {
       queryClient.invalidateQueries({ queryKey: facilityKeys.detail(variables.facilityId) });
       showSuccess('Facility updated successfully');
     },
-    onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to update facility';
+    onError: (error: unknown) => {
+      const errorMsg = getErrorDetail(error, 'Failed to update facility');
       showError(errorMsg);
     },
   });
@@ -103,8 +112,45 @@ export const useDeleteFacility = () => {
       });
       showSuccess('Facility deleted successfully');
     },
-    onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to delete facility';
+    onError: (error: unknown) => {
+      const errorMsg = getErrorDetail(error, 'Failed to delete facility');
+      showError(errorMsg);
+    },
+  });
+};
+
+export const useAssignFacilityManager = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ facilityId, managerId }: { facilityId: string; managerId: string }) =>
+      facilityService.assignManager(facilityId, managerId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: facilityKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: facilityKeys.detail(variables.facilityId) });
+      showSuccess('Facility manager assigned successfully');
+    },
+    onError: (error: unknown) => {
+      const errorMsg = getErrorDetail(error, 'Failed to assign facility manager');
+      showError(errorMsg);
+    },
+  });
+};
+
+export const useAssignFacilityStaff = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ facilityId, userId }: { facilityId: string; userId: string }) =>
+      facilityService.assignStaff(facilityId, userId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: facilityKeys.staff(variables.facilityId, 1) });
+      showSuccess('Staff assigned successfully');
+    },
+    onError: (error: unknown) => {
+      const errorMsg = getErrorDetail(error, 'Failed to assign staff');
       showError(errorMsg);
     },
   });
@@ -122,8 +168,8 @@ export const useRemoveStaff = (facilityId: string) => {
       queryClient.invalidateQueries({ queryKey: facilityKeys.staff(facilityId, 1) });
       showSuccess('Staff member removed successfully');
     },
-    onError: (error: any) => {
-      const errorMsg = error.response?.data?.detail || 'Failed to remove staff member';
+    onError: (error: unknown) => {
+      const errorMsg = getErrorDetail(error, 'Failed to remove staff member');
       showError(errorMsg);
     },
   });

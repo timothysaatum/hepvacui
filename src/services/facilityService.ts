@@ -24,7 +24,7 @@ export const facilityService = {
 
   getFacility: async (facilityId: string): Promise<Facility> => {
     const response = await api.get(`/api/v1/facility/${facilityId}`);
-    return response.data;
+    return response.data?.data ?? response.data;
   },
 
   updateFacility: async (facilityId: string, data: UpdateFacilityPayload): Promise<Facility> => {

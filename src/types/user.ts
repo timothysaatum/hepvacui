@@ -59,6 +59,7 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   password_confirm: string;
+  facility_id?: string;
 }
 
 export interface LoginPayload {

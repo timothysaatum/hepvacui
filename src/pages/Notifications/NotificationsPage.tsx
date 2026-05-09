@@ -1,6 +1,7 @@
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ElementType } from 'react';
-import { Bell, CheckCircle2, Clock, PhoneCall, X } from 'lucide-react';
+import { Bell, CheckCircle2, Clock, PhoneCall, Search, X } from 'lucide-react';
 import { Button } from '../../components/common/Button';
 import { LoadingSpinner } from '../../components/common';
 import { useFacilityNotifications, useUpdateFacilityNotification } from '../../hooks/useNotifications';
@@ -8,11 +9,27 @@ import type { FacilityNotification, FacilityNotificationStatus } from '../../typ
 
 export function NotificationsPage() {
     const navigate = useNavigate();
+    const [search, setSearch] = useState('');
     const { data = [], isLoading } = useFacilityNotifications({ unresolved_only: true, limit: 100 });
     const update = useUpdateFacilityNotification();
     const unread = data.filter(n => n.status === 'unread');
     const inProgress = data.filter(n => n.status === 'in_progress' || n.status === 'acknowledged');
     const urgent = data.filter(n => n.priority === 'urgent');
+    const filtered = useMemo(() => {
+        const term = search.trim().toLowerCase();
+        if (!term) return data;
+        return data.filter(notification =>
+            [
+                notification.title,
+                notification.message,
+                notification.patient_name,
+                notification.patient_phone,
+                notification.priority,
+                notification.status,
+                notification.notification_type,
+            ].some(value => value?.toLowerCase().includes(term)),
+        );
+    }, [data, search]);
 
     const setStatus = (id: string, status: FacilityNotificationStatus) =>
         update.mutate({ id, data: { status } });
@@ -37,18 +54,36 @@ export function NotificationsPage() {
 
             <section className="border border-slate-200 bg-white">
                 <div className="border-b border-slate-100 px-5 py-4">
-                    <h2 className="text-sm font-semibold text-slate-900">Call Work Queue</h2>
-                    <p className="mt-0.5 text-xs text-slate-500">Prioritized by urgency and due date.</p>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <h2 className="text-sm font-semibold text-slate-900">Call Work Queue</h2>
+                            <p className="mt-0.5 text-xs text-slate-500">Prioritized by urgency and due date.</p>
+                        </div>
+                        <div className="relative w-full lg:w-80">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={event => setSearch(event.target.value)}
+                                placeholder="Search notifications..."
+                                className="w-full border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-500 focus:ring-2 focus:ring-slate-100"
+                            />
+                        </div>
+                    </div>
                 </div>
-                {!data.length ? (
+                {!filtered.length ? (
                     <div className="px-5 py-14 text-center">
                         <CheckCircle2 className="mx-auto h-8 w-8 text-slate-300" />
-                        <p className="mt-3 text-sm font-semibold text-slate-700">No open facility notifications</p>
-                        <p className="mt-1 text-xs text-slate-400">New call tasks appear here after patient reminders are sent.</p>
+                        <p className="mt-3 text-sm font-semibold text-slate-700">
+                            {data.length ? 'No notifications match your search' : 'No open facility notifications'}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">
+                            {data.length ? 'Try a different patient, phone, status, or priority.' : 'New call tasks appear here after patient reminders are sent.'}
+                        </p>
                     </div>
                 ) : (
                     <div className="divide-y divide-slate-100">
-                        {data.map(notification => (
+                        {filtered.map(notification => (
                             <NotificationRow
                                 key={notification.id}
                                 notification={notification}

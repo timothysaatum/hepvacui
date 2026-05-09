@@ -1,10 +1,11 @@
 import React, { useState, memo } from 'react';
 import type { Facility } from '../../types/facility';
-import { useFacilities, useDeleteFacility } from '../../hooks/useFacilities';
+import { useAssignFacilityManager, useAssignFacilityStaff, useFacilities, useDeleteFacility } from '../../hooks/useFacilities';
 import { useConfirm } from '../common/ConfirmDialog';
 import { useDebounce } from '../../hooks/useDebounce';
 import { formatDate } from '../../utils/formatters';
 import { FacilityStaffRow } from './FacilityStaffRow';
+import { useUsers } from '../../hooks/useUsers';
 import {
   Building2,
   Phone,
@@ -31,7 +32,11 @@ const FacilityRow = memo<{
   onDelete: (facilityId: string, facilityName: string) => void;
   isExpanded: boolean;
   onToggleExpand: () => void;
-}>(({ facility, onEdit, onDelete, isExpanded, onToggleExpand }) => {
+  users: { id: string; full_name: string; email: string }[];
+  onAssignManager: (facilityId: string, managerId: string) => void;
+  onAssignStaff: (facilityId: string, userId: string) => void;
+  assigning: boolean;
+}>(({ facility, onEdit, onDelete, isExpanded, onToggleExpand, users, onAssignManager, onAssignStaff, assigning }) => {
   return (
     <>
       <tr className="hover:bg-gray-50 transition-colors border-b border-gray-100">
@@ -71,6 +76,34 @@ const FacilityRow = memo<{
             {formatDate(facility.created_at)}
           </div>
         </td>
+        <td className="px-6 py-4">
+          <div className="space-y-2">
+            <select
+              value={facility.facility_manager_id ?? ''}
+              onChange={event => event.target.value && onAssignManager(facility.id, event.target.value)}
+              disabled={assigning}
+              className="w-48 border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-black"
+              title="Assign manager"
+            >
+              <option value="">Assign manager</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
+              ))}
+            </select>
+            <select
+              value=""
+              onChange={event => event.target.value && onAssignStaff(facility.id, event.target.value)}
+              disabled={assigning}
+              className="w-48 border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-700 outline-none focus:border-black"
+              title="Assign staff"
+            >
+              <option value="">Add staff</option>
+              {users.map(user => (
+                <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
+              ))}
+            </select>
+          </div>
+        </td>
         <td className="px-6 py-4 whitespace-nowrap">
           <div className="flex items-center gap-1">
             <button
@@ -106,7 +139,7 @@ const FacilityRow = memo<{
       </tr>
       {isExpanded && (
         <tr>
-          <td colSpan={5} className="px-0 py-0 bg-gray-50">
+          <td colSpan={6} className="px-0 py-0 bg-gray-50">
             <FacilityStaffRow facilityId={facility.id} facilityName={facility.facility_name} />
           </td>
         </tr>
@@ -125,7 +158,10 @@ export const FacilityList: React.FC<FacilityListProps> = ({ onEdit }) => {
   const { confirm } = useConfirm();
 
   const { data, isPending, error, isFetching } = useFacilities(currentPage, 10, debouncedSearch);
+  const { data: usersData } = useUsers(1, 100);
   const deleteMutation = useDeleteFacility();
+  const assignManagerMutation = useAssignFacilityManager();
+  const assignStaffMutation = useAssignFacilityStaff();
 
   React.useEffect(() => {
     setCurrentPage(1);
@@ -148,6 +184,9 @@ export const FacilityList: React.FC<FacilityListProps> = ({ onEdit }) => {
   const handleToggleExpand = (facilityId: string) => {
     setExpandedFacilityId(expandedFacilityId === facilityId ? null : facilityId);
   };
+
+  const assignBusy = assignManagerMutation.isPending || assignStaffMutation.isPending;
+  const assignableUsers = usersData?.items?.filter(user => user.is_active && !user.is_deleted) ?? [];
 
   if (isPending) {
     return (
@@ -237,6 +276,9 @@ export const FacilityList: React.FC<FacilityListProps> = ({ onEdit }) => {
                 Created
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Assignments
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -250,6 +292,10 @@ export const FacilityList: React.FC<FacilityListProps> = ({ onEdit }) => {
                 onDelete={handleDelete}
                 isExpanded={expandedFacilityId === facility.id}
                 onToggleExpand={() => handleToggleExpand(facility.id)}
+                users={assignableUsers}
+                onAssignManager={(facilityId, managerId) => assignManagerMutation.mutate({ facilityId, managerId })}
+                onAssignStaff={(facilityId, userId) => assignStaffMutation.mutate({ facilityId, userId })}
+                assigning={assignBusy}
               />
             ))}
           </tbody>
