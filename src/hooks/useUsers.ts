@@ -11,6 +11,7 @@ export const userKeys = {
   list: (page: number, pageSize: number) => [...userKeys.lists(), { page, pageSize }] as const,
   details: () => [...userKeys.all, 'detail'] as const,
   detail: (id: string) => [...userKeys.details(), id] as const,
+  permissions: () => [...userKeys.all, 'permissions'] as const,
 };
 
 // Fetch Users List with Pagination
@@ -30,6 +31,14 @@ export const useUser = (userId: string | null) => {
     queryFn: () => userService.getUser(userId!),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
+  });
+};
+
+export const usePermissions = () => {
+  return useQuery({
+    queryKey: userKeys.permissions(),
+    queryFn: () => userService.getPermissions(),
+    staleTime: 10 * 60 * 1000,
   });
 };
 
@@ -88,6 +97,25 @@ export const useUpdateUser = () => {
     },
     onError: (error: any) => {
       const errorMsg = error.response?.data?.detail || 'Failed to update user';
+      showError(errorMsg);
+    },
+  });
+};
+
+export const useUpdateUserPermissions = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: ({ userId, permissionIds }: { userId: string; permissionIds: number[] }) =>
+      userService.updateUserPermissions(userId, permissionIds),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: userKeys.detail(variables.userId) });
+      showSuccess('User permissions updated successfully');
+    },
+    onError: (error: any) => {
+      const errorMsg = error.response?.data?.detail || 'Failed to update user permissions';
       showError(errorMsg);
     },
   });

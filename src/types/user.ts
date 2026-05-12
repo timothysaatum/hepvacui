@@ -4,6 +4,11 @@ export interface Role {
   name: string;
 }
 
+export interface Permission {
+  id: number;
+  name: string;
+}
+
 /** Type alias so new code can use either name without breaking old imports. */
 export type UserRole = Role;
 
@@ -30,6 +35,7 @@ export interface User {
   is_active: boolean;
   is_suspended: boolean;
   roles: Role[];
+  direct_permissions: Permission[];
   facility: Facility;
   created_at: string;
   updated_at: string;

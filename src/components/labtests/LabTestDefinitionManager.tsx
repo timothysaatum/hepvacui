@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Plus, Save, Search, Settings2, X } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, ChevronRight, Plus, Save, Search, Settings2, X } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FormField, Input, Select, Textarea } from '../common';
 import { Modal } from '../common/Modal';
 import { useToast } from '../../context/ToastContext';
 import { getErrorMessage } from '../../utils/errorUtils';
+import { formatCurrency } from '../../utils/formatters';
 import {
     useCreateLabTestDefinition,
     useCreateLabTestParameter,
@@ -88,14 +90,15 @@ function formatRange(parameter: LabTestParameterDefinition) {
 }
 
 export function LabTestDefinitionManager() {
+    const navigate = useNavigate();
+    const { testDefinitionId } = useParams<{ testDefinitionId?: string }>();
     const { data, isLoading } = useLabTestDefinitions(true);
     const definitions = useMemo(() => Array.isArray(data) ? data : [], [data]);
     const [search, setSearch] = useState('');
     const [createOpen, setCreateOpen] = useState(false);
-    const [selectedId, setSelectedId] = useState<string | null>(null);
     const selected = useMemo(
-        () => definitions.find(definition => definition.id === selectedId) ?? null,
-        [definitions, selectedId],
+        () => definitions.find(definition => definition.id === testDefinitionId) ?? null,
+        [definitions, testDefinitionId],
     );
     const filteredDefinitions = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -111,6 +114,38 @@ export function LabTestDefinitionManager() {
             ].some(value => value?.toLowerCase().includes(term)),
         );
     }, [definitions, search]);
+
+    if (testDefinitionId) {
+        return (
+            <section className="border border-slate-200 bg-white">
+                <div className="border-b border-slate-100 px-5 py-4">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/tests')}
+                        className="mb-2 inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:text-teal-900"
+                    >
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                        Back to tests
+                    </button>
+                    <h2 className="text-base font-semibold text-slate-900">
+                        {selected ? `Edit ${selected.name}` : 'Lab Test Configuration'}
+                    </h2>
+                    <p className="mt-0.5 text-sm text-slate-500">
+                        Update test details, pricing, availability, parameters, and result rules.
+                    </p>
+                </div>
+                <div className="p-5">
+                    {isLoading ? (
+                        <div className="py-12 text-center text-sm text-slate-400">Loading test definition...</div>
+                    ) : selected ? (
+                        <DefinitionDetail key={selected.id} definition={selected} />
+                    ) : (
+                        <div className="py-12 text-center text-sm text-slate-500">Lab test definition not found.</div>
+                    )}
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="border border-slate-200 bg-white">
@@ -153,6 +188,7 @@ export function LabTestDefinitionManager() {
                                         <th className="px-4 py-3">Code</th>
                                         <th className="px-4 py-3">Category</th>
                                         <th className="px-4 py-3">Parameters</th>
+                                        <th className="px-4 py-3">Price</th>
                                         <th className="px-4 py-3">Status</th>
                                         <th className="px-4 py-3"></th>
                                     </tr>
@@ -161,11 +197,11 @@ export function LabTestDefinitionManager() {
                                     {filteredDefinitions.map(definition => (
                                         <tr
                                             key={definition.id}
-                                            onClick={() => setSelectedId(definition.id)}
+                                            onClick={() => navigate(`/tests/${definition.id}`)}
                                             onKeyDown={event => {
                                                 if (event.key === 'Enter' || event.key === ' ') {
                                                     event.preventDefault();
-                                                    setSelectedId(definition.id);
+                                                    navigate(`/tests/${definition.id}`);
                                                 }
                                             }}
                                             tabIndex={0}
@@ -181,6 +217,7 @@ export function LabTestDefinitionManager() {
                                             <td className="px-4 py-4 font-mono text-xs text-slate-600">{definition.code}</td>
                                             <td className="px-4 py-4 text-slate-600">{definition.category || '—'}</td>
                                             <td className="px-4 py-4 text-slate-600">{definition.parameters.length}</td>
+                                            <td className="px-4 py-4 font-semibold text-slate-700">{formatCurrency(definition.price)}</td>
                                             <td className="px-4 py-4">
                                                 <span className={`px-2 py-0.5 text-[11px] font-semibold ${definition.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
                                                     {definition.is_active ? 'Active' : 'Inactive'}
@@ -191,7 +228,7 @@ export function LabTestDefinitionManager() {
                                                     type="button"
                                                     onClick={event => {
                                                         event.stopPropagation();
-                                                        setSelectedId(definition.id);
+                                                        navigate(`/tests/${definition.id}`);
                                                     }}
                                                     className="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:text-teal-900"
                                                 >
@@ -209,15 +246,6 @@ export function LabTestDefinitionManager() {
             </div>
 
             <CreateDefinitionModal open={createOpen} onClose={() => setCreateOpen(false)} />
-            <Modal
-                open={!!selected}
-                onClose={() => setSelectedId(null)}
-                title={selected ? `Edit ${selected.name}` : 'Edit Lab Test'}
-                subtitle="Update test details, availability, parameters, and result rules."
-                size="2xl"
-            >
-                {selected && <DefinitionDetail key={selected.id} definition={selected} />}
-            </Modal>
         </section>
     );
 }
@@ -234,6 +262,7 @@ function DefinitionDetail({ definition }: { definition: LabTestDefinition }) {
         category: definition.category ?? '',
         specimen: definition.specimen ?? '',
         method: definition.method ?? '',
+        price: String(definition.price ?? 0),
         description: definition.description ?? '',
         is_active: definition.is_active,
     });
@@ -303,6 +332,9 @@ function DefinitionDetail({ definition }: { definition: LabTestDefinition }) {
                 </FormField>
                 <FormField label="Method">
                     <Input value={definitionForm.method} onChange={e => setDefinitionForm(f => ({ ...f, method: e.target.value }))} />
+                </FormField>
+                <FormField label="Price">
+                    <Input type="number" min={0} step="0.01" value={definitionForm.price} onChange={e => setDefinitionForm(f => ({ ...f, price: e.target.value }))} />
                 </FormField>
                 <FormField label="Description" className="md:col-span-2">
                     <Textarea value={definitionForm.description} onChange={e => setDefinitionForm(f => ({ ...f, description: e.target.value }))} />
@@ -435,6 +467,7 @@ function CreateDefinitionModal({ open, onClose }: { open: boolean; onClose: () =
         category: '',
         specimen: '',
         method: '',
+        price: '',
         description: '',
     });
     const [parameters, setParameters] = useState<ParameterDraft[]>([emptyParameter()]);
@@ -455,7 +488,7 @@ function CreateDefinitionModal({ open, onClose }: { open: boolean; onClose: () =
         try {
             await createDefinition.mutateAsync(payload);
             showSuccess('Lab test definition created.');
-            setForm({ code: '', name: '', short_name: '', category: '', specimen: '', method: '', description: '' });
+            setForm({ code: '', name: '', short_name: '', category: '', specimen: '', method: '', price: '', description: '' });
             setParameters([emptyParameter()]);
             onClose();
         } catch (error: unknown) {
@@ -496,18 +529,17 @@ function CreateDefinitionModal({ open, onClose }: { open: boolean; onClose: () =
                     <FormField label="Method">
                         <Input value={form.method} onChange={e => setForm(f => ({ ...f, method: e.target.value }))} />
                     </FormField>
+                    <FormField label="Price">
+                        <Input type="number" min={0} step="0.01" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="0.00" />
+                    </FormField>
                     <FormField label="Description" className="sm:col-span-2">
                         <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
                     </FormField>
                 </div>
 
                 <div className="border-t border-slate-100 pt-4">
-                    <div className="mb-3 flex items-center justify-between">
+                    <div className="mb-3">
                         <h3 className="text-sm font-semibold text-slate-900">Initial Parameters</h3>
-                        <Button size="sm" variant="outline" onClick={() => setParameters(items => [...items, emptyParameter()])}>
-                            <Plus className="mr-1 h-4 w-4" />
-                            Parameter
-                        </Button>
                     </div>
                     <div className="space-y-4">
                         {parameters.map((parameter, index) => (
@@ -518,6 +550,12 @@ function CreateDefinitionModal({ open, onClose }: { open: boolean; onClose: () =
                                 />
                             </div>
                         ))}
+                    </div>
+                    <div className="sticky bottom-0 mt-4 flex justify-end border-t border-slate-200 bg-white/95 py-3">
+                        <Button size="sm" variant="outline" onClick={() => setParameters(items => [...items, emptyParameter()])}>
+                            <Plus className="mr-1 h-4 w-4" />
+                            Add Parameter
+                        </Button>
                     </div>
                 </div>
             </div>
@@ -573,6 +611,7 @@ function cleanDefinitionPayload(form: {
     category: string;
     specimen: string;
     method: string;
+    price: string;
     description: string;
     is_active?: boolean;
 }): LabTestDefinitionPayload {
@@ -583,6 +622,7 @@ function cleanDefinitionPayload(form: {
         category: form.category.trim() || undefined,
         specimen: form.specimen.trim() || undefined,
         method: form.method.trim() || undefined,
+        price: parseNumber(form.price) ?? 0,
         description: form.description.trim() || undefined,
         is_active: form.is_active,
     };

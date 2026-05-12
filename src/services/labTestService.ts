@@ -33,6 +33,7 @@ export interface LabTestDefinition {
     description: string | null;
     specimen: string | null;
     method: string | null;
+    price: string | number;
     is_active: boolean;
     parameters: LabTestParameterDefinition[];
     created_at: string;
@@ -62,6 +63,7 @@ export interface LabTestDefinitionPayload {
     description?: string | null;
     specimen?: string | null;
     method?: string | null;
+    price?: number | null;
     is_active?: boolean;
     parameters?: LabTestParameterDefinitionPayload[];
 }

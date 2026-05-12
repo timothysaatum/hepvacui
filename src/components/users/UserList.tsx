@@ -16,19 +16,22 @@ import {
   Ban,
   AlertTriangle,
   Loader2,
-  Users
+  Users,
+  KeyRound
 } from 'lucide-react';
 
 interface UserListProps {
   onEdit?: (user: User) => void;
+  onPermissions?: (user: User) => void;
 }
 
 // Memoized User Row Component
 const UserRow = memo<{
   user: User;
   onEdit: (user: User) => void;
+  onPermissions: (user: User) => void;
   onDelete: (userId: string, userName: string) => void
-}>(({ user, onEdit, onDelete }) => {
+}>(({ user, onEdit, onPermissions, onDelete }) => {
   const getStatusDisplay = () => {
     if (user.is_suspended) {
       return {
@@ -128,6 +131,13 @@ const UserRow = memo<{
             <Edit2 className="w-4 h-4" />
           </button>
           <button
+            onClick={() => onPermissions(user)}
+            className="p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Permissions"
+          >
+            <KeyRound className="w-4 h-4" />
+          </button>
+          <button
             onClick={() => onDelete(user.id, user.full_name)}
             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete"
@@ -142,7 +152,7 @@ const UserRow = memo<{
 
 UserRow.displayName = 'UserRow';
 
-export const UserList: React.FC<UserListProps> = ({ onEdit }) => {
+export const UserList: React.FC<UserListProps> = ({ onEdit, onPermissions }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const { confirm } = useConfirm();
 
@@ -249,6 +259,7 @@ export const UserList: React.FC<UserListProps> = ({ onEdit }) => {
                 key={user.id}
                 user={user}
                 onEdit={onEdit!}
+                onPermissions={onPermissions!}
                 onDelete={handleDelete}
               />
             ))}

@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useAddLabResult, useCreateLabTest, useLabTestDefinitions, useLabTests, useUpdateLabResult, useUpdateLabTest } from '../../hooks/useLabTests';
 import { getErrorMessage } from '../../utils/errorUtils';
+import { formatCurrency } from '../../utils/formatters';
 import type { Patient } from '../../types/patient';
 import type { LabResult, LabResultFlag, LabResultPayload, LabTest, LabTestDefinition, LabTestParameterDefinition } from '../../services/labTestService';
 
@@ -323,7 +324,7 @@ function LabTestModal({
                                         <span className="min-w-0 flex-1">
                                             <span className="block text-sm font-semibold text-slate-900">{definition.name}</span>
                                             <span className="mt-0.5 block text-xs text-slate-500">
-                                                {definition.short_name ?? definition.code} · {definition.parameters.length} parameters
+                                                {definition.short_name ?? definition.code} · {definition.parameters.length} parameters · {formatCurrency(definition.price)}
                                             </span>
                                         </span>
                                     </label>

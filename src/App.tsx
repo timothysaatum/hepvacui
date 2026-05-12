@@ -68,6 +68,7 @@ function App() {
                           <Route path="/staff" element={<UsersPage />} />
                           <Route path="/devices" element={<DevicesPage />} />
                           <Route path="/tests" element={<TestsPage />} />
+                          <Route path="/tests/:testDefinitionId" element={<TestsPage />} />
                           <Route path="/settings" element={<SettingsPage />} />
                         </Routes>
                       </Layout>

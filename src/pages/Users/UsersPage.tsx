@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { UserList } from '../../components/users/UserList';
 import { CreateUserForm } from '../../components/users/CreateUserForm';
 import { EditUserForm } from '../../components/users/EditUserForm';
+import { UserPermissionsModal } from '../../components/users/UserPermissionsModal';
 import type { User } from '../../types/user';
 import { Plus, X } from 'lucide-react';
 
 export const UsersPage: React.FC = () => {
   const [showStaffForm, setShowStaffForm] = useState(false);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [permissionsUser, setPermissionsUser] = useState<User | null>(null);
 
   const handleCreateSuccess = () => {
     setShowStaffForm(false);
@@ -79,8 +81,13 @@ export const UsersPage: React.FC = () => {
 
       {/* User List - Only show when not creating or editing */}
       {!showStaffForm && !editingUserId && (
-        <UserList onEdit={handleEdit} />
+        <UserList onEdit={handleEdit} onPermissions={setPermissionsUser} />
       )}
+      <UserPermissionsModal
+        user={permissionsUser}
+        open={!!permissionsUser}
+        onClose={() => setPermissionsUser(null)}
+      />
     </div>
   );
 };

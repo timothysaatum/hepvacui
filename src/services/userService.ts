@@ -1,5 +1,5 @@
 import api from './api';
-import type { User, CreateUserPayload, UpdateUserPayload, PaginatedUsers } from '../types/user';
+import type { Permission, User, CreateUserPayload, UpdateUserPayload, PaginatedUsers } from '../types/user';
 
 export const userService = {
   createUser: async (data: CreateUserPayload): Promise<User> => {
@@ -26,6 +26,18 @@ export const userService = {
 
   updateUser: async (userId: string, data: UpdateUserPayload): Promise<User> => {
     const response = await api.patch(`/api/v1/users/${userId}`, data);
+    return response.data;
+  },
+
+  getPermissions: async (): Promise<Permission[]> => {
+    const response = await api.get('/api/v1/users/permissions/catalog');
+    return response.data;
+  },
+
+  updateUserPermissions: async (userId: string, permissionIds: number[]): Promise<User> => {
+    const response = await api.put(`/api/v1/users/${userId}/permissions`, {
+      permission_ids: permissionIds,
+    });
     return response.data;
   },
 
