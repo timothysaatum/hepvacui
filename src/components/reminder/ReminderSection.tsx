@@ -9,7 +9,7 @@ import { FormField, Input, Select, Textarea } from '../common/index';
 import { useToast } from '../../context/ToastContext';
 import { formatDate, REMINDER_TYPE_LABELS } from '../../utils/formatters';
 import type { PatientReminder, ReminderType } from '../../types/reminder';
-import { useCreateReminder, useReminders, useUpdateReminder } from '../../hooks/useReminder';
+import { useCreateReminder, useRemindersPaginated, useUpdateReminder } from '../../hooks/useReminder';
 import { Baby, Bell, CalendarClock, CircleDollarSign, Pill, Plus, Syringe, XCircle } from 'lucide-react';
 
 const REMINDER_TYPES: ReminderType[] = [
@@ -27,7 +27,11 @@ const TYPE_ICONS: Record<ReminderType, ElementType> = {
 interface Props { patient: Patient; }
 
 export function ReminderSection({ patient }: Props) {
-    const { data: reminders = [], isLoading } = useReminders(patient.id);
+    const [page, setPage] = useState(1);
+    const pageSize = 10;
+    const { data, isLoading, isFetching } = useRemindersPaginated(patient.id, page, pageSize);
+    const reminders = data?.items ?? [];
+    const pageInfo = data?.page_info;
     const [addOpen, setAddOpen] = useState(false);
     const [editReminder, setEditReminder] = useState<PatientReminder | null>(null);
     const updateReminder = useUpdateReminder(patient.id);
@@ -63,7 +67,7 @@ export function ReminderSection({ patient }: Props) {
 
             <SectionCard
                 title="Reminder Work Queue"
-                subtitle={`${pending.length} pending · ${overdue.length} overdue`}
+                subtitle={pageInfo ? `${pageInfo.total_items} total · page ${pageInfo.current_page} of ${Math.max(pageInfo.total_pages, 1)}` : `${pending.length} pending · ${overdue.length} overdue`}
                 action={<Button size="sm" onClick={() => setAddOpen(true)}><Plus className="mr-1 h-4 w-4" /> Add Reminder</Button>}
             >
                 {!reminders.length ? (
@@ -106,6 +110,32 @@ export function ReminderSection({ patient }: Props) {
                                             onCancel={() => cancel(r.id)}
                                         />
                                     ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {pageInfo && pageInfo.total_pages > 1 && (
+                            <div className="flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
+                                <span className="text-slate-500">
+                                    Page {pageInfo.current_page} of {pageInfo.total_pages} · {pageInfo.total_items} reminders
+                                </span>
+                                <div className="flex gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={!pageInfo.has_previous || isFetching}
+                                        onClick={() => setPage(pageInfo.previous_page ?? Math.max(1, page - 1))}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={!pageInfo.has_next || isFetching}
+                                        onClick={() => setPage(pageInfo.next_page ?? page + 1)}
+                                    >
+                                        Next
+                                    </Button>
                                 </div>
                             </div>
                         )}

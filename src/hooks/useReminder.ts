@@ -1,11 +1,31 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reminderService } from '../services/reminderService';
-import type { CreateReminderPayload, UpdateReminderPayload } from '../types/reminder';
+import type { CreateReminderPayload, ReminderStatus, UpdateReminderPayload } from '../types/reminder';
 
 export function useReminders(patientId: string, pendingOnly?: boolean) {
     return useQuery({
         queryKey: ['reminders', patientId, pendingOnly],
         queryFn: () => reminderService.listReminders(patientId, pendingOnly),
+        enabled: !!patientId,
+    });
+}
+
+export function useRemindersPaginated(
+    patientId: string,
+    page: number,
+    pageSize: number,
+    statusFilter?: ReminderStatus,
+    upcomingOnly = false
+) {
+    return useQuery({
+        queryKey: ['reminders', patientId, 'paginated', page, pageSize, statusFilter, upcomingOnly],
+        queryFn: () => reminderService.listRemindersPaginated(
+            patientId,
+            page,
+            pageSize,
+            statusFilter,
+            upcomingOnly
+        ),
         enabled: !!patientId,
     });
 }

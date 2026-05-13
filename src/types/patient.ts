@@ -304,7 +304,7 @@ export interface PaginatedPatients {
 export interface PatientFilters {
   facility_id?: string;
   patient_type?: PatientType;
-  patient_status?: PatientStatus;
+  patient_status?: PatientStatus | string;
   delivery_date_field?: 'expected' | 'actual';
   delivery_window_days?: number;
   delivery_window_months?: number;

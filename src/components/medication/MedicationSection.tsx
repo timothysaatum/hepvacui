@@ -251,30 +251,30 @@ function AddPrescriptionModal({
             }
         >
             <div className="space-y-4">
-                <FormField label="Medication Name" required>
+                <FormField label="Medication Name" required hint="Enter the exact drug name the patient was prescribed.">
                     <Input value={form.medication_name} onChange={e => set('medication_name', e.target.value)} />
                 </FormField>
                 <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Dosage" required>
+                    <FormField label="Dosage" required hint="Strength per dose, for example 300mg or one tablet.">
                         <Input placeholder="e.g. 300mg" value={form.dosage} onChange={e => set('dosage', e.target.value)} />
                     </FormField>
-                    <FormField label="Frequency" required>
+                    <FormField label="Frequency" required hint="How often the patient should take it, for example once daily.">
                         <Input placeholder="e.g. Once daily" value={form.frequency} onChange={e => set('frequency', e.target.value)} />
                     </FormField>
-                    <FormField label="Duration (months)">
+                    <FormField label="Duration (months)" hint="How long this prescription should remain active.">
                         <Input type="number" min={1} max={24} value={form.duration_months} onChange={e => set('duration_months', e.target.value)} />
                     </FormField>
-                    <FormField label="Prescription Date">
+                    <FormField label="Prescription Date" hint="Date the clinician issued the prescription.">
                         <Input type="date" value={form.prescription_date} onChange={e => set('prescription_date', e.target.value)} />
                     </FormField>
-                    <FormField label="Start Date">
+                    <FormField label="Start Date" hint="Date the patient should start taking the medication.">
                         <Input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
                     </FormField>
-                    <FormField label="End Date">
+                    <FormField label="End Date" hint="Optional stop date if treatment should end on a known date.">
                         <Input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)} />
                     </FormField>
                 </div>
-                <FormField label="Instructions">
+                <FormField label="Instructions" hint="Add patient-facing directions or clinical notes, such as take with food.">
                     <Textarea value={form.instructions} onChange={e => set('instructions', e.target.value)} />
                 </FormField>
             </div>
@@ -328,7 +328,7 @@ function AddScheduleModal({
         >
             <div className="space-y-4">
                 {prescriptions.filter(rx => rx.is_active).length > 0 && (
-                    <FormField label="Link to Prescription">
+                    <FormField label="Link to Prescription" hint="Choose an active prescription to prefill the medication name and keep the schedule connected.">
                         <Select
                             value={form.prescription_id}
                             onChange={e => {
@@ -349,21 +349,21 @@ function AddScheduleModal({
                         </Select>
                     </FormField>
                 )}
-                <FormField label="Medication Name" required>
+                <FormField label="Medication Name" required hint="Use the medicine being dispensed at this visit.">
                     <Input value={form.medication_name} onChange={e => set('medication_name', e.target.value)} />
                 </FormField>
                 <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Scheduled Date">
+                    <FormField label="Scheduled Date" hint="The expected dispensing or pickup date for this schedule.">
                         <Input type="date" value={form.scheduled_date} onChange={e => set('scheduled_date', e.target.value)} />
                     </FormField>
-                    <FormField label="Months Supply">
+                    <FormField label="Months Supply" hint="How many months of medication this pickup covers.">
                         <Input type="number" min={1} value={form.months_supply} onChange={e => set('months_supply', e.target.value)} />
                     </FormField>
-                    <FormField label="Quantity">
+                    <FormField label="Quantity" hint="Number of packs, bottles, tablets, or units purchased.">
                         <Input type="number" min={1} value={form.quantity_purchased} onChange={e => set('quantity_purchased', e.target.value)} />
                     </FormField>
                 </div>
-                <FormField label="Notes">
+                <FormField label="Notes" hint="Record refill context, adherence notes, or supply issues.">
                     <Textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} />
                 </FormField>
             </div>
@@ -425,24 +425,24 @@ function EditPrescriptionModal({
             }
         >
             <div className="space-y-4">
-                <FormField label="Medication Name" required>
+                <FormField label="Medication Name" required hint="Update the prescribed drug name if it was entered incorrectly or changed.">
                     <Input value={form.medication_name} onChange={e => set('medication_name', e.target.value)} />
                 </FormField>
                 <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Dosage" required>
+                    <FormField label="Dosage" required hint="Strength per dose, for example 300mg or one tablet.">
                         <Input placeholder="e.g. 300mg" value={form.dosage} onChange={e => set('dosage', e.target.value)} />
                     </FormField>
-                    <FormField label="Frequency" required>
+                    <FormField label="Frequency" required hint="How often the patient should take it.">
                         <Input placeholder="e.g. Once daily" value={form.frequency} onChange={e => set('frequency', e.target.value)} />
                     </FormField>
-                    <FormField label="Duration (months)">
+                    <FormField label="Duration (months)" hint="Total intended treatment duration for this prescription.">
                         <Input type="number" min={1} max={24} value={form.duration_months} onChange={e => set('duration_months', e.target.value)} />
                     </FormField>
-                    <FormField label="End Date">
+                    <FormField label="End Date" hint="Use this when the prescription should stop on a specific date.">
                         <Input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)} />
                     </FormField>
                 </div>
-                <FormField label="Instructions">
+                <FormField label="Instructions" hint="Directions or clinical notes shown with this prescription.">
                     <Textarea value={form.instructions} onChange={e => set('instructions', e.target.value)} />
                 </FormField>
             </div>
@@ -503,40 +503,46 @@ function EditScheduleModal({
         >
             <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                    <FormField label="Quantity Purchased">
+                    <FormField label="Quantity Purchased" hint="Actual quantity the patient received or purchased.">
                         <Input type="number" min={1} value={form.quantity_purchased} onChange={e => set('quantity_purchased', e.target.value)} />
                     </FormField>
-                    <FormField label="Months Supply">
+                    <FormField label="Months Supply" hint="How long this dispensing should last before the next refill.">
                         <Input type="number" min={1} value={form.months_supply} onChange={e => set('months_supply', e.target.value)} />
                     </FormField>
-                    <FormField label="Next Dose Due">
+                    <FormField label="Next Dose Due" hint="Next refill or medication due date; use it to flag overdue schedules.">
                         <Input type="date" value={form.next_dose_due_date} onChange={e => set('next_dose_due_date', e.target.value)} />
                     </FormField>
-                    <FormField label="Lab Review Date">
+                    <FormField label="Lab Review Date" hint="Date the clinician should review lab results tied to this medication.">
                         <Input type="date" value={form.lab_review_date} onChange={e => set('lab_review_date', e.target.value)} />
                     </FormField>
                 </div>
                 <div className="flex gap-6">
-                    <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                    <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
                         <input
                             type="checkbox"
-                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            className="mt-1 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                             checked={form.lab_review_scheduled}
                             onChange={e => set('lab_review_scheduled', e.target.checked)}
                         />
-                        Lab review scheduled
+                        <span>
+                            Lab review scheduled
+                            <span className="block text-xs text-slate-500">Turn on when this medication needs lab follow-up.</span>
+                        </span>
                     </label>
-                    <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                    <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
                         <input
                             type="checkbox"
-                            className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                            className="mt-1 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                             checked={form.lab_review_completed}
                             onChange={e => set('lab_review_completed', e.target.checked)}
                         />
-                        Lab review completed
+                        <span>
+                            Lab review completed
+                            <span className="block text-xs text-slate-500">Check after the clinician has reviewed the lab results.</span>
+                        </span>
                     </label>
                 </div>
-                <FormField label="Notes">
+                <FormField label="Notes" hint="Add dispensing, adherence, lab follow-up, or pharmacy notes.">
                     <Textarea rows={2} value={form.notes} onChange={e => set('notes', e.target.value)} />
                 </FormField>
             </div>

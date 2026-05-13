@@ -20,6 +20,22 @@ export interface PatientReminder {
     updated_at: string;
 }
 
+export interface ReminderPageInfo {
+    total_items: number;
+    total_pages: number;
+    current_page: number;
+    page_size: number;
+    has_next: boolean;
+    has_previous: boolean;
+    next_page: number | null;
+    previous_page: number | null;
+}
+
+export interface PaginatedReminders {
+    items: PatientReminder[];
+    page_info: ReminderPageInfo;
+}
+
 export interface CreateReminderPayload {
     reminder_type: ReminderType;
     scheduled_date: string;

@@ -76,7 +76,7 @@ export function PatientsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<PatientType | ''>('');
-  const [statusFilter, setStatusFilter] = useState<PatientStatus | ''>('active');
+  const [statusFilters, setStatusFilters] = useState<PatientStatus[]>(['active', 'postpartum']);
   const [deliveryMode, setDeliveryMode] = useState<'expected' | 'actual' | ''>('');
   const [deliveryFrom, setDeliveryFrom] = useState('');
   const [deliveryTo, setDeliveryTo] = useState('');
@@ -87,7 +87,7 @@ export function PatientsPage() {
   const { data, isLoading, isFetching } = usePatients({
     facility_id: activeFacilityId || undefined,
     patient_type: typeFilter || undefined,
-    patient_status: statusFilter || undefined,
+    patient_status: statusFilters.length ? statusFilters.join(',') : undefined,
     delivery_date_field: hasDeliveryFilter ? deliveryMode : undefined,
     delivery_date_from: hasDeliveryFilter ? deliveryFrom || undefined : undefined,
     delivery_date_to: hasDeliveryFilter ? deliveryTo || undefined : undefined,
@@ -105,11 +105,11 @@ export function PatientsPage() {
     )
     : patients;
 
-  const hasActiveFilters = !!(typeFilter || statusFilter || search.trim() || hasDeliveryFilter);
+  const hasActiveFilters = !!(typeFilter || statusFilters.length || search.trim() || hasDeliveryFilter);
 
   const clearAll = () => {
     setTypeFilter('');
-    setStatusFilter('active');
+    setStatusFilters(['active', 'postpartum']);
     setDeliveryMode('');
     setDeliveryFrom('');
     setDeliveryTo('');
@@ -199,8 +199,20 @@ export function PatientsPage() {
               <FilterPill
                 key={opt.value}
                 label={opt.label}
-                active={statusFilter === opt.value}
-                onClick={() => { setStatusFilter(opt.value as PatientStatus | ''); setPage(1); }}
+                active={opt.value ? statusFilters.includes(opt.value) : statusFilters.length === 0}
+                onClick={() => {
+                  if (!opt.value) {
+                    setStatusFilters([]);
+                  } else {
+                    const status = opt.value;
+                    setStatusFilters(current =>
+                      current.includes(status)
+                        ? current.filter(value => value !== status)
+                        : [...current, status]
+                    );
+                  }
+                  setPage(1);
+                }}
               />
             ))}
           </div>
@@ -262,12 +274,16 @@ export function PatientsPage() {
                 onRemove={() => { setTypeFilter(''); setPage(1); }}
               />
             )}
-            {statusFilter && (
-              <ActiveChip
-                label={STATUS_OPTIONS.find(o => o.value === statusFilter)?.label ?? statusFilter}
-                onRemove={() => { setStatusFilter(''); setPage(1); }}
-              />
-            )}
+            {statusFilters.map(status => (
+                <ActiveChip
+                  key={status}
+                  label={STATUS_OPTIONS.find(o => o.value === status)?.label ?? status}
+                  onRemove={() => {
+                    setStatusFilters(current => current.filter(value => value !== status));
+                    setPage(1);
+                  }}
+                />
+            ))}
             {hasDeliveryFilter && (
               <ActiveChip
                 label={`${deliveryMode === 'expected' ? 'Expected' : 'Delivered'} ${deliveryFrom || '...'} to ${deliveryTo || '...'}`}

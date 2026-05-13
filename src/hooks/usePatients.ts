@@ -241,7 +241,9 @@ export const useConvertToRegular = (onConverted?: (patientId: string) => void) =
       data: ConvertToRegularPayload;
     }) => patientService.convertToRegular(patientId, data),
 
-    onSuccess: (_, variables) => {
+    onSuccess: (convertedPatient, variables) => {
+      const convertedId = convertedPatient?.id ?? variables.patientId;
+
       // Remove (not just invalidate) the typed detail cache entries so React Query
       // cannot fire a background refetch before navigation unmounts the subscriber.
       // invalidateQueries triggers an immediate refetch of any mounted query, which
@@ -252,10 +254,18 @@ export const useConvertToRegular = (onConverted?: (patientId: string) => void) =
       queryClient.removeQueries({
         queryKey: patientKeys.detailUnified(variables.patientId),
       });
+      queryClient.setQueryData(
+        patientKeys.detail(convertedId, 'regular'),
+        convertedPatient
+      );
+      queryClient.setQueryData(
+        patientKeys.detailUnified(convertedId),
+        convertedPatient
+      );
 
       // Navigate first so the component unmounts before the list refresh fires.
       showSuccess('Patient converted to regular care successfully');
-      onConverted?.(variables.patientId);
+      onConverted?.(convertedId);
 
       // Invalidate the list + search in the background after navigation.
       queryClient.invalidateQueries({ queryKey: patientKeys.lists() });

@@ -1,4 +1,4 @@
-import type { CreateReminderPayload, PatientReminder, UpdateReminderPayload } from '../types/reminder';
+import type { CreateReminderPayload, PaginatedReminders, PatientReminder, ReminderStatus, UpdateReminderPayload } from '../types/reminder';
 import api from './api';
 
 export const reminderService = {
@@ -16,6 +16,24 @@ export const reminderService = {
     ): Promise<PatientReminder[]> => {
         const response = await api.get(`/api/v1/patient-reminders/${patientId}`, {
             params: { pending_only: pendingOnly },
+        });
+        return response.data;
+    },
+
+    listRemindersPaginated: async (
+        patientId: string,
+        page = 1,
+        pageSize = 10,
+        statusFilter?: ReminderStatus,
+        upcomingOnly = false
+    ): Promise<PaginatedReminders> => {
+        const response = await api.get(`/api/v1/patient-reminders/${patientId}/paginated`, {
+            params: {
+                page,
+                page_size: pageSize,
+                status_filter: statusFilter,
+                upcoming_only: upcomingOnly,
+            },
         });
         return response.data;
     },
