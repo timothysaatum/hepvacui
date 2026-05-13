@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Beaker, CheckCircle2, ClipboardCheck, FileCheck2, FilePlus2, Printer, Search, Save, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Beaker, CheckCircle2, ClipboardCheck, CreditCard, FileCheck2, FilePlus2, Printer, Search, Save, Trash2, X } from 'lucide-react';
 import { Button } from '../common/Button';
-import { FormField, Input, Textarea } from '../common';
+import { FormField, Input, Select, Textarea } from '../common';
 import { Modal } from '../common/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -32,6 +32,23 @@ function formatParameterRange(parameter: LabTestParameterDefinition) {
     if (min !== null && max !== null) return `${min} - ${max} ${unit}`.trim();
     if (min !== null) return `>= ${min} ${unit}`.trim();
     return `<= ${max} ${unit}`.trim();
+}
+
+function moneyNumber(value: string | number | null | undefined) {
+    const amount = Number(value ?? 0);
+    return Number.isFinite(amount) ? amount : 0;
+}
+
+function isTestPaid(test: LabTest) {
+    return test.payment_status === 'completed' || moneyNumber(test.payment_balance) <= 0;
+}
+
+function labCode(test: LabTest) {
+    return test.id.replace(/-/g, '').slice(0, 8).toUpperCase();
+}
+
+function requestCode(test: LabTest) {
+    return test.id.replace(/-/g, '').slice(-8).toUpperCase();
 }
 
 function getLabWorkflowStage(test: LabTest): LabWorkflowStage {
@@ -109,7 +126,7 @@ export function LabTestSection({ patient }: { patient: Patient }) {
     const [addTestOpen, setAddTestOpen] = useState(false);
     const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
     const selectedTest = useMemo(
-        () => tests.find(test => test.id === selectedTestId) ?? tests[0] ?? null,
+        () => tests.find(test => test.id === selectedTestId) ?? null,
         [selectedTestId, tests],
     );
 
@@ -151,27 +168,25 @@ export function LabTestSection({ patient }: { patient: Patient }) {
                         <Button size="sm" className="mt-4" onClick={() => setAddTestOpen(true)} disabled={definitions.length === 0}>Add Test</Button>
                     </div>
                 ) : (
-                    <div className="grid min-h-[560px] lg:grid-cols-[360px_minmax(0,1fr)]">
-                        <div className="border-r border-slate-100">
-                            <div className="divide-y divide-slate-100">
-                                {tests.map(test => (
-                                    <LabTestRow
-                                        key={test.id}
-                                        test={test}
-                                        selected={selectedTest?.id === test.id}
-                                        onSelect={() => setSelectedTestId(test.id)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
+                    <div className="min-h-[560px]">
+                        <LabTestRequestTable
+                            patientName={patient.name}
+                            tests={tests}
+                            selectedTestId={selectedTestId}
+                            onSelect={setSelectedTestId}
+                        />
                         <div className="min-w-0 bg-slate-50/50">
-                            {selectedTest && (
+                            {selectedTest ? (
                                 <LabTestDetailPanel
                                     key={selectedTest.id}
                                     onClose={() => setSelectedTestId(null)}
                                     patient={patient}
                                     test={selectedTest}
                                 />
+                            ) : (
+                                <div className="px-5 py-12 text-center text-sm text-slate-500">
+                                    Click a test request above to print it, record payment, or enter results.
+                                </div>
                             )}
                         </div>
                     </div>
@@ -210,36 +225,64 @@ function LabSectionLoading() {
     );
 }
 
-function LabTestRow({ test, selected, onSelect }: { test: LabTest; selected: boolean; onSelect: () => void }) {
-    const definition = test.test_definition;
-    const stage = getLabWorkflowStage(test);
-    const stageMeta = getStageMeta(stage);
-
+function LabTestRequestTable({
+    patientName,
+    tests,
+    selectedTestId,
+    onSelect,
+}: {
+    patientName: string;
+    tests: LabTest[];
+    selectedTestId: string | null;
+    onSelect: (id: string) => void;
+}) {
     return (
-        <button
-            type="button"
-            onClick={onSelect}
-            className={`block w-full px-5 py-4 text-left transition-colors ${selected ? 'bg-teal-50' : 'hover:bg-teal-50/60'}`}
-        >
-            <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900">{test.test_name}</p>
-                        <span className="bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                            {definition?.short_name ?? definition?.code ?? test.test_type ?? 'Custom'}
-                        </span>
-                        <span className={`px-2 py-0.5 text-[11px] font-semibold ${stageMeta.tone}`}>{stageMeta.label}</span>
-                        {test.has_abnormal_results && (
-                            <span className="bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Abnormal</span>
-                        )}
-                    </div>
-                    <p className="mt-1 text-xs text-slate-400">
-                        Ordered {formatDateTime(test.ordered_at)} · Filed {formatDateTime(test.reported_at)}
-                    </p>
-                </div>
-                <span className="text-xs text-slate-500">{test.results.length} result{test.results.length === 1 ? '' : 's'}</span>
-            </div>
-        </button>
+        <div className="overflow-x-auto border-b border-slate-200">
+            <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+                <thead>
+                    <tr className="bg-[#5d95c8] text-white">
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Req Code</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Lab Code</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Paid</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Remainder</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Patient Name</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Contract</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Request date</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Registered By</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Checked by</th>
+                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Checked date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {tests.map((test, index) => {
+                        const selected = selectedTestId === test.id;
+                        const paid = isTestPaid(test);
+                        return (
+                            <tr
+                                key={test.id}
+                                tabIndex={0}
+                                onClick={() => onSelect(test.id)}
+                                onKeyDown={event => {
+                                    if (event.key === 'Enter' || event.key === ' ') onSelect(test.id);
+                                }}
+                                className={`cursor-pointer ${selected ? 'bg-sky-100' : index % 2 === 0 ? 'bg-[#e9e5d7]' : 'bg-white'} hover:bg-sky-50`}
+                            >
+                                <td className="px-1 py-0.5 font-bold text-red-600">{requestCode(test)}</td>
+                                <td className="px-1 py-0.5 font-bold text-red-600">{labCode(test)}</td>
+                                <td className="px-1 py-0.5 text-right font-medium text-green-700">{moneyNumber(test.amount_paid).toFixed(2)}</td>
+                                <td className="px-1 py-0.5 text-right font-medium text-green-700">{moneyNumber(test.payment_balance).toFixed(2)}</td>
+                                <td className="px-1 py-0.5 font-semibold uppercase text-red-600">{patientName}</td>
+                                <td className="px-1 py-0.5 uppercase text-slate-900">{paid ? 'STANDARD PRICE' : 'PAYMENT PENDING'}</td>
+                                <td className="px-1 py-0.5 text-slate-900">{formatDateTime(test.ordered_at)}</td>
+                                <td className="px-1 py-0.5 text-slate-900">{test.ordered_by?.name ?? '—'}</td>
+                                <td className="px-1 py-0.5 text-slate-900">{test.reviewed_by?.name ?? ''}</td>
+                                <td className="px-1 py-0.5 text-slate-900">{test.reviewed_by ? formatDateTime(test.reported_at) : ''}</td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
     );
 }
 
@@ -260,6 +303,9 @@ function LabTestModal({
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [clinicalHistory, setClinicalHistory] = useState('');
     const [attachments, setAttachments] = useState<{ file_name: string; content_type: string; size: number }[]>([]);
+    const [markPaid, setMarkPaid] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [paymentReference, setPaymentReference] = useState('');
     const busy = createMutation.isPending;
     const filteredDefinitions = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -285,6 +331,9 @@ function LabTestModal({
         setSelectedIds([]);
         setClinicalHistory('');
         setAttachments([]);
+        setMarkPaid(false);
+        setPaymentMethod('cash');
+        setPaymentReference('');
         onClose();
     };
 
@@ -300,6 +349,12 @@ function LabTestModal({
                     test_definition_id: definition.id,
                     test_name: definition.name,
                     status: 'ordered',
+                    total_price: moneyNumber(definition.price),
+                    amount_paid: markPaid ? moneyNumber(definition.price) : 0,
+                    payment_status: markPaid ? 'completed' : 'pending',
+                    payment_method: markPaid ? paymentMethod : undefined,
+                    payment_reference: markPaid ? paymentReference.trim() || undefined : undefined,
+                    paid_at: markPaid ? new Date().toISOString() : undefined,
                     clinical_history: clinicalHistory.trim() || undefined,
                     attachments: attachments.length ? attachments : undefined,
                 });
@@ -371,6 +426,33 @@ function LabTestModal({
                         placeholder="Relevant symptoms, treatment history, pregnancy context, or clinical indication"
                     />
                 </FormField>
+                <div className="border border-slate-200 bg-slate-50 px-4 py-3">
+                    <label className="flex items-center gap-3 text-sm font-semibold text-slate-800">
+                        <input
+                            type="checkbox"
+                            checked={markPaid}
+                            onChange={event => setMarkPaid(event.target.checked)}
+                            className="h-4 w-4"
+                        />
+                        Payment received for selected test(s)
+                    </label>
+                    {markPaid && (
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            <FormField label="Payment Method">
+                                <Select value={paymentMethod} onChange={event => setPaymentMethod(event.target.value)}>
+                                    <option value="cash">Cash</option>
+                                    <option value="momo">Mobile money</option>
+                                    <option value="card">Card</option>
+                                    <option value="bank_transfer">Bank transfer</option>
+                                    <option value="insurance">Insurance</option>
+                                </Select>
+                            </FormField>
+                            <FormField label="Reference">
+                                <Input value={paymentReference} onChange={event => setPaymentReference(event.target.value)} placeholder="Receipt, MoMo, or insurance reference" />
+                            </FormField>
+                        </div>
+                    )}
+                </div>
                 <FormField label="Attachments">
                     <Input
                         type="file"
@@ -427,7 +509,8 @@ function LabTestDetailPanel({
     const stageMeta = getStageMeta(stage);
     const userRoles = user?.roles?.map(role => role.name) ?? [];
     const canVerify = canSignLabResults(userRoles);
-    const canEditResults = stage === 'draft';
+    const paid = isTestPaid(test);
+    const canEditResults = stage === 'draft' && paid;
     const parameters = useMemo(
         () => (definition?.parameters ?? [])
             .filter(parameter => parameter.is_active)
@@ -449,6 +532,10 @@ function LabTestDetailPanel({
     );
 
     const handleSaveResults = async (nextStage: 'draft' | 'filed') => {
+        if (!paid) {
+            showError('Record payment before entering results.');
+            return;
+        }
         const entries = parameters
             .map(parameter => ({ parameter, draft: drafts[parameter.id] ?? emptyResultDraft() }))
             .filter(({ parameter, draft }) => {
@@ -511,6 +598,10 @@ function LabTestDetailPanel({
     };
 
     const handleVerify = async () => {
+        if (!paid) {
+            showError('Record payment before verifying results.');
+            return;
+        }
         if (!canVerify) {
             showError('Only a supervisor or administrator can sign and verify filed results.');
             return;
@@ -543,6 +634,23 @@ function LabTestDetailPanel({
             onClose();
         } catch (e: unknown) {
             showError(getErrorMessage(e, 'Failed to delete lab test.'));
+        }
+    };
+
+    const handleMarkPaid = async () => {
+        try {
+            await updateTestMutation.mutateAsync({
+                id: test.id,
+                data: {
+                    amount_paid: moneyNumber(test.total_price),
+                    payment_status: 'completed',
+                    payment_method: test.payment_method ?? 'cash',
+                    paid_at: new Date().toISOString(),
+                },
+            });
+            showSuccess('Payment recorded for this lab test.');
+        } catch (e: unknown) {
+            showError(getErrorMessage(e, 'Failed to record payment.'));
         }
     };
 
@@ -584,6 +692,12 @@ function LabTestDetailPanel({
                                 Delete
                             </Button>
                         )}
+                        {!paid && (
+                            <Button variant="secondary" onClick={handleMarkPaid} loading={updateTestMutation.isPending}>
+                                <CreditCard className="mr-1 h-4 w-4" />
+                                Mark Paid
+                            </Button>
+                        )}
                         {canEditResults && (
                             <Button variant="secondary" onClick={() => handleSaveResults('draft')} loading={busy}>
                                 <Save className="mr-1 h-4 w-4" />
@@ -609,11 +723,19 @@ function LabTestDetailPanel({
                     <div>
                         <div className="flex flex-wrap items-center gap-2">
                             <span className={`px-2 py-0.5 text-[11px] font-semibold uppercase ${stageMeta.tone}`}>{stageMeta.label}</span>
+                            <span className={`px-2 py-0.5 text-[11px] font-semibold uppercase ${paid ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                                {paid ? 'Paid' : 'Unpaid'}
+                            </span>
                             {test.reviewed_by && (
                                 <span className="text-xs text-slate-500">Signed by {test.reviewed_by.name}</span>
                             )}
                         </div>
                         <p className="mt-1 text-xs text-slate-500">{stageMeta.description}</p>
+                        {!paid && (
+                            <p className="mt-1 text-xs font-semibold text-rose-600">
+                                Results are locked until payment is recorded. Balance: {formatCurrency(moneyNumber(test.payment_balance))}
+                            </p>
+                        )}
                     </div>
                     <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
                         <StageStep active done={stage !== 'draft'} label="Draft" />

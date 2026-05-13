@@ -4,6 +4,7 @@ export type LabTestType = 'hep_b' | 'rft' | 'lft';
 export type LabTestStatus = 'draft' | 'filed' | 'verified' | 'ordered' | 'in_progress' | 'completed' | 'cancelled';
 export type LabResultFlag = 'normal' | 'low' | 'high' | 'critical_low' | 'critical_high' | 'abnormal';
 export type LabValueType = 'numeric' | 'text' | 'both';
+export type LabPaymentStatus = 'pending' | 'partial' | 'completed' | 'overdue';
 
 export interface LabTestParameterDefinition {
     id: string;
@@ -96,9 +97,17 @@ export interface LabTest {
     status: LabTestStatus;
     ordered_by: { id: string; name: string } | null;
     reviewed_by: { id: string; name: string } | null;
+    payment_recorded_by: { id: string; name: string } | null;
     ordered_at: string;
     collected_at: string | null;
     reported_at: string | null;
+    total_price: string | number;
+    amount_paid: string | number;
+    payment_status: LabPaymentStatus;
+    payment_method: string | null;
+    payment_reference: string | null;
+    paid_at: string | null;
+    payment_balance: string | number;
     has_abnormal_results: boolean;
     notes: string | null;
     clinical_history: string | null;
@@ -136,6 +145,12 @@ export interface CreateLabTestPayload {
     collected_at?: string;
     reported_at?: string;
     status?: LabTestStatus;
+    total_price?: number | null;
+    amount_paid?: number;
+    payment_status?: LabPaymentStatus;
+    payment_method?: string | null;
+    payment_reference?: string | null;
+    paid_at?: string | null;
     notes?: string;
     clinical_history?: string;
     attachments?: LabTestAttachment[];
