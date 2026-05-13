@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { User } from '../../types/user';
-import { usePermissions, useUpdateUserPermissions } from '../../hooks/useUsers';
+import { usePermissions, useUpdateUserPermissions, useUser } from '../../hooks/useUsers';
 import { Button } from '../common/Button';
 import { Modal } from '../common/Modal';
 
@@ -14,8 +14,13 @@ export function UserPermissionsModal({
   onClose: () => void;
 }) {
   const { data: permissions = [], isLoading } = usePermissions();
+  const { data: loadedUser, isLoading: isUserLoading } = useUser(open && user ? user.id : null);
   const updatePermissions = useUpdateUserPermissions();
-  const initialIds = useMemo(() => user?.direct_permissions?.map(permission => permission.id) ?? [], [user]);
+  const displayUser = loadedUser ?? user;
+  const initialIds = useMemo(
+    () => displayUser?.direct_permissions?.map(permission => permission.id) ?? [],
+    [displayUser],
+  );
   const [selectedIds, setSelectedIds] = useState<number[]>(initialIds);
 
   useEffect(() => {
@@ -40,7 +45,7 @@ export function UserPermissionsModal({
     <Modal
       open={open && !!user}
       onClose={onClose}
-      title={user ? `Permissions for ${user.full_name}` : 'User Permissions'}
+      title={displayUser ? `Permissions for ${displayUser.full_name}` : 'User Permissions'}
       subtitle="Grant or revoke direct permissions without changing this user's role."
       size="lg"
       footer={
@@ -50,7 +55,7 @@ export function UserPermissionsModal({
         </>
       }
     >
-      {isLoading ? (
+      {isLoading || isUserLoading ? (
         <div className="py-10 text-center text-sm text-slate-400">Loading permissions...</div>
       ) : (
         <div className="grid gap-2 sm:grid-cols-2">
