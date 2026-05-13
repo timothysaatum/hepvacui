@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, Plus, Save, Search, Settings2, X } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Plus, Save, Search, Settings2, Trash2, X } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FormField, Input, Select, Textarea } from '../common';
 import { Modal } from '../common/Modal';
@@ -10,6 +10,7 @@ import { formatCurrency } from '../../utils/formatters';
 import {
     useCreateLabTestDefinition,
     useCreateLabTestParameter,
+    useDeleteLabTestDefinition,
     useLabTestDefinitions,
     useUpdateLabTestDefinition,
     useUpdateLabTestParameter,
@@ -251,8 +252,10 @@ export function LabTestDefinitionManager() {
 }
 
 function DefinitionDetail({ definition }: { definition: LabTestDefinition }) {
+    const navigate = useNavigate();
     const { showSuccess, showError } = useToast();
     const updateDefinition = useUpdateLabTestDefinition();
+    const deleteDefinition = useDeleteLabTestDefinition();
     const createParameter = useCreateLabTestParameter();
     const updateParameter = useUpdateLabTestParameter();
     const [definitionForm, setDefinitionForm] = useState({
@@ -312,6 +315,19 @@ function DefinitionDetail({ definition }: { definition: LabTestDefinition }) {
         }
     };
 
+    const removeDefinition = async () => {
+        if (!window.confirm(`Delete ${definition.name} from the lab test catalog? Historical patient results will be kept.`)) {
+            return;
+        }
+        try {
+            await deleteDefinition.mutateAsync(definition.id);
+            showSuccess('Lab test definition deleted.');
+            navigate('/tests');
+        } catch (error: unknown) {
+            showError(getErrorMessage(error, 'Failed to delete lab test definition.'));
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="grid gap-4 md:grid-cols-2">
@@ -349,10 +365,16 @@ function DefinitionDetail({ definition }: { definition: LabTestDefinition }) {
                     />
                     Available for patient orders
                 </label>
-                <Button size="sm" onClick={saveDefinition} loading={updateDefinition.isPending}>
-                    <Save className="mr-1 h-4 w-4" />
-                    Save Test
-                </Button>
+                <div className="flex flex-wrap justify-end gap-2">
+                    <Button size="sm" variant="danger" onClick={removeDefinition} loading={deleteDefinition.isPending}>
+                        <Trash2 className="mr-1 h-4 w-4" />
+                        Delete Test
+                    </Button>
+                    <Button size="sm" onClick={saveDefinition} loading={updateDefinition.isPending}>
+                        <Save className="mr-1 h-4 w-4" />
+                        Save Test
+                    </Button>
+                </div>
             </div>
 
             <div className="border-t border-slate-100 pt-5">

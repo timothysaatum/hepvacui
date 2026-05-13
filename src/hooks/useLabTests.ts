@@ -85,6 +85,14 @@ export function useUpdateLabTestDefinition() {
     });
 }
 
+export function useDeleteLabTestDefinition() {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => labTestService.deleteDefinition(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['lab-test-definitions'] }),
+    });
+}
+
 export function useCreateLabTestParameter() {
     const qc = useQueryClient();
     return useMutation({

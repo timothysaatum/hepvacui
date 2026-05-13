@@ -176,7 +176,7 @@ export const labTestService = {
     updateDefinition: (id: string, data: Partial<LabTestDefinitionPayload>): Promise<LabTestDefinition> =>
         api.patch(`${DEFINITIONS_BASE}/${id}`, data).then(r => r.data),
 
-    deactivateDefinition: (id: string): Promise<LabTestDefinition> =>
+    deleteDefinition: (id: string): Promise<void> =>
         api.delete(`${DEFINITIONS_BASE}/${id}`).then(r => r.data),
 
     createParameter: (testDefinitionId: string, data: LabTestParameterDefinitionPayload): Promise<LabTestParameterDefinition> =>
