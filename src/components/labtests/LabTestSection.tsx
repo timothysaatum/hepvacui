@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { AlertTriangle, Beaker, CheckCircle2, ClipboardCheck, CreditCard, FileCheck2, FilePlus2, Printer, Search, Save, Trash2, X } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FormField, Input, Select, Textarea } from '../common';
@@ -49,6 +50,13 @@ function labCode(test: LabTest) {
 
 function requestCode(test: LabTest) {
     return test.id.replace(/-/g, '').slice(-8).toUpperCase();
+}
+
+function formatMoneyCell(value: string | number | null | undefined) {
+    return moneyNumber(value).toLocaleString('en-GH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    });
 }
 
 function getLabWorkflowStage(test: LabTest): LabWorkflowStage {
@@ -175,23 +183,25 @@ export function LabTestSection({ patient }: { patient: Patient }) {
                             selectedTestId={selectedTestId}
                             onSelect={setSelectedTestId}
                         />
-                        <div className="min-w-0 bg-slate-50/50">
-                            {selectedTest ? (
-                                <LabTestDetailPanel
-                                    key={selectedTest.id}
-                                    onClose={() => setSelectedTestId(null)}
-                                    patient={patient}
-                                    test={selectedTest}
-                                />
-                            ) : (
-                                <div className="px-5 py-12 text-center text-sm text-slate-500">
-                                    Click a test request above to print it, record payment, or enter results.
-                                </div>
-                            )}
-                        </div>
+                        {!selectedTest && (
+                            <div className="px-5 py-12 text-center text-sm text-slate-500">
+                                Select a test request to open its side panel.
+                            </div>
+                        )}
                     </div>
                 )}
             </section>
+
+            {selectedTest && (
+                <LabTestSidePanel onClose={() => setSelectedTestId(null)}>
+                    <LabTestDetailPanel
+                        key={selectedTest.id}
+                        onClose={() => setSelectedTestId(null)}
+                        patient={patient}
+                        test={selectedTest}
+                    />
+                </LabTestSidePanel>
+            )}
 
             {addTestOpen && (
                 <LabTestModal
@@ -225,6 +235,22 @@ function LabSectionLoading() {
     );
 }
 
+function LabTestSidePanel({ children, onClose }: { children: ReactNode; onClose: () => void }) {
+    return (
+        <div className="fixed inset-0 z-50">
+            <button
+                type="button"
+                className="absolute inset-0 bg-slate-950/30"
+                aria-label="Close lab test panel"
+                onClick={onClose}
+            />
+            <aside className="absolute inset-y-0 right-0 flex w-full max-w-5xl flex-col border-l border-slate-200 bg-white shadow-2xl">
+                {children}
+            </aside>
+        </div>
+    );
+}
+
 function LabTestRequestTable({
     patientName,
     tests,
@@ -238,22 +264,23 @@ function LabTestRequestTable({
 }) {
     return (
         <div className="overflow-x-auto border-b border-slate-200">
-            <table className="w-full min-w-[1100px] border-collapse text-left text-sm">
+            <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
                 <thead>
-                    <tr className="bg-[#5d95c8] text-white">
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Req Code</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Lab Code</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Paid</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Remainder</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Patient Name</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Contract</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Request date</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Registered By</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Checked by</th>
-                        <th className="border border-white/70 px-1 py-0.5 font-serif font-normal">Checked date</th>
+                    <tr className="border-y border-slate-200 bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                        <th className="px-3 py-2">Req Code</th>
+                        <th className="px-3 py-2">Lab Code</th>
+                        <th className="px-3 py-2">Test</th>
+                        <th className="px-3 py-2 text-right">Paid</th>
+                        <th className="px-3 py-2 text-right">Balance</th>
+                        <th className="px-3 py-2">Patient</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">Request date</th>
+                        <th className="px-3 py-2">Registered By</th>
+                        <th className="px-3 py-2">Checked by</th>
+                        <th className="px-3 py-2">Checked date</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                     {tests.map((test, index) => {
                         const selected = selectedTestId === test.id;
                         const paid = isTestPaid(test);
@@ -265,18 +292,25 @@ function LabTestRequestTable({
                                 onKeyDown={event => {
                                     if (event.key === 'Enter' || event.key === ' ') onSelect(test.id);
                                 }}
-                                className={`cursor-pointer ${selected ? 'bg-sky-100' : index % 2 === 0 ? 'bg-[#e9e5d7]' : 'bg-white'} hover:bg-sky-50`}
+                                className={`cursor-pointer transition-colors ${selected ? 'bg-teal-50' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'} hover:bg-teal-50/70`}
                             >
-                                <td className="px-1 py-0.5 font-bold text-red-600">{requestCode(test)}</td>
-                                <td className="px-1 py-0.5 font-bold text-red-600">{labCode(test)}</td>
-                                <td className="px-1 py-0.5 text-right font-medium text-green-700">{moneyNumber(test.amount_paid).toFixed(2)}</td>
-                                <td className="px-1 py-0.5 text-right font-medium text-green-700">{moneyNumber(test.payment_balance).toFixed(2)}</td>
-                                <td className="px-1 py-0.5 font-semibold uppercase text-red-600">{patientName}</td>
-                                <td className="px-1 py-0.5 uppercase text-slate-900">{paid ? 'STANDARD PRICE' : 'PAYMENT PENDING'}</td>
-                                <td className="px-1 py-0.5 text-slate-900">{formatDateTime(test.ordered_at)}</td>
-                                <td className="px-1 py-0.5 text-slate-900">{test.ordered_by?.name ?? '—'}</td>
-                                <td className="px-1 py-0.5 text-slate-900">{test.reviewed_by?.name ?? ''}</td>
-                                <td className="px-1 py-0.5 text-slate-900">{test.reviewed_by ? formatDateTime(test.reported_at) : ''}</td>
+                                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs font-semibold text-slate-700">{requestCode(test)}</td>
+                                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs font-semibold text-slate-700">{labCode(test)}</td>
+                                <td className="max-w-[220px] truncate px-3 py-2 font-semibold text-slate-900">{test.test_name}</td>
+                                <td className="whitespace-nowrap px-3 py-2 text-right font-medium text-emerald-700">{formatMoneyCell(test.amount_paid)}</td>
+                                <td className={`whitespace-nowrap px-3 py-2 text-right font-medium ${paid ? 'text-slate-500' : 'text-amber-700'}`}>
+                                    {formatMoneyCell(test.payment_balance)}
+                                </td>
+                                <td className="max-w-[180px] truncate px-3 py-2 font-medium uppercase text-slate-800">{patientName}</td>
+                                <td className="px-3 py-2">
+                                    <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold uppercase ${paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                        {paid ? 'Paid' : 'Payment due'}
+                                    </span>
+                                </td>
+                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{formatDateTime(test.ordered_at)}</td>
+                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{test.ordered_by?.name ?? '—'}</td>
+                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{test.reviewed_by?.name ?? '—'}</td>
+                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{test.reviewed_by ? formatDateTime(test.reported_at) : '—'}</td>
                             </tr>
                         );
                     })}
@@ -530,6 +564,10 @@ function LabTestDetailPanel({
     const [drafts, setDrafts] = useState<Record<string, ResultDraft>>(() =>
         buildInitialDrafts(parameters, resultsByParameter)
     );
+    const [paymentOpen, setPaymentOpen] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState(() => String(moneyNumber(test.payment_balance) || moneyNumber(test.total_price)));
+    const [paymentMethod, setPaymentMethod] = useState(test.payment_method ?? 'cash');
+    const [paymentReference, setPaymentReference] = useState(test.payment_reference ?? '');
 
     const handleSaveResults = async (nextStage: 'draft' | 'filed') => {
         if (!paid) {
@@ -637,18 +675,29 @@ function LabTestDetailPanel({
         }
     };
 
-    const handleMarkPaid = async () => {
+    const handleAddPayment = async () => {
+        const amount = Number(paymentAmount);
+        const balance = moneyNumber(test.payment_balance);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            showError('Enter a valid payment amount.');
+            return;
+        }
+        if (balance > 0 && amount > balance) {
+            showError(`Payment cannot exceed the outstanding balance of ${formatCurrency(balance)}.`);
+            return;
+        }
         try {
             await updateTestMutation.mutateAsync({
                 id: test.id,
                 data: {
-                    amount_paid: moneyNumber(test.total_price),
-                    payment_status: 'completed',
-                    payment_method: test.payment_method ?? 'cash',
+                    amount_paid: moneyNumber(test.amount_paid) + amount,
+                    payment_method: paymentMethod,
+                    payment_reference: paymentReference.trim() || undefined,
                     paid_at: new Date().toISOString(),
                 },
             });
-            showSuccess('Payment recorded for this lab test.');
+            showSuccess('Payment saved.');
+            setPaymentOpen(false);
         } catch (e: unknown) {
             showError(getErrorMessage(e, 'Failed to record payment.'));
         }
@@ -665,21 +714,23 @@ function LabTestDetailPanel({
     }
 
     return (
-        <div className="p-5">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <h3 className="text-base font-semibold text-slate-900">{test.test_name}</h3>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                        Ordered {formatDateTime(test.ordered_at)} · Filed {formatDateTime(test.reported_at)}
-                    </p>
+        <div className="flex h-full flex-col">
+            <div className="border-b border-slate-200 px-6 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h3 className="text-base font-semibold text-slate-900">{test.test_name}</h3>
+                        <p className="mt-0.5 text-xs text-slate-500">
+                            Ordered {formatDateTime(test.ordered_at)} · Filed {formatDateTime(test.reported_at)}
+                        </p>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={onClose}>
+                        <X className="mr-1 h-4 w-4" />
+                        Close
+                    </Button>
                 </div>
-                <Button variant="outline" size="sm" onClick={onClose}>
-                    <X className="mr-1 h-4 w-4" />
-                    Close
-                </Button>
             </div>
 
-            <div className="space-y-5">
+            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
                 <div className="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white px-4 py-3">
                     <Button variant="outline" onClick={() => printLabResult(patient, test, parameters, resultsByParameter)} disabled={busy}>
                         <Printer className="mr-1 h-4 w-4" />
@@ -693,9 +744,9 @@ function LabTestDetailPanel({
                             </Button>
                         )}
                         {!paid && (
-                            <Button variant="secondary" onClick={handleMarkPaid} loading={updateTestMutation.isPending}>
+                            <Button variant="secondary" onClick={() => setPaymentOpen(current => !current)} disabled={busy}>
                                 <CreditCard className="mr-1 h-4 w-4" />
-                                Mark Paid
+                                Add Payment
                             </Button>
                         )}
                         {canEditResults && (
@@ -718,6 +769,45 @@ function LabTestDetailPanel({
                         )}
                     </div>
                 </div>
+
+                {paymentOpen && !paid && (
+                    <div className="border border-teal-200 bg-teal-50/40 px-4 py-3">
+                        <div className="grid gap-3 md:grid-cols-[150px_150px_minmax(0,1fr)_auto] md:items-end">
+                            <FormField label="Payment Type">
+                                <Select value={paymentMethod} onChange={event => setPaymentMethod(event.target.value)}>
+                                    <option value="cash">Cash</option>
+                                    <option value="momo">Mobile money</option>
+                                    <option value="card">Card</option>
+                                    <option value="bank_transfer">Bank transfer</option>
+                                    <option value="insurance">Insurance</option>
+                                </Select>
+                            </FormField>
+                            <FormField label="Amount">
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={paymentAmount}
+                                    onChange={event => setPaymentAmount(event.target.value)}
+                                />
+                            </FormField>
+                            <FormField label="Reference">
+                                <Input
+                                    value={paymentReference}
+                                    onChange={event => setPaymentReference(event.target.value)}
+                                    placeholder="Receipt, MoMo, or insurance reference"
+                                />
+                            </FormField>
+                            <Button onClick={handleAddPayment} loading={updateTestMutation.isPending}>
+                                <Save className="mr-1 h-4 w-4" />
+                                Save
+                            </Button>
+                        </div>
+                        <p className="mt-2 text-xs text-slate-600">
+                            Outstanding balance: {formatCurrency(test.payment_balance)}
+                        </p>
+                    </div>
+                )}
 
                 <div className="grid gap-3 border border-slate-200 bg-slate-50 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                     <div>
