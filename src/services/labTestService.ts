@@ -1,7 +1,7 @@
 import api from './api';
 
 export type LabTestType = 'hep_b' | 'rft' | 'lft';
-export type LabTestStatus = 'ordered' | 'in_progress' | 'completed' | 'cancelled';
+export type LabTestStatus = 'draft' | 'filed' | 'verified' | 'ordered' | 'in_progress' | 'completed' | 'cancelled';
 export type LabResultFlag = 'normal' | 'low' | 'high' | 'critical_low' | 'critical_high' | 'abnormal';
 export type LabValueType = 'numeric' | 'text' | 'both';
 
@@ -157,6 +157,9 @@ export const labTestService = {
 
     update: (testId: string, data: UpdateLabTestPayload): Promise<LabTest> =>
         api.patch(`${BASE}/record/${testId}`, data).then(r => r.data),
+
+    delete: (testId: string): Promise<void> =>
+        api.delete(`${BASE}/record/${testId}`).then(r => r.data),
 
     addResult: (testId: string, data: LabResultPayload): Promise<LabTest> =>
         api.post(`${BASE}/record/${testId}/results`, data).then(r => r.data),

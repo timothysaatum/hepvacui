@@ -34,6 +34,11 @@ export const userService = {
     return response.data;
   },
 
+  createPermission: async (data: { name: string; description?: string }): Promise<Permission> => {
+    const response = await api.post('/api/v1/users/permissions/catalog', data);
+    return response.data;
+  },
+
   updateUserPermissions: async (userId: string, permissionIds: number[]): Promise<User> => {
     const response = await api.put(`/api/v1/users/${userId}/permissions`, {
       permission_ids: permissionIds,

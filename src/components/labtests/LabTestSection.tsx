@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { AlertTriangle, Beaker, CheckCircle2, ChevronRight, ClipboardCheck, FileCheck2, FilePlus2, Printer, Search, Save } from 'lucide-react';
+import { AlertTriangle, Beaker, CheckCircle2, ClipboardCheck, FileCheck2, FilePlus2, Printer, Search, Save, Trash2, X } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FormField, Input, Textarea } from '../common';
 import { Modal } from '../common/Modal';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { useAddLabResult, useCreateLabTest, useLabTestDefinitions, useLabTests, useUpdateLabResult, useUpdateLabTest } from '../../hooks/useLabTests';
+import { useAddLabResult, useCreateLabTest, useDeleteLabTest, useLabTestDefinitions, useLabTests, useUpdateLabResult, useUpdateLabTest } from '../../hooks/useLabTests';
 import { getErrorMessage } from '../../utils/errorUtils';
 import { formatCurrency } from '../../utils/formatters';
 import type { Patient } from '../../types/patient';
@@ -35,8 +35,8 @@ function formatParameterRange(parameter: LabTestParameterDefinition) {
 }
 
 function getLabWorkflowStage(test: LabTest): LabWorkflowStage {
-    if (test.reviewed_by) return 'verified';
-    if (test.status === 'completed' || test.reported_at) return 'filed';
+    if (test.reviewed_by || test.status === 'verified') return 'verified';
+    if (test.status === 'filed' || test.status === 'completed' || test.reported_at) return 'filed';
     return 'draft';
 }
 
@@ -107,6 +107,11 @@ export function LabTestSection({ patient }: { patient: Patient }) {
     const definitions = useMemo(() => Array.isArray(definitionsRaw) ? definitionsRaw : [], [definitionsRaw]);
     const tests = useMemo(() => Array.isArray(testsRaw) ? testsRaw : [], [testsRaw]);
     const [addTestOpen, setAddTestOpen] = useState(false);
+    const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+    const selectedTest = useMemo(
+        () => tests.find(test => test.id === selectedTestId) ?? tests[0] ?? null,
+        [selectedTestId, tests],
+    );
 
     // Show error if definitions query fails
     if (definitionsError && definitionsErrorObj) {
@@ -137,7 +142,7 @@ export function LabTestSection({ patient }: { patient: Patient }) {
                         <p className="mt-1 text-xs text-slate-400">Unable to add new tests at this time. Please try again later.</p>
                     </div>
                 ) : isLoading ? (
-                    <div className="px-5 py-12 text-center text-sm text-slate-400">Loading tests...</div>
+                    <LabSectionLoading />
                 ) : tests.length === 0 ? (
                     <div className="px-5 py-12 text-center">
                         <Beaker className="mx-auto h-8 w-8 text-slate-300" />
@@ -146,8 +151,29 @@ export function LabTestSection({ patient }: { patient: Patient }) {
                         <Button size="sm" className="mt-4" onClick={() => setAddTestOpen(true)} disabled={definitions.length === 0}>Add Test</Button>
                     </div>
                 ) : (
-                    <div className="divide-y divide-slate-100">
-                        {tests.map(test => <LabTestRow key={test.id} patient={patient} test={test} />)}
+                    <div className="grid min-h-[560px] lg:grid-cols-[360px_minmax(0,1fr)]">
+                        <div className="border-r border-slate-100">
+                            <div className="divide-y divide-slate-100">
+                                {tests.map(test => (
+                                    <LabTestRow
+                                        key={test.id}
+                                        test={test}
+                                        selected={selectedTest?.id === test.id}
+                                        onSelect={() => setSelectedTestId(test.id)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="min-w-0 bg-slate-50/50">
+                            {selectedTest && (
+                                <LabTestDetailPanel
+                                    key={selectedTest.id}
+                                    onClose={() => setSelectedTestId(null)}
+                                    patient={patient}
+                                    test={selectedTest}
+                                />
+                            )}
+                        </div>
                     </div>
                 )}
             </section>
@@ -164,51 +190,56 @@ export function LabTestSection({ patient }: { patient: Patient }) {
     );
 }
 
-function LabTestRow({ patient, test }: { patient: Patient; test: LabTest }) {
-    const [detailOpen, setDetailOpen] = useState(false);
+function LabSectionLoading() {
+    return (
+        <div className="grid min-h-[360px] animate-pulse lg:grid-cols-[360px_minmax(0,1fr)]">
+            <div className="space-y-3 border-r border-slate-100 p-5">
+                {[1, 2, 3].map(item => (
+                    <div key={item} className="border border-slate-100 bg-white p-4">
+                        <div className="h-4 w-2/3 bg-slate-200" />
+                        <div className="mt-3 h-3 w-1/2 bg-slate-100" />
+                    </div>
+                ))}
+            </div>
+            <div className="space-y-4 p-5">
+                <div className="h-16 bg-white" />
+                <div className="h-48 bg-white" />
+                <div className="h-20 bg-white" />
+            </div>
+        </div>
+    );
+}
+
+function LabTestRow({ test, selected, onSelect }: { test: LabTest; selected: boolean; onSelect: () => void }) {
     const definition = test.test_definition;
     const stage = getLabWorkflowStage(test);
     const stageMeta = getStageMeta(stage);
 
     return (
-        <>
-            <button
-                type="button"
-                onClick={() => setDetailOpen(true)}
-                className="block w-full px-5 py-4 text-left transition-colors hover:bg-teal-50/60"
-            >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-900">{test.test_name}</p>
-                            <span className="bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                                {definition?.short_name ?? definition?.code ?? test.test_type ?? 'Custom'}
-                            </span>
-                            <span className={`px-2 py-0.5 text-[11px] font-semibold ${stageMeta.tone}`}>{stageMeta.label}</span>
-                            {test.has_abnormal_results && (
-                                <span className="bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Abnormal</span>
-                            )}
-                        </div>
-                        <p className="mt-1 text-xs text-slate-400">
-                            Ordered {formatDateTime(test.ordered_at)} · Filed {formatDateTime(test.reported_at)}
-                        </p>
+        <button
+            type="button"
+            onClick={onSelect}
+            className={`block w-full px-5 py-4 text-left transition-colors ${selected ? 'bg-teal-50' : 'hover:bg-teal-50/60'}`}
+        >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">{test.test_name}</p>
+                        <span className="bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                            {definition?.short_name ?? definition?.code ?? test.test_type ?? 'Custom'}
+                        </span>
+                        <span className={`px-2 py-0.5 text-[11px] font-semibold ${stageMeta.tone}`}>{stageMeta.label}</span>
+                        {test.has_abnormal_results && (
+                            <span className="bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700">Abnormal</span>
+                        )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span>{test.results.length} result{test.results.length === 1 ? '' : 's'}</span>
-                        <ChevronRight className="h-4 w-4 text-slate-400" />
-                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                        Ordered {formatDateTime(test.ordered_at)} · Filed {formatDateTime(test.reported_at)}
+                    </p>
                 </div>
-            </button>
-
-            {detailOpen && (
-                <LabTestDetailModal
-                    open={detailOpen}
-                    onClose={() => setDetailOpen(false)}
-                    patient={patient}
-                    test={test}
-                />
-            )}
-        </>
+                <span className="text-xs text-slate-500">{test.results.length} result{test.results.length === 1 ? '' : 's'}</span>
+            </div>
+        </button>
     );
 }
 
@@ -376,13 +407,11 @@ type ResultDraft = {
     notes: string;
 };
 
-function LabTestDetailModal({
-    open,
+function LabTestDetailPanel({
     onClose,
     patient,
     test,
 }: {
-    open: boolean;
     onClose: () => void;
     patient: Patient;
     test: LabTest;
@@ -390,6 +419,7 @@ function LabTestDetailModal({
     const { showSuccess, showError } = useToast();
     const { user } = useAuth();
     const addMutation = useAddLabResult(patient.id);
+    const deleteMutation = useDeleteLabTest(patient.id);
     const updateMutation = useUpdateLabResult(patient.id);
     const updateTestMutation = useUpdateLabTest(patient.id);
     const definition = test.test_definition;
@@ -404,7 +434,7 @@ function LabTestDetailModal({
             .sort((a, b) => a.display_order - b.display_order),
         [definition],
     );
-    const busy = addMutation.isPending || updateMutation.isPending || updateTestMutation.isPending;
+    const busy = addMutation.isPending || updateMutation.isPending || updateTestMutation.isPending || deleteMutation.isPending;
 
     const resultsByParameter = useMemo(() => {
         const map = new Map<string, LabResult>();
@@ -470,8 +500,8 @@ function LabTestDetailModal({
             await updateTestMutation.mutateAsync({
                 id: test.id,
                 data: nextStage === 'filed'
-                    ? { status: 'completed', reported_at: test.reported_at ?? new Date().toISOString() }
-                    : { status: 'in_progress' },
+                    ? { status: 'filed', reported_at: test.reported_at ?? new Date().toISOString() }
+                    : { status: 'draft' },
             });
             showSuccess(nextStage === 'filed' ? 'Results filed for verification.' : 'Draft results saved.');
             onClose();
@@ -492,12 +522,27 @@ function LabTestDetailModal({
         try {
             await updateTestMutation.mutateAsync({
                 id: test.id,
-                data: { status: 'completed', reported_at: test.reported_at ?? new Date().toISOString() },
+                data: { status: 'verified', reported_at: test.reported_at ?? new Date().toISOString() },
             });
             showSuccess('Results signed and verified.');
             onClose();
         } catch (e: unknown) {
             showError(getErrorMessage(e, 'Failed to verify results.'));
+        }
+    };
+
+    const handleDelete = async () => {
+        if (stage === 'verified') {
+            showError('Verified lab tests cannot be deleted.');
+            return;
+        }
+        if (!window.confirm(`Delete ${test.test_name}? This removes it from the active patient record.`)) return;
+        try {
+            await deleteMutation.mutateAsync(test.id);
+            showSuccess('Lab test deleted.');
+            onClose();
+        } catch (e: unknown) {
+            showError(getErrorMessage(e, 'Failed to delete lab test.'));
         }
     };
 
@@ -512,20 +557,33 @@ function LabTestDetailModal({
     }
 
     return (
-        <Modal
-            open={open}
-            onClose={onClose}
-            title={test.test_name}
-            subtitle={`Ordered ${formatDateTime(test.ordered_at)} · Filed ${formatDateTime(test.reported_at)}`}
-            size="2xl"
-            footer={
-                <div className="flex w-full flex-wrap items-center justify-between gap-3">
+        <div className="p-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h3 className="text-base font-semibold text-slate-900">{test.test_name}</h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                        Ordered {formatDateTime(test.ordered_at)} · Filed {formatDateTime(test.reported_at)}
+                    </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={onClose}>
+                    <X className="mr-1 h-4 w-4" />
+                    Close
+                </Button>
+            </div>
+
+            <div className="space-y-5">
+                <div className="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white px-4 py-3">
                     <Button variant="outline" onClick={() => printLabResult(patient, test, parameters, resultsByParameter)} disabled={busy}>
                         <Printer className="mr-1 h-4 w-4" />
                         Print
                     </Button>
                     <div className="flex flex-wrap justify-end gap-3">
-                        <Button variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
+                        {stage !== 'verified' && (
+                            <Button variant="danger" onClick={handleDelete} loading={deleteMutation.isPending}>
+                                <Trash2 className="mr-1 h-4 w-4" />
+                                Delete
+                            </Button>
+                        )}
                         {canEditResults && (
                             <Button variant="secondary" onClick={() => handleSaveResults('draft')} loading={busy}>
                                 <Save className="mr-1 h-4 w-4" />
@@ -546,9 +604,7 @@ function LabTestDetailModal({
                         )}
                     </div>
                 </div>
-            }
-        >
-            <div className="space-y-5">
+
                 <div className="grid gap-3 border border-slate-200 bg-slate-50 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                     <div>
                         <div className="flex flex-wrap items-center gap-2">
@@ -668,7 +724,7 @@ function LabTestDetailModal({
                     </div>
                 </div>
             </div>
-        </Modal>
+        </div>
     );
 }
 

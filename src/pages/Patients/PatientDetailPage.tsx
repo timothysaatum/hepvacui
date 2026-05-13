@@ -10,7 +10,6 @@ import { ReminderSection } from '../../components/reminder/ReminderSection';
 import { DiagnosisSection } from '../../components/diagnosis/DiagnosisSection';
 import { LabTestSection } from '../../components/labtests/LabTestSection';
 import { AllergySection } from '../../components/patients/AllergySection';
-import { LoadingSpinner } from '../../components/common/index';
 import { isPregnantPatient } from '../../types/patient';
 import type { PatientType } from '../../types/patient';
 import {
@@ -45,7 +44,7 @@ export function PatientDetailPage() {
   const [reRegisterOpen, setReRegisterOpen] = useState(false);
 
   if (!patientId) { navigate('/patients'); return null; }
-  if (isLoading) return <div className="max-w-5xl mx-auto px-4 py-8"><LoadingSpinner /></div>;
+  if (isLoading) return <PatientDetailLoading />;
   if (isError || !patient) return (
     <div className="max-w-5xl mx-auto px-4 py-8 text-center">
       <p className="text-slate-400 text-sm">Patient record not found.</p>
@@ -123,6 +122,30 @@ export function PatientDetailPage() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+function PatientDetailLoading() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-5">
+      <div className="animate-pulse space-y-5">
+        <div className="border border-slate-200 bg-white p-5">
+          <div className="h-6 w-64 bg-slate-200" />
+          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+            {[1, 2, 3, 4].map(item => <div key={item} className="h-10 bg-slate-100" />)}
+          </div>
+        </div>
+        <div className="border-b border-slate-200 bg-white px-2">
+          <div className="flex gap-3 overflow-hidden py-3">
+            {[1, 2, 3, 4, 5, 6].map(item => <div key={item} className="h-8 w-24 bg-slate-100" />)}
+          </div>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="h-72 border border-slate-200 bg-white lg:col-span-2" />
+          <div className="h-72 border border-slate-200 bg-white" />
+        </div>
+      </div>
     </div>
   );
 }

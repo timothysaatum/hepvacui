@@ -7,6 +7,7 @@ export interface Role {
 export interface Permission {
   id: number;
   name: string;
+  description?: string | null;
 }
 
 /** Type alias so new code can use either name without breaking old imports. */

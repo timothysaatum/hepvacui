@@ -42,6 +42,14 @@ export function useUpdateLabTest(patientId: string) {
     });
 }
 
+export function useDeleteLabTest(patientId: string) {
+    const qc = useQueryClient();
+    return useMutation({
+        mutationFn: (id: string) => labTestService.delete(id),
+        onSuccess: () => qc.invalidateQueries({ queryKey: ['lab-tests', patientId] }),
+    });
+}
+
 export function useAddLabResult(patientId: string) {
     const qc = useQueryClient();
     return useMutation({

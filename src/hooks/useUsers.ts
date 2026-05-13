@@ -42,6 +42,23 @@ export const usePermissions = () => {
   });
 };
 
+export const useCreatePermission = () => {
+  const queryClient = useQueryClient();
+  const { showSuccess, showError } = useToast();
+
+  return useMutation({
+    mutationFn: (data: { name: string; description?: string }) => userService.createPermission(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.permissions() });
+      showSuccess('Permission created successfully');
+    },
+    onError: (error: any) => {
+      const errorMsg = error.response?.data?.detail || 'Failed to create permission';
+      showError(errorMsg);
+    },
+  });
+};
+
 // Create User Mutation
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
