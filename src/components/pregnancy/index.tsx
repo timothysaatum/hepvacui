@@ -10,6 +10,7 @@ import type { Child } from '../../types/child';
 import { PREGNANCY_OUTCOME_LABELS } from '../../utils/formatters';
 
 const OUTCOMES: PregnancyOutcome[] = ['live_birth', 'stillbirth', 'miscarriage', 'abortion', 'ectopic'];
+type HepBAntibodyResult = '' | 'positive' | 'negative' | 'indeterminate' | 'pending';
 
 // ── Open Pregnancy ─────────────────────────────────────────────────────────────
 
@@ -200,14 +201,20 @@ export function AddChildModal({ open, onClose, pregnancy, patientId }: { open: b
 export function UpdateChildModal({ open, onClose, child, patientId }: { open: boolean; onClose: () => void; child: Child; patientId: string }) {
     const { showSuccess, showError } = useToast();
     const mutation = useUpdateChild(); // no args
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<{
+        six_month_checkup_date: string;
+        six_month_checkup_completed: boolean;
+        hep_b_antibody_test_result: HepBAntibodyResult;
+        test_date: string;
+        notes: string;
+    }>({
         six_month_checkup_date: child.six_month_checkup_date ?? '',
         six_month_checkup_completed: child.six_month_checkup_completed,
         hep_b_antibody_test_result: child.hep_b_antibody_test_result ?? '',
         test_date: child.test_date ?? '',
         notes: child.notes ?? '',
     });
-    const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+    const set = <K extends keyof typeof form>(k: K, v: typeof form[K]) => setForm(f => ({ ...f, [k]: v }));
 
     const handleSubmit = async () => {
         try {
@@ -239,7 +246,7 @@ export function UpdateChildModal({ open, onClose, child, patientId }: { open: bo
                     <label htmlFor="checkup_done" className="text-sm text-slate-700">6-Month checkup completed</label>
                 </div>
                 <FormField label="Hep B Antibody Test Result">
-                    <Select value={form.hep_b_antibody_test_result} onChange={e => set('hep_b_antibody_test_result', e.target.value)}>
+                    <Select value={form.hep_b_antibody_test_result} onChange={e => set('hep_b_antibody_test_result', e.target.value as HepBAntibodyResult)}>
                         <option value="">Not tested</option>
                         <option value="positive">Positive</option>
                         <option value="negative">Negative</option>

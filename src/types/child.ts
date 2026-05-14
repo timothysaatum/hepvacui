@@ -36,7 +36,7 @@ export interface Child {
   six_month_checkup_completed: boolean;
 
   // Hep B antibody test
-  hep_b_antibody_test_result: string | null;
+  hep_b_antibody_test_result: 'positive' | 'negative' | 'indeterminate' | 'pending' | null;
   test_date: string | null;
 
   created_at: string;
@@ -69,7 +69,7 @@ export interface UpdateChildPayload {
   sex?: 'male' | 'female';
   six_month_checkup_date?: string;
   six_month_checkup_completed?: boolean;
-  hep_b_antibody_test_result?: string;
+  hep_b_antibody_test_result?: 'positive' | 'negative' | 'indeterminate' | 'pending';
   test_date?: string;
   notes?: string;
 }

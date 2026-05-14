@@ -24,7 +24,7 @@ interface FormState {
   sex: 'male' | 'female' | '';
   six_month_checkup_date: string;
   six_month_checkup_completed: boolean;
-  hep_b_antibody_test_result: string;
+  hep_b_antibody_test_result: '' | 'positive' | 'negative' | 'indeterminate' | 'pending';
   test_date: string;
   notes: string;
 }
@@ -79,8 +79,8 @@ export const EditChildPanel: React.FC<EditChildPanelProps> = ({
       payload.sex = formData.sex;
     if (formData.six_month_checkup_date)
       payload.six_month_checkup_date = formData.six_month_checkup_date;
-    if (formData.hep_b_antibody_test_result.trim())
-      payload.hep_b_antibody_test_result = formData.hep_b_antibody_test_result.trim();
+    if (formData.hep_b_antibody_test_result)
+      payload.hep_b_antibody_test_result = formData.hep_b_antibody_test_result;
     if (formData.test_date)
       payload.test_date = formData.test_date;
     if (formData.notes.trim())
@@ -248,16 +248,22 @@ export const EditChildPanel: React.FC<EditChildPanelProps> = ({
                   <label htmlFor="edit-hepb-result" className="block text-sm font-semibold text-black mb-2">
                     Test Result
                   </label>
-                  <input
+                  <select
                     id="edit-hepb-result"
-                    type="text"
                     name="hep_b_antibody_test_result"
                     value={formData.hep_b_antibody_test_result}
                     onChange={handleChange}
-                    placeholder="Enter test result"
-                    maxLength={200}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all"
-                  />
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent transition-all bg-white"
+                  >
+                    <option value="">Select result</option>
+                    <option value="positive">Positive</option>
+                    <option value="negative">Negative</option>
+                    <option value="indeterminate">Indeterminate</option>
+                    <option value="pending">Pending</option>
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Choose the official antibody result category used for follow-up reporting.
+                  </p>
                 </div>
 
                 <div>

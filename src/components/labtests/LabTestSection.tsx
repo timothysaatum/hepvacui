@@ -34,6 +34,43 @@ function formatParameterRange(parameter: LabTestParameterDefinition) {
     return `<= ${max} ${unit}`.trim();
 }
 
+function configuredDecimalPlaces(value: string | number | null | undefined) {
+    if (value === null || value === undefined) return 0;
+    const text = String(value);
+    if (!text.includes('.')) return 0;
+    return text.split('.')[1]?.length ?? 0;
+}
+
+function parameterDecimalPlaces(parameter: LabTestParameterDefinition) {
+    return Math.max(
+        configuredDecimalPlaces(parameter.reference_min),
+        configuredDecimalPlaces(parameter.reference_max),
+    );
+}
+
+function numericStep(parameter: LabTestParameterDefinition) {
+    const places = parameterDecimalPlaces(parameter);
+    return places > 0 ? `0.${'0'.repeat(Math.max(0, places - 1))}1` : '1';
+}
+
+function clampNumericPrecision(value: string, decimalPlaces: number) {
+    const cleaned = value
+        .replace(/[^\d.-]/g, '')
+        .replace(/(?!^)-/g, '');
+    const [whole = '', ...fractionParts] = cleaned.split('.');
+    if (!fractionParts.length) return whole;
+    if (decimalPlaces === 0) return whole;
+    return `${whole}.${fractionParts.join('').slice(0, decimalPlaces)}`;
+}
+
+function formatNumericForParameter(value: string | number | null, parameter: LabTestParameterDefinition) {
+    if (value === null || value === '') return '';
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+    const places = parameterDecimalPlaces(parameter);
+    return places > 0 ? numeric.toFixed(places) : String(Math.round(numeric));
+}
+
 function moneyNumber(value: string | number | null | undefined) {
     const amount = Number(value ?? 0);
     return Number.isFinite(amount) ? amount : 0;
@@ -227,18 +264,18 @@ function LabTestRequestTable({
     onSelect: (id: string) => void;
 }) {
     return (
-        <div className="border-b border-slate-200">
-            <table className="w-full table-fixed border-collapse text-left text-sm">
+        <div className="overflow-x-auto border-b border-slate-200">
+            <table className="min-w-[1080px] w-full border-collapse text-left text-sm">
                 <thead>
                     <tr className="border-y border-slate-200 bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-                        <th className="w-[23%] px-3 py-2">Test</th>
-                        <th className="w-[10%] px-3 py-2 text-right">Paid</th>
-                        <th className="w-[10%] px-3 py-2 text-right">Balance</th>
-                        <th className="w-[16%] px-3 py-2">Patient</th>
-                        <th className="w-[12%] px-3 py-2">Status</th>
-                        <th className="w-[14%] px-3 py-2">Request date</th>
-                        <th className="w-[15%] px-3 py-2">Registered By</th>
-                        <th className="hidden px-3 py-2 xl:table-cell">Checked by</th>
+                        <th className="min-w-[210px] px-3 py-2">Test</th>
+                        <th className="min-w-[90px] px-3 py-2 text-right">Paid</th>
+                        <th className="min-w-[95px] px-3 py-2 text-right">Balance</th>
+                        <th className="min-w-[150px] px-3 py-2">Patient</th>
+                        <th className="min-w-[130px] px-3 py-2">Status</th>
+                        <th className="min-w-[150px] px-3 py-2">Request date</th>
+                        <th className="min-w-[150px] px-3 py-2">Registered By</th>
+                        <th className="min-w-[140px] whitespace-nowrap px-3 py-2">Checked by</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -268,7 +305,7 @@ function LabTestRequestTable({
                                 </td>
                                 <td className="truncate px-3 py-2 text-slate-700">{formatDateTime(test.ordered_at)}</td>
                                 <td className="truncate px-3 py-2 text-slate-700">{test.ordered_by?.name ?? '—'}</td>
-                                <td className="hidden truncate px-3 py-2 text-slate-700 xl:table-cell">{test.reviewed_by?.name ?? '—'}</td>
+                                <td className="truncate px-3 py-2 text-slate-700">{test.reviewed_by?.name ?? '—'}</td>
                             </tr>
                         );
                     })}
@@ -849,10 +886,13 @@ function LabTestDetailPanel({
                                     <div>
                                         <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Numeric</p>
                                         <Input
-                                            type="number"
-                                            step="any"
+                                            type="text"
+                                            inputMode="decimal"
+                                            step={numericStep(parameter)}
                                             value={draft.value_numeric}
-                                            onChange={e => updateDraft(parameter.id, { value_numeric: e.target.value })}
+                                            onChange={e => updateDraft(parameter.id, {
+                                                value_numeric: clampNumericPrecision(e.target.value, parameterDecimalPlaces(parameter)),
+                                            })}
                                             disabled={!canEditResults || parameter.value_type === 'text'}
                                         />
                                     </div>
@@ -907,9 +947,9 @@ function emptyResultDraft(): ResultDraft {
     };
 }
 
-function resultToDraft(result: LabResult): ResultDraft {
+function resultToDraft(result: LabResult, parameter: LabTestParameterDefinition): ResultDraft {
     return {
-        value_numeric: result.value_numeric === null ? '' : String(result.value_numeric),
+        value_numeric: formatNumericForParameter(result.value_numeric, parameter),
         value_text: result.value_text ?? '',
         notes: result.notes ?? '',
     };
@@ -919,7 +959,7 @@ function buildInitialDrafts(parameters: LabTestParameterDefinition[], resultsByP
     const next: Record<string, ResultDraft> = {};
     for (const parameter of parameters) {
         const result = resultsByParameter.get(parameter.id) ?? resultsByParameter.get(parameter.code);
-        next[parameter.id] = result ? resultToDraft(result) : emptyResultDraft();
+        next[parameter.id] = result ? resultToDraft(result, parameter) : emptyResultDraft();
     }
     return next;
 }

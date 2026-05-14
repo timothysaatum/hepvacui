@@ -225,15 +225,46 @@ function DiagnosisModal({
                 </>
             }
         >
-            <div className="space-y-4">
-                <FormField label="Medical History">
-                    <Textarea rows={3} value={form.history} onChange={e => set('history', e.target.value)} />
+            <div className="space-y-5">
+                <div className="border border-slate-200 bg-slate-50 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-900">Clinical diagnosis note</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Record concise clinical facts. Use preliminary diagnosis for working impressions and confirmed diagnosis only when the diagnosis is clinically established.
+                    </p>
+                </div>
+
+                <FormField
+                    label="Medical History"
+                    hint="Summarize relevant symptoms, examination findings, past conditions, risk factors, medications, allergies, pregnancy context, or important negative findings."
+                >
+                    <Textarea
+                        rows={4}
+                        value={form.history}
+                        onChange={e => set('history', e.target.value)}
+                        placeholder="Example: 3 days of fever and right upper quadrant pain. No known drug allergies. Currently 24 weeks pregnant..."
+                    />
                 </FormField>
-                <FormField label="Preliminary Diagnosis">
-                    <Textarea rows={2} value={form.preliminary_diagnosis} onChange={e => set('preliminary_diagnosis', e.target.value)} />
+                <FormField
+                    label="Preliminary Diagnosis"
+                    hint="Enter the working or suspected diagnosis while investigations are pending. Include differentials when needed."
+                >
+                    <Textarea
+                        rows={3}
+                        value={form.preliminary_diagnosis}
+                        onChange={e => set('preliminary_diagnosis', e.target.value)}
+                        placeholder="Example: Suspected urinary tract infection; rule out pyelonephritis."
+                    />
                 </FormField>
-                <FormField label="Confirmed Diagnosis">
-                    <Textarea rows={2} value={form.actual_diagnosis} onChange={e => set('actual_diagnosis', e.target.value)} />
+                <FormField
+                    label="Confirmed Diagnosis"
+                    hint="Use this after confirmation from clinical assessment, lab results, imaging, or specialist review. Leave blank if still provisional."
+                >
+                    <Textarea
+                        rows={3}
+                        value={form.actual_diagnosis}
+                        onChange={e => set('actual_diagnosis', e.target.value)}
+                        placeholder="Example: Acute uncomplicated cystitis confirmed by urinalysis."
+                    />
                 </FormField>
             </div>
         </Modal>

@@ -10,6 +10,7 @@ import { ReminderSection } from '../../components/reminder/ReminderSection';
 import { DiagnosisSection } from '../../components/diagnosis/DiagnosisSection';
 import { LabTestSection } from '../../components/labtests/LabTestSection';
 import { AllergySection } from '../../components/patients/AllergySection';
+import { ChildManagementSection } from '../../components/children/ChildManagementSection';
 import { isPregnantPatient } from '../../types/patient';
 import type { PatientType } from '../../types/patient';
 import {
@@ -20,11 +21,12 @@ import {
 import { ReRegisterPregnantModal } from '../../components/patients/ReRegisterPregnantModal';
 import { getGravidaParaLabel } from '../../utils/formatters';
 
-type Tab = 'overview' | 'pregnancy' | 'safety' | 'vaccines' | 'medication' | 'diagnosis' | 'tests' | 'reminders';
+type Tab = 'overview' | 'pregnancy' | 'children' | 'safety' | 'vaccines' | 'medication' | 'diagnosis' | 'tests' | 'reminders';
 
 const ALL_TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'overview', label: 'Overview', icon: User },
   { id: 'pregnancy', label: 'Pregnancy', icon: Baby },
+  { id: 'children', label: 'Children', icon: Baby },
   { id: 'safety', label: 'Safety', icon: ShieldAlert },
   { id: 'vaccines', label: 'Vaccines', icon: Syringe },
   { id: 'medication', label: 'Medication', icon: Pill },
@@ -55,7 +57,7 @@ export function PatientDetailPage() {
   );
 
   const pregnant = isPregnantPatient(patient);
-  const tabs = pregnant ? ALL_TABS : ALL_TABS.filter(t => t.id !== 'pregnancy');
+  const tabs = pregnant ? ALL_TABS : ALL_TABS.filter(t => t.id !== 'pregnancy' && t.id !== 'children');
   const canReRegisterPregnant = !pregnant && patient.sex === 'female';
 
   return (
@@ -92,6 +94,7 @@ export function PatientDetailPage() {
 
       {tab === 'overview' && <OverviewTab patient={patient} pregnant={pregnant} />}
       {tab === 'pregnancy' && pregnant && <PregnancySection patient={patient} />}
+      {tab === 'children' && pregnant && <ChildManagementSection patient={patient} />}
       {tab === 'safety' && <AllergySection patient={patient} />}
       {tab === 'vaccines' && <VaccineSection patient={patient} />}
       {tab === 'medication' && <MedicationSection patient={patient} />}
