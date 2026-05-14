@@ -139,6 +139,10 @@ export interface PregnantPatient extends BasePatient {
 
 export interface RegularPatient extends BasePatient {
   patient_type: 'regular';
+  active_pregnancy?: null;
+  gravida?: number | null;
+  para?: number | null;
+  pregnancy_history?: PregnancySummary[];
 }
 
 /** Discriminated union — use isPregnantPatient() / isRegularPatient() to narrow. */
@@ -269,8 +273,7 @@ export interface UpdateRegularPatientPayload {
  * Sent to POST /api/v1/patients/pregnant/{patient_id}/convert.
  */
 export interface ConvertToRegularPayload {
-  /** REQUIRED: the clinical outcome of the active pregnancy being closed. */
-  outcome: PregnancyOutcome;
+  outcome?: PregnancyOutcome;
   actual_delivery_date?: string;
   notes?: string;
 }

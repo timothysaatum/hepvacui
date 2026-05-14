@@ -57,7 +57,8 @@ export function PatientDetailPage() {
   );
 
   const pregnant = isPregnantPatient(patient);
-  const tabs = pregnant ? ALL_TABS : ALL_TABS.filter(t => t.id !== 'pregnancy' && t.id !== 'children');
+  const canViewPregnancyHistory = pregnant || patient.sex === 'female';
+  const tabs = canViewPregnancyHistory ? ALL_TABS : ALL_TABS.filter(t => t.id !== 'pregnancy' && t.id !== 'children');
   const canReRegisterPregnant = !pregnant && patient.sex === 'female';
 
   return (
@@ -93,8 +94,8 @@ export function PatientDetailPage() {
       </div>
 
       {tab === 'overview' && <OverviewTab patient={patient} pregnant={pregnant} />}
-      {tab === 'pregnancy' && pregnant && <PregnancySection patient={patient} />}
-      {tab === 'children' && pregnant && <ChildManagementSection patient={patient} />}
+      {tab === 'pregnancy' && canViewPregnancyHistory && <PregnancySection patient={patient} readOnly={!pregnant} />}
+      {tab === 'children' && canViewPregnancyHistory && <ChildManagementSection patient={patient} readOnly={!pregnant} />}
       {tab === 'safety' && <AllergySection patient={patient} />}
       {tab === 'vaccines' && <VaccineSection patient={patient} />}
       {tab === 'medication' && <MedicationSection patient={patient} />}

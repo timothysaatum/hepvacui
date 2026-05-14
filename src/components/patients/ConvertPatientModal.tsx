@@ -1,18 +1,7 @@
 import { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { Button } from '../common/Button';
-import { FormField, Input, Select, Textarea } from '../common/index';
 import { useConvertToRegular } from '../../hooks/usePatients';
-import type { PregnancyOutcome } from '../../types/pregnancy';
-
-// Outcome labels defined inline to avoid depending on an external formatters util.
-const OUTCOME_OPTIONS: { value: PregnancyOutcome; label: string }[] = [
-  { value: 'live_birth', label: 'Live Birth' },
-  { value: 'stillbirth', label: 'Stillbirth' },
-  { value: 'miscarriage', label: 'Miscarriage' },
-  { value: 'abortion', label: 'Abortion' },
-  { value: 'ectopic', label: 'Ectopic' },
-];
 
 interface Props {
   open: boolean;
@@ -28,23 +17,13 @@ export function ConvertPatientModal({ open, onClose, patient, onSuccess }: Props
     onSuccess?.(id);
   });
 
-  const [form, setForm] = useState({
-    outcome: '' as PregnancyOutcome | '',
-    actual_delivery_date: '',
-    notes: '',
-  });
-
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const [confirmed, setConfirmed] = useState(false);
 
   const handleSubmit = async () => {
-    if (!form.outcome) return;
+    if (!confirmed) return;
     await convert.mutateAsync({
       patientId: patient.id,
-        data: {
-          outcome: form.outcome as PregnancyOutcome,
-          actual_delivery_date: form.actual_delivery_date || undefined,
-          notes: form.notes || undefined,
-        },
+      data: {},
     });
   };
 
@@ -63,7 +42,7 @@ export function ConvertPatientModal({ open, onClose, patient, onSuccess }: Props
           <Button
             onClick={handleSubmit}
             loading={convert.isPending}
-            disabled={!form.outcome}
+            disabled={!confirmed}
           >
             Convert Patient
           </Button>
@@ -71,31 +50,22 @@ export function ConvertPatientModal({ open, onClose, patient, onSuccess }: Props
       }
     >
       <div className="space-y-4">
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
-          This will close the active pregnancy and transition the patient into
-          long-term regular care. All existing records stay linked.
+        <div className="border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Conversion is available only after the active pregnancy has been closed from the Pregnancy tab.
+          Existing pregnancy history, children, vaccines, lab tests, and clinical records remain linked and viewable.
         </div>
 
-        <FormField label="Pregnancy Outcome" required>
-          <Select value={form.outcome} onChange={e => set('outcome', e.target.value)}>
-            <option value="">Select outcome…</option>
-            {OUTCOME_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
-          </Select>
-        </FormField>
-
-        <FormField label="Delivery Date" hint="Defaults to today if left blank">
-          <Input
-            type="date"
-            value={form.actual_delivery_date}
-            onChange={e => set('actual_delivery_date', e.target.value)}
+        <label className="flex items-start gap-3 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={confirmed}
+            onChange={event => setConfirmed(event.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
           />
-        </FormField>
-
-        <FormField label="Notes">
-          <Textarea rows={3} value={form.notes} onChange={e => set('notes', e.target.value)} />
-        </FormField>
+          <span>
+            I confirm there is no active pregnancy and this patient should continue as a regular patient.
+          </span>
+        </label>
       </div>
     </Modal>
   );

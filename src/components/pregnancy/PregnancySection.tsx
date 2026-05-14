@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ElementType } from 'react';
-import type { PregnantPatient } from '../../types/patient';
+import type { Patient } from '../../types/patient';
+import { isPregnantPatient } from '../../types/patient';
 import type { Pregnancy } from '../../types/pregnancy';
 import type { Child } from '../../types/child';
 import { usePregnancies } from '../../hooks/usePregnancy';
@@ -16,9 +17,12 @@ import {
 } from 'lucide-react';
 import { AddChildModal, ClosePregnancyModal, OpenPregnancyModal, UpdateChildModal, UpdatePregnancyModal } from '.';
 
-interface Props { patient: PregnantPatient; }
+interface Props {
+    patient: Patient;
+    readOnly?: boolean;
+}
 
-export function PregnancySection({ patient }: Props) {
+export function PregnancySection({ patient, readOnly = false }: Props) {
     const { data: pregnancies = [], isLoading } = usePregnancies(patient.id);
     const { data: children = [] } = useMotherChildren(patient.id);
 
@@ -28,7 +32,8 @@ export function PregnancySection({ patient }: Props) {
     const [addChildTarget, setAddChildTarget] = useState<Pregnancy | null>(null);
     const [updateChildId, setUpdateChildId] = useState<string | null>(null);
 
-    const hasActive = !!patient.active_pregnancy;
+    const pregnant = isPregnantPatient(patient);
+    const hasActive = pregnant && !!patient.active_pregnancy;
     const activePreg = pregnancies.find(p => p.is_active) ?? null;
     const pastPregs = pregnancies.filter(p => !p.is_active);
     const childForUpdate = children.find(c => c.id === updateChildId) ?? null;
@@ -53,7 +58,7 @@ export function PregnancySection({ patient }: Props) {
                         icon={<Baby className="w-8 h-8 text-slate-300" />}
                         title="No pregnancy records"
                         description="Open a new pregnancy episode to begin tracking."
-                        action={<Button onClick={() => setOpenPregnancyModal(true)}>+ Open Pregnancy</Button>}
+                        action={!readOnly && pregnant ? <Button onClick={() => setOpenPregnancyModal(true)}>+ Open Pregnancy</Button> : undefined}
                     />
                 </div>
             )}
@@ -64,12 +69,12 @@ export function PregnancySection({ patient }: Props) {
                     pregnancy={activePreg}
                     onEdit={() => setUpdateTarget(activePreg)}
                     onClose={() => setCloseTarget(activePreg)}
-                    onAddChild={() => setAddChildTarget(activePreg)}
+                    readOnly={readOnly}
                 />
             )}
 
             {/* ── + New pregnancy button (only when no active one) ─────── */}
-            {!hasActive && pregnancies.length > 0 && (
+            {!readOnly && pregnant && !hasActive && pregnancies.length > 0 && (
                 <div className="flex justify-end">
                     <Button size="sm" onClick={() => setOpenPregnancyModal(true)}>
                         + Open New Pregnancy
@@ -93,6 +98,7 @@ export function PregnancySection({ patient }: Props) {
                             <ChildCard
                                 key={child.id}
                                 child={child}
+                                readOnly={readOnly}
                                 onUpdate={() => setUpdateChildId(child.id)}
                             />
                         ))}
@@ -114,6 +120,7 @@ export function PregnancySection({ patient }: Props) {
                             <PastPregnancyRow
                                 key={preg.id}
                                 pregnancy={preg}
+                                readOnly={readOnly}
                                 onAddChild={() => setAddChildTarget(preg)}
                             />
                         ))}
@@ -122,10 +129,10 @@ export function PregnancySection({ patient }: Props) {
             )}
 
             {/* ── Modals ───────────────────────────────────────────────── */}
-            <OpenPregnancyModal open={openPregnancyModal} onClose={() => setOpenPregnancyModal(false)} patientId={patient.id} />
-            {closeTarget && <ClosePregnancyModal open onClose={() => setCloseTarget(null)} pregnancy={closeTarget} patientId={patient.id} />}
-            {updateTarget && <UpdatePregnancyModal open onClose={() => setUpdateTarget(null)} pregnancy={updateTarget} patientId={patient.id} />}
-            {addChildTarget && <AddChildModal open onClose={() => setAddChildTarget(null)} pregnancy={addChildTarget} patientId={patient.id} />}
+            {!readOnly && pregnant && <OpenPregnancyModal open={openPregnancyModal} onClose={() => setOpenPregnancyModal(false)} patientId={patient.id} />}
+            {!readOnly && closeTarget && <ClosePregnancyModal open onClose={() => setCloseTarget(null)} pregnancy={closeTarget} patientId={patient.id} />}
+            {!readOnly && updateTarget && <UpdatePregnancyModal open onClose={() => setUpdateTarget(null)} pregnancy={updateTarget} patientId={patient.id} />}
+            {!readOnly && addChildTarget && <AddChildModal open onClose={() => setAddChildTarget(null)} pregnancy={addChildTarget} patientId={patient.id} />}
             {childForUpdate && <UpdateChildModal open onClose={() => setUpdateChildId(null)} child={childForUpdate} patientId={patient.id} />}
         </div>
     );
@@ -136,12 +143,12 @@ export function PregnancySection({ patient }: Props) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ActivePregnancyPanel({
-    pregnancy, onEdit, onClose, onAddChild,
+    pregnancy, onEdit, onClose, readOnly,
 }: {
     pregnancy: Pregnancy;
     onEdit: () => void;
     onClose: () => void;
-    onAddChild: () => void;
+    readOnly: boolean;
 }) {
     const edd = pregnancy.expected_delivery_date ? new Date(pregnancy.expected_delivery_date) : null;
     const today = new Date();
@@ -225,17 +232,16 @@ function ActivePregnancyPanel({
                 )}
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-                    <Button size="sm" variant="outline" onClick={onEdit}>
-                        <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Edit Details
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={onAddChild}>
-                        <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Child
-                    </Button>
-                    <Button size="sm" variant="danger" onClick={onClose}>
-                        Close Pregnancy
-                    </Button>
-                </div>
+                {!readOnly && (
+                    <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
+                        <Button size="sm" variant="outline" onClick={onEdit}>
+                            <Edit2 className="w-3.5 h-3.5 mr-1.5" /> Edit Details
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={onClose}>
+                            Close Pregnancy
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -245,7 +251,7 @@ function ActivePregnancyPanel({
 // Child Card
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ChildCard({ child, onUpdate }: { child: Child; onUpdate: () => void }) {
+function ChildCard({ child, readOnly, onUpdate }: { child: Child; readOnly: boolean; onUpdate: () => void }) {
     const dob = child.date_of_birth ? new Date(child.date_of_birth) : null;
     const ageMonths = dob ? Math.floor((Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 30.44)) : null;
     const ageLabel = ageMonths == null ? null : ageMonths < 12 ? `${ageMonths}mo` : `${Math.floor(ageMonths / 12)}yr ${ageMonths % 12}mo`;
@@ -270,12 +276,14 @@ function ChildCard({ child, onUpdate }: { child: Child; onUpdate: () => void }) 
                         {ageLabel ? ` · ${ageLabel}` : ''}
                     </p>
                 </div>
-                <button
-                    onClick={onUpdate}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                >
-                    <Edit2 className="w-3.5 h-3.5" />
-                </button>
+                {!readOnly && (
+                    <button
+                        onClick={onUpdate}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                    >
+                        <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                )}
             </div>
 
             {/* Status badges */}
@@ -321,7 +329,15 @@ function ChildCard({ child, onUpdate }: { child: Child; onUpdate: () => void }) 
 // Past Pregnancy Row (collapsible)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PastPregnancyRow({ pregnancy, onAddChild }: { pregnancy: Pregnancy; onAddChild: () => void }) {
+function PastPregnancyRow({
+    pregnancy,
+    readOnly,
+    onAddChild,
+}: {
+    pregnancy: Pregnancy;
+    readOnly: boolean;
+    onAddChild: () => void;
+}) {
     const [expanded, setExpanded] = useState(false);
     const childEntry = getClosedPregnancyChildEntryState(pregnancy);
 
@@ -378,16 +394,14 @@ function PastPregnancyRow({ pregnancy, onAddChild }: { pregnancy: Pregnancy; onA
                         <p className="text-xs text-slate-500 italic">{pregnancy.notes}</p>
                     )}
 
-                    {pregnancy.outcome === 'live_birth' && (
-                        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                            <p className="text-xs text-slate-500">{childEntry.message}</p>
-                            {childEntry.canAdd && (
-                                <Button size="sm" variant="outline" onClick={onAddChild}>
-                                    <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Child
-                                </Button>
-                            )}
-                        </div>
-                    )}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+                        <p className="text-xs text-slate-500">{childEntry.message}</p>
+                        {!readOnly && childEntry.canAdd && (
+                            <Button size="sm" variant="outline" onClick={onAddChild}>
+                                <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Child
+                            </Button>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
@@ -395,8 +409,16 @@ function PastPregnancyRow({ pregnancy, onAddChild }: { pregnancy: Pregnancy; onA
 }
 
 function getClosedPregnancyChildEntryState(pregnancy: Pregnancy): { canAdd: boolean; message: string } {
-    if (pregnancy.is_active || pregnancy.outcome !== 'live_birth' || !pregnancy.actual_delivery_date) {
-        return { canAdd: false, message: '' };
+    if (pregnancy.is_active) {
+        return { canAdd: false, message: 'Close the pregnancy with a live birth outcome before adding child records.' };
+    }
+
+    if (pregnancy.outcome !== 'live_birth') {
+        return { canAdd: false, message: 'Child registration is disabled because this pregnancy outcome was not live birth.' };
+    }
+
+    if (!pregnancy.actual_delivery_date) {
+        return { canAdd: false, message: 'Record the delivery date before adding child records.' };
     }
 
     const delivered = new Date(`${pregnancy.actual_delivery_date}T00:00:00`);

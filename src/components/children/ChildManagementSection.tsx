@@ -4,10 +4,10 @@ import { Baby, CalendarCheck2, Edit2, FilePlus2, FlaskConical, Plus, ShieldCheck
 import { Button } from '../common/Button';
 import { AddChildPanel } from './AddChildPanel';
 import { EditChildPanel } from './EditChildPanel';
-import { useMotherChildren } from '../../hooks/useChildren';
+import { useMotherChildren, usePregnancies } from '../../hooks/useChildren';
 import type { Child } from '../../types/child';
 import { getChildDisplayName, isCheckupOverdue } from '../../types/child';
-import type { PregnantPatient } from '../../types/patient';
+import type { Patient } from '../../types/patient';
 
 function formatDate(iso?: string | null) {
   if (!iso) return '-';
@@ -36,17 +36,73 @@ function calculateAge(dob: string) {
   return `${years} year${years === 1 ? '' : 's'}`;
 }
 
-export function ChildManagementSection({ patient }: { patient: PregnantPatient }) {
+function getChildEntryState(pregnancies: Array<{ id: string; outcome: string | null; actual_delivery_date: string | null; is_active: boolean; pregnancy_number: number }>) {
+  const liveBirths = pregnancies
+    .filter(pregnancy => !pregnancy.is_active && pregnancy.outcome === 'live_birth')
+    .sort((a, b) => (b.actual_delivery_date ?? '').localeCompare(a.actual_delivery_date ?? ''));
+
+  const target = liveBirths[0] ?? null;
+  if (target) {
+    if (!target.actual_delivery_date) {
+      return {
+        pregnancy: null,
+        message: `Record the delivery date for Pregnancy #${target.pregnancy_number} before adding a child.`,
+      };
+    }
+
+    const delivered = new Date(`${target.actual_delivery_date}T00:00:00`);
+    const deadline = new Date(delivered);
+    deadline.setDate(deadline.getDate() + 7);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (today > deadline) {
+      return {
+        pregnancy: null,
+        message: 'The child registration window has ended. Admin access is required for late birth records.',
+      };
+    }
+
+    return {
+      pregnancy: target,
+      message: `New child records will be linked to Pregnancy #${target.pregnancy_number}.`,
+    };
+  }
+
+  if (pregnancies.some(pregnancy => pregnancy.is_active)) {
+    return {
+      pregnancy: null,
+      message: 'Close the active pregnancy with a live birth outcome before adding a child.',
+    };
+  }
+
+  if (pregnancies.length) {
+    return {
+      pregnancy: null,
+      message: 'Child addition is disabled because there is no closed pregnancy with a live birth outcome.',
+    };
+  }
+
+  return {
+    pregnancy: null,
+    message: 'No pregnancy episode is available for child registration.',
+  };
+}
+
+export function ChildManagementSection({ patient, readOnly = false }: { patient: Patient; readOnly?: boolean }) {
   const { data: childrenRaw, isLoading, isError } = useMotherChildren(patient.id);
+  const { data: pregnanciesRaw = [] } = usePregnancies(patient.id);
   const children = useMemo(() => Array.isArray(childrenRaw) ? childrenRaw : [], [childrenRaw]);
+  const pregnancies = useMemo(() => Array.isArray(pregnanciesRaw) ? pregnanciesRaw : [], [pregnanciesRaw]);
   const [addOpen, setAddOpen] = useState(false);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
 
-  const activePregnancyId = patient.active_pregnancy?.id ?? null;
+  const childEntry = getChildEntryState(pregnancies);
+  const addPregnancyId = childEntry.pregnancy?.id ?? null;
   const overdueCount = children.filter(isCheckupOverdue).length;
   const completedCheckups = children.filter(child => child.six_month_checkup_completed).length;
   const testedCount = children.filter(child => child.hep_b_antibody_test_result).length;
-  const canAddChild = Boolean(activePregnancyId);
+  const canAddChild = !readOnly && Boolean(addPregnancyId);
 
   return (
     <div className="space-y-4">
@@ -71,9 +127,9 @@ export function ChildManagementSection({ patient }: { patient: PregnantPatient }
           </Button>
         </div>
 
-        {!canAddChild && (
+        {(!canAddChild || childEntry.message) && (
           <div className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-800">
-            Open or re-register an active pregnancy before adding a new child record. Existing children remain available for follow-up updates.
+            {readOnly ? 'This patient is in regular care. Pregnancy and child records are view-only here.' : childEntry.message}
           </div>
         )}
 
@@ -119,6 +175,7 @@ export function ChildManagementSection({ patient }: { patient: PregnantPatient }
                   <ChildRow
                     key={child.id}
                     child={child}
+                    readOnly={readOnly}
                     onEdit={() => setEditingChild(child)}
                   />
                 ))}
@@ -130,7 +187,7 @@ export function ChildManagementSection({ patient }: { patient: PregnantPatient }
 
       {addOpen && (
         <AddChildPanel
-          pregnancyId={activePregnancyId}
+          pregnancyId={addPregnancyId}
           patientId={patient.id}
           onClose={() => setAddOpen(false)}
         />
@@ -148,7 +205,7 @@ export function ChildManagementSection({ patient }: { patient: PregnantPatient }
   );
 }
 
-function ChildRow({ child, onEdit }: { child: Child; onEdit: () => void }) {
+function ChildRow({ child, readOnly, onEdit }: { child: Child; readOnly: boolean; onEdit: () => void }) {
   const overdue = isCheckupOverdue(child);
   const checkupTone = child.six_month_checkup_completed
     ? 'bg-emerald-100 text-emerald-700'
@@ -181,10 +238,14 @@ function ChildRow({ child, onEdit }: { child: Child; onEdit: () => void }) {
         <p className="line-clamp-3 whitespace-pre-wrap text-slate-600">{child.notes || '-'}</p>
       </td>
       <td className="px-4 py-4 text-right">
-        <Button size="sm" variant="outline" onClick={onEdit}>
-          <Edit2 className="mr-1 h-3.5 w-3.5" />
-          Edit
-        </Button>
+        {readOnly ? (
+          <span className="text-xs font-medium text-slate-400">View only</span>
+        ) : (
+          <Button size="sm" variant="outline" onClick={onEdit}>
+            <Edit2 className="mr-1 h-3.5 w-3.5" />
+            Edit
+          </Button>
+        )}
       </td>
     </tr>
   );

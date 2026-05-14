@@ -15,7 +15,8 @@ interface PatientHeaderProps {
 export function PatientHeader({ patient, onConvert, onReRegisterPregnant }: PatientHeaderProps) {
     const navigate = useNavigate();
     const pregnant = isPregnantPatient(patient);
-    const canConvertToRegular = pregnant && ['active', 'postpartum'].includes(patient.status);
+    const hasActivePregnancy = pregnant && Boolean(patient.active_pregnancy);
+    const canConvertToRegular = pregnant && !hasActivePregnancy && ['active', 'postpartum'].includes(patient.status);
     const canReRegisterPregnant = !pregnant && patient.sex === 'female';
 
     return (
@@ -84,8 +85,14 @@ export function PatientHeader({ patient, onConvert, onReRegisterPregnant }: Pati
                         <Edit3 className="mr-1 h-4 w-4" />
                         Edit
                     </Button>
-                    {canConvertToRegular && onConvert && (
-                        <Button variant="secondary" size="sm" onClick={onConvert}>
+                    {pregnant && onConvert && (
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={onConvert}
+                            disabled={!canConvertToRegular}
+                            title={hasActivePregnancy ? 'Close the active pregnancy before conversion' : 'Convert to regular care'}
+                        >
                             <Shuffle className="mr-1 h-4 w-4" />
                             Convert to Regular
                         </Button>

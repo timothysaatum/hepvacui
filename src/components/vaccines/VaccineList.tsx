@@ -53,7 +53,7 @@ const ActionMenu: React.FC<{
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-1.5 w-48 bg-white rounded-xl border border-slate-200 shadow-lg z-20 overflow-hidden py-1">
+        <div className="absolute right-0 mt-1.5 w-52 bg-white rounded-xl border border-slate-200 shadow-xl z-50 overflow-hidden py-1">
           {onAddStock && (
             <button
               onClick={() => action(() => onAddStock(vaccine))}
@@ -451,7 +451,7 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-visible">
       <FilterBar
         searchName={searchName} setSearchName={updateSearchName}
         searchBatch={searchBatch} setSearchBatch={updateSearchBatch}
