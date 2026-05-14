@@ -38,7 +38,7 @@ export interface CreateVaccinePayload {
   price_per_dose: number;
   quantity: number;
   batch_number: string;
-  added_by_id: string;
+  added_by_id?: string;
   is_published?: boolean;
 }
 

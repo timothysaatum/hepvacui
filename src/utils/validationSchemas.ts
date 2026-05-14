@@ -110,8 +110,8 @@ export const createVaccineSchema = z.object({
     .max(100, 'Vaccine name must be less than 100 characters'),
   
   price_per_dose: z.number()
-    .min(0, 'Price must be a positive number')
-    .max(999999, 'Price is too high'),
+    .positive('Price must be greater than 0')
+    .max(10000, 'Price cannot exceed GHS 10,000'),
   
   quantity: z.number()
     .int('Quantity must be a whole number')
@@ -119,7 +119,7 @@ export const createVaccineSchema = z.object({
   
   batch_number: z.string()
     .min(3, 'Batch number must be at least 3 characters')
-    .max(50, 'Batch number must be less than 50 characters')
+    .max(100, 'Batch number must be less than 100 characters')
     .regex(/^[A-Z0-9-]+$/i, 'Batch number can only contain letters, numbers, and hyphens'),
   
   is_published: z.boolean().optional(),
@@ -133,8 +133,8 @@ export const updateVaccineSchema = z.object({
     .optional(),
   
   price_per_dose: z.number()
-    .min(0, 'Price must be a positive number')
-    .max(999999, 'Price is too high')
+    .positive('Price must be greater than 0')
+    .max(10000, 'Price cannot exceed GHS 10,000')
     .optional(),
   
   quantity: z.number()
@@ -144,7 +144,7 @@ export const updateVaccineSchema = z.object({
   
   batch_number: z.string()
     .min(3, 'Batch number must be at least 3 characters')
-    .max(50, 'Batch number must be less than 50 characters')
+    .max(100, 'Batch number must be less than 100 characters')
     .regex(/^[A-Z0-9-]+$/i, 'Batch number can only contain letters, numbers, and hyphens')
     .optional(),
   

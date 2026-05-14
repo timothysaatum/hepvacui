@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import { AlertTriangle, Beaker, CheckCircle2, ClipboardCheck, CreditCard, FileCheck2, FilePlus2, Printer, Search, Save, Trash2, X } from 'lucide-react';
 import { Button } from '../common/Button';
 import { FormField, Input, Select, Textarea } from '../common';
@@ -42,14 +41,6 @@ function moneyNumber(value: string | number | null | undefined) {
 
 function isTestPaid(test: LabTest) {
     return test.payment_status === 'completed' || moneyNumber(test.payment_balance) <= 0;
-}
-
-function labCode(test: LabTest) {
-    return test.id.replace(/-/g, '').slice(0, 8).toUpperCase();
-}
-
-function requestCode(test: LabTest) {
-    return test.id.replace(/-/g, '').slice(-8).toUpperCase();
 }
 
 function formatMoneyCell(value: string | number | null | undefined) {
@@ -175,33 +166,22 @@ export function LabTestSection({ patient }: { patient: Patient }) {
                         <p className="mt-1 text-xs text-slate-400">Add configured tests and enter parameter results.</p>
                         <Button size="sm" className="mt-4" onClick={() => setAddTestOpen(true)} disabled={definitions.length === 0}>Add Test</Button>
                     </div>
-                ) : (
-                    <div className="min-h-[560px]">
-                        <LabTestRequestTable
-                            patientName={patient.name}
-                            tests={tests}
-                            selectedTestId={selectedTestId}
-                            onSelect={setSelectedTestId}
-                        />
-                        {!selectedTest && (
-                            <div className="px-5 py-12 text-center text-sm text-slate-500">
-                                Select a test request to open its side panel.
-                            </div>
-                        )}
-                    </div>
-                )}
-            </section>
-
-            {selectedTest && (
-                <LabTestSidePanel onClose={() => setSelectedTestId(null)}>
+                ) : selectedTest ? (
                     <LabTestDetailPanel
                         key={selectedTest.id}
                         onClose={() => setSelectedTestId(null)}
                         patient={patient}
                         test={selectedTest}
                     />
-                </LabTestSidePanel>
-            )}
+                ) : (
+                    <LabTestRequestTable
+                        patientName={patient.name}
+                        tests={tests}
+                        selectedTestId={selectedTestId}
+                        onSelect={setSelectedTestId}
+                    />
+                )}
+            </section>
 
             {addTestOpen && (
                 <LabTestModal
@@ -235,22 +215,6 @@ function LabSectionLoading() {
     );
 }
 
-function LabTestSidePanel({ children, onClose }: { children: ReactNode; onClose: () => void }) {
-    return (
-        <div className="fixed inset-0 z-50">
-            <button
-                type="button"
-                className="absolute inset-0 bg-slate-950/30"
-                aria-label="Close lab test panel"
-                onClick={onClose}
-            />
-            <aside className="absolute inset-y-0 right-0 flex w-full max-w-5xl flex-col border-l border-slate-200 bg-white shadow-2xl">
-                {children}
-            </aside>
-        </div>
-    );
-}
-
 function LabTestRequestTable({
     patientName,
     tests,
@@ -263,21 +227,18 @@ function LabTestRequestTable({
     onSelect: (id: string) => void;
 }) {
     return (
-        <div className="overflow-x-auto border-b border-slate-200">
-            <table className="w-full min-w-[1180px] border-collapse text-left text-sm">
+        <div className="border-b border-slate-200">
+            <table className="w-full table-fixed border-collapse text-left text-sm">
                 <thead>
                     <tr className="border-y border-slate-200 bg-slate-100 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
-                        <th className="px-3 py-2">Req Code</th>
-                        <th className="px-3 py-2">Lab Code</th>
-                        <th className="px-3 py-2">Test</th>
-                        <th className="px-3 py-2 text-right">Paid</th>
-                        <th className="px-3 py-2 text-right">Balance</th>
-                        <th className="px-3 py-2">Patient</th>
-                        <th className="px-3 py-2">Status</th>
-                        <th className="px-3 py-2">Request date</th>
-                        <th className="px-3 py-2">Registered By</th>
-                        <th className="px-3 py-2">Checked by</th>
-                        <th className="px-3 py-2">Checked date</th>
+                        <th className="w-[23%] px-3 py-2">Test</th>
+                        <th className="w-[10%] px-3 py-2 text-right">Paid</th>
+                        <th className="w-[10%] px-3 py-2 text-right">Balance</th>
+                        <th className="w-[16%] px-3 py-2">Patient</th>
+                        <th className="w-[12%] px-3 py-2">Status</th>
+                        <th className="w-[14%] px-3 py-2">Request date</th>
+                        <th className="w-[15%] px-3 py-2">Registered By</th>
+                        <th className="hidden px-3 py-2 xl:table-cell">Checked by</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -294,23 +255,20 @@ function LabTestRequestTable({
                                 }}
                                 className={`cursor-pointer transition-colors ${selected ? 'bg-teal-50' : index % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'} hover:bg-teal-50/70`}
                             >
-                                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs font-semibold text-slate-700">{requestCode(test)}</td>
-                                <td className="whitespace-nowrap px-3 py-2 font-mono text-xs font-semibold text-slate-700">{labCode(test)}</td>
-                                <td className="max-w-[220px] truncate px-3 py-2 font-semibold text-slate-900">{test.test_name}</td>
+                                <td className="truncate px-3 py-2 font-semibold text-slate-900">{test.test_name}</td>
                                 <td className="whitespace-nowrap px-3 py-2 text-right font-medium text-emerald-700">{formatMoneyCell(test.amount_paid)}</td>
                                 <td className={`whitespace-nowrap px-3 py-2 text-right font-medium ${paid ? 'text-slate-500' : 'text-amber-700'}`}>
                                     {formatMoneyCell(test.payment_balance)}
                                 </td>
-                                <td className="max-w-[180px] truncate px-3 py-2 font-medium uppercase text-slate-800">{patientName}</td>
+                                <td className="truncate px-3 py-2 font-medium uppercase text-slate-800">{patientName}</td>
                                 <td className="px-3 py-2">
                                     <span className={`inline-flex px-2 py-0.5 text-[11px] font-semibold uppercase ${paid ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
                                         {paid ? 'Paid' : 'Payment due'}
                                     </span>
                                 </td>
-                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{formatDateTime(test.ordered_at)}</td>
-                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{test.ordered_by?.name ?? '—'}</td>
-                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{test.reviewed_by?.name ?? '—'}</td>
-                                <td className="whitespace-nowrap px-3 py-2 text-slate-700">{test.reviewed_by ? formatDateTime(test.reported_at) : '—'}</td>
+                                <td className="truncate px-3 py-2 text-slate-700">{formatDateTime(test.ordered_at)}</td>
+                                <td className="truncate px-3 py-2 text-slate-700">{test.ordered_by?.name ?? '—'}</td>
+                                <td className="hidden truncate px-3 py-2 text-slate-700 xl:table-cell">{test.reviewed_by?.name ?? '—'}</td>
                             </tr>
                         );
                     })}
@@ -863,66 +821,67 @@ function LabTestDetailPanel({
                         This test has no active configured parameters.
                     </div>
                 ) : (
-                    <div className="overflow-x-auto border border-slate-200">
-                        <table className="min-w-[900px] w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-slate-100 bg-slate-50 text-[11px] font-semibold uppercase text-slate-500">
-                                    <th className="px-3 py-3">Parameter</th>
-                                    <th className="px-3 py-3">Range</th>
-                                    <th className="px-3 py-3">Numeric</th>
-                                    <th className="px-3 py-3">Text</th>
-                                    <th className="px-3 py-3">Indicator</th>
-                                    <th className="px-3 py-3">Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {parameters.map(parameter => {
-                                    const draft = drafts[parameter.id] ?? emptyResultDraft();
-                                    const indicator = deriveResultIndicator(parameter, draft.value_numeric, draft.value_text);
-                                    return (
-                                        <tr key={parameter.id}>
-                                            <td className="px-3 py-3 align-top">
-                                                <p className="font-semibold text-slate-900">{parameter.name}</p>
-                                                <p className="text-xs text-slate-400">{parameter.code} · {parameter.unit ?? 'No unit'}</p>
-                                            </td>
-                                            <td className="px-3 py-3 align-top text-xs text-slate-500">{formatParameterRange(parameter)}</td>
-                                            <td className="px-3 py-3 align-top">
-                                                <Input
-                                                    type="number"
-                                                    step="any"
-                                                    value={draft.value_numeric}
-                                                    onChange={e => updateDraft(parameter.id, { value_numeric: e.target.value })}
-                                                    disabled={!canEditResults || parameter.value_type === 'text'}
-                                                    className="min-w-28"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-3 align-top">
-                                                <Input
-                                                    value={draft.value_text}
-                                                    onChange={e => updateDraft(parameter.id, { value_text: e.target.value })}
-                                                    disabled={!canEditResults || parameter.value_type === 'numeric'}
-                                                    className="min-w-32"
-                                                />
-                                            </td>
-                                            <td className="px-3 py-3 align-top">
-                                                <ResultFlag
-                                                    flag={(indicator.abnormal_flag ?? 'normal') as LabResultFlag}
-                                                    abnormal={Boolean(indicator.is_abnormal)}
-                                                />
-                                            </td>
-                                            <td className="px-3 py-3 align-top">
-                                                <Input
-                                                    value={draft.notes}
-                                                    onChange={e => updateDraft(parameter.id, { notes: e.target.value })}
-                                                    disabled={!canEditResults}
-                                                    className="min-w-36"
-                                                />
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                    <div className="divide-y divide-slate-100 border border-slate-200">
+                        <div className="hidden grid-cols-[minmax(180px,1.2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_100px_minmax(140px,1fr)] gap-3 bg-slate-50 px-4 py-3 text-[11px] font-semibold uppercase text-slate-500 lg:grid">
+                            <span>Parameter</span>
+                            <span>Range</span>
+                            <span>Numeric</span>
+                            <span>Text</span>
+                            <span>Indicator</span>
+                            <span>Notes</span>
+                        </div>
+                        {parameters.map(parameter => {
+                            const draft = drafts[parameter.id] ?? emptyResultDraft();
+                            const indicator = deriveResultIndicator(parameter, draft.value_numeric, draft.value_text);
+                            return (
+                                <div
+                                    key={parameter.id}
+                                    className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(180px,1.2fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_minmax(120px,0.8fr)_100px_minmax(140px,1fr)] lg:items-start"
+                                >
+                                    <div>
+                                        <p className="font-semibold text-slate-900">{parameter.name}</p>
+                                        <p className="text-xs text-slate-400">{parameter.code} · {parameter.unit ?? 'No unit'}</p>
+                                    </div>
+                                    <div>
+                                        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Range</p>
+                                        <p className="text-xs text-slate-500">{formatParameterRange(parameter)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Numeric</p>
+                                        <Input
+                                            type="number"
+                                            step="any"
+                                            value={draft.value_numeric}
+                                            onChange={e => updateDraft(parameter.id, { value_numeric: e.target.value })}
+                                            disabled={!canEditResults || parameter.value_type === 'text'}
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Text</p>
+                                        <Input
+                                            value={draft.value_text}
+                                            onChange={e => updateDraft(parameter.id, { value_text: e.target.value })}
+                                            disabled={!canEditResults || parameter.value_type === 'numeric'}
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Indicator</p>
+                                        <ResultFlag
+                                            flag={(indicator.abnormal_flag ?? 'normal') as LabResultFlag}
+                                            abnormal={Boolean(indicator.is_abnormal)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Notes</p>
+                                        <Input
+                                            value={draft.notes}
+                                            onChange={e => updateDraft(parameter.id, { notes: e.target.value })}
+                                            disabled={!canEditResults}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
 

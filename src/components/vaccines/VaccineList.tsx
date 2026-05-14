@@ -1,4 +1,4 @@
-import React, { useState, memo, useEffect, useCallback, useRef } from 'react';
+import React, { useState, memo, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { Vaccine } from '../../types/vaccine';
 import type { PaginatedVaccines } from '../../types/vaccine';
 import type { VaccineSearchResponse } from '../../types/search';
@@ -10,7 +10,7 @@ import { formatDate, formatCurrency, formatNumber } from '../../utils/formatters
 import {
   Search, Package, Filter, X, Loader2,
   CalendarRange, ChevronLeft, ChevronRight,
-  AlertTriangle, MoreVertical,
+  AlertTriangle, MoreVertical, Eye, Pencil, PlusCircle, Power, Trash2,
 } from 'lucide-react';
 
 interface VaccineListProps {
@@ -59,7 +59,7 @@ const ActionMenu: React.FC<{
               onClick={() => action(() => onAddStock(vaccine))}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <PlusCircle className="h-4 w-4 text-emerald-600" />
               Add Stock
             </button>
           )}
@@ -68,7 +68,7 @@ const ActionMenu: React.FC<{
               onClick={() => action(() => onViewStock(vaccine))}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+              <Eye className="h-4 w-4 text-sky-600" />
               View Stock Info
             </button>
           )}
@@ -76,14 +76,14 @@ const ActionMenu: React.FC<{
             onClick={() => action(() => onTogglePublish(vaccine.id, vaccine.is_published))}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
           >
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${vaccine.is_published ? 'bg-amber-500' : 'bg-teal-500'}`} />
+            <Power className={`h-4 w-4 ${vaccine.is_published ? 'text-amber-600' : 'text-teal-600'}`} />
             {vaccine.is_published ? 'Unpublish' : 'Publish'}
           </button>
           <button
             onClick={() => action(() => onEdit(vaccine))}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400 shrink-0" />
+            <Pencil className="h-4 w-4 text-slate-500" />
             Edit Vaccine
           </button>
           <div className="h-px bg-slate-100 my-1" />
@@ -91,7 +91,7 @@ const ActionMenu: React.FC<{
             onClick={() => action(() => onDelete(vaccine.id, vaccine.vaccine_name))}
             className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors text-left"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+            <Trash2 className="h-4 w-4 text-red-600" />
             Delete Vaccine
           </button>
         </div>
@@ -102,7 +102,15 @@ const ActionMenu: React.FC<{
 
 // ── Vaccine row ───────────────────────────────────────────────────────────────
 
-const VaccineRow = memo<{
+function availableStock(vaccine: Vaccine) {
+  return vaccine.available_quantity ?? Math.max(0, vaccine.quantity - (vaccine.reserved_quantity ?? 0));
+}
+
+function isLowStock(vaccine: Vaccine) {
+  return availableStock(vaccine) < 10;
+}
+
+const VaccineCard = memo<{
   vaccine: Vaccine;
   onEdit: (v: Vaccine) => void;
   onDelete: (id: string, name: string) => void;
@@ -110,58 +118,57 @@ const VaccineRow = memo<{
   onAddStock?: (v: Vaccine) => void;
   onTogglePublish: (id: string, current: boolean) => void;
 }>(({ vaccine, onEdit, onDelete, onViewStock, onAddStock, onTogglePublish }) => {
-  const isLowStock = vaccine.quantity < 50;
+  const available = availableStock(vaccine);
+  const reserved = vaccine.reserved_quantity ?? Math.max(0, vaccine.quantity - available);
+  const lowStock = isLowStock(vaccine);
 
   return (
-    <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-      {/* Vaccine */}
-      <td className="px-5 py-4">
-        <div className="min-w-0">
+    <div className="grid gap-4 border-b border-slate-100 bg-white px-5 py-4 transition-colors last:border-0 hover:bg-slate-50 lg:grid-cols-[minmax(180px,1.5fr)_minmax(140px,0.9fr)_minmax(180px,1.2fr)_minmax(130px,0.8fr)_minmax(120px,0.8fr)_auto] lg:items-center">
+      <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 truncate">{vaccine.vaccine_name}</p>
           <p className="text-xs text-slate-500 mt-0.5 font-mono">{vaccine.batch_number}</p>
-        </div>
-      </td>
+      </div>
 
-      {/* Price */}
-      <td className="px-5 py-4 whitespace-nowrap">
+      <div>
+        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Price / Dose</p>
         <span className="text-sm font-semibold text-slate-900">{formatCurrency(vaccine.price_per_dose)}</span>
         <span className="text-xs text-slate-400 ml-1">/ dose</span>
-      </td>
+      </div>
 
-      {/* Stock */}
-      <td className="px-5 py-4 whitespace-nowrap">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-slate-900">{formatNumber(vaccine.quantity)}</span>
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${isLowStock
+      <div>
+        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Stock</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-slate-900">{formatNumber(available)} available</span>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full ${lowStock
               ? 'bg-amber-100 text-amber-700'
               : 'bg-emerald-100 text-emerald-700'
             }`}>
-            {isLowStock ? (
+            {lowStock ? (
               <><AlertTriangle className="w-3 h-3" /> Low</>
             ) : (
               'In Stock'
             )}
           </span>
         </div>
-      </td>
+        <p className="mt-1 text-xs text-slate-500">{formatNumber(vaccine.quantity)} total · {formatNumber(reserved)} reserved</p>
+      </div>
 
-      {/* Status */}
-      <td className="px-5 py-4 whitespace-nowrap">
+      <div>
+        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Status</p>
         <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${vaccine.is_published
             ? 'bg-teal-100 text-teal-700'
             : 'bg-slate-100 text-slate-600'
           }`}>
           {vaccine.is_published ? 'Published' : 'Draft'}
         </span>
-      </td>
+      </div>
 
-      {/* Created */}
-      <td className="px-5 py-4 whitespace-nowrap text-sm text-slate-500">
-        {formatDate(vaccine.created_at)}
-      </td>
+      <div>
+        <p className="mb-1 text-[11px] font-semibold uppercase text-slate-400 lg:hidden">Created</p>
+        <p className="text-sm text-slate-500">{formatDate(vaccine.created_at)}</p>
+      </div>
 
-      {/* Actions */}
-      <td className="px-5 py-4 whitespace-nowrap text-right">
+      <div className="flex justify-start lg:justify-end">
         <ActionMenu
           vaccine={vaccine}
           onEdit={onEdit}
@@ -170,12 +177,12 @@ const VaccineRow = memo<{
           onAddStock={onAddStock}
           onTogglePublish={onTogglePublish}
         />
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 });
 
-VaccineRow.displayName = 'VaccineRow';
+VaccineCard.displayName = 'VaccineCard';
 
 // ── Filter bar ────────────────────────────────────────────────────────────────
 
@@ -196,7 +203,7 @@ const FilterBar: React.FC<{
   onClear, hasActiveFilters, isFetching,
 }) => (
     <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 md:grid-cols-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
@@ -219,7 +226,7 @@ const FilterBar: React.FC<{
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 md:grid-cols-2">
         <div className="relative">
           <CalendarRange className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           <input
@@ -276,6 +283,32 @@ const FilterBar: React.FC<{
       </div>
     </div>
   );
+
+const InventorySummary: React.FC<{ vaccines: Vaccine[]; totalCount: number }> = ({ vaccines, totalCount }) => {
+  const published = vaccines.filter(vaccine => vaccine.is_published).length;
+  const lowStock = vaccines.filter(isLowStock).length;
+  const available = vaccines.reduce((sum, vaccine) => sum + availableStock(vaccine), 0);
+  const reserved = vaccines.reduce((sum, vaccine) => sum + (vaccine.reserved_quantity ?? 0), 0);
+
+  const metrics = [
+    { label: 'Total vaccines', value: formatNumber(totalCount), subtext: `${formatNumber(vaccines.length)} shown on this page` },
+    { label: 'Available doses', value: formatNumber(available), subtext: `${formatNumber(reserved)} reserved` },
+    { label: 'Published', value: formatNumber(published), subtext: 'Available for patient purchases' },
+    { label: 'Low stock', value: formatNumber(lowStock), subtext: 'Available stock below 10', danger: lowStock > 0 },
+  ];
+
+  return (
+    <div className="grid gap-3 border-b border-slate-200 bg-white px-5 py-4 sm:grid-cols-2 xl:grid-cols-4">
+      {metrics.map(metric => (
+        <div key={metric.label} className="border border-slate-200 bg-slate-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{metric.label}</p>
+          <p className={`mt-1 text-xl font-bold ${metric.danger ? 'text-amber-700' : 'text-slate-900'}`}>{metric.value}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{metric.subtext}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 // ── Main list ─────────────────────────────────────────────────────────────────
 
@@ -378,7 +411,7 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
   }, []);
 
   // Normalise pagination across both response shapes
-  const items = data?.items || [];
+  const items = useMemo(() => (data?.items ?? []) as Vaccine[], [data?.items]);
   const isSearchResponse = (d: VaccineSearchResponse | PaginatedVaccines | undefined): d is VaccineSearchResponse =>
     Boolean(d && 'total_count' in d && 'page' in d);
   const isPaginatedResponse = (d: VaccineSearchResponse | PaginatedVaccines | undefined): d is PaginatedVaccines =>
@@ -430,6 +463,7 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
         hasActiveFilters={hasActiveFilters}
         isFetching={isFetching}
       />
+      <InventorySummary vaccines={items} totalCount={totalCount} />
 
       {items.length === 0 ? (
         <div className="py-16 text-center">
@@ -442,35 +476,30 @@ export const VaccineList: React.FC<VaccineListProps> = ({ onEdit, onViewStock, o
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  {['Vaccine', 'Price / Dose', 'Stock', 'Status', 'Created', ''].map((h, i) => (
-                    <th key={i} className={`px-5 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide ${i === 5 ? 'text-right' : 'text-left'}`}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {items.map(vaccine => (
-                  <VaccineRow
-                    key={vaccine.id}
-                    vaccine={vaccine as Vaccine}
-                    onEdit={onEdit!}
-                    onDelete={handleDelete}
-                    onViewStock={onViewStock}
-                    onAddStock={onAddStock}
-                    onTogglePublish={handleTogglePublish}
-                  />
-                ))}
-              </tbody>
-            </table>
+          <div>
+            <div className="hidden grid-cols-[minmax(180px,1.5fr)_minmax(140px,0.9fr)_minmax(180px,1.2fr)_minmax(130px,0.8fr)_minmax(120px,0.8fr)_auto] gap-4 border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 lg:grid">
+              <span>Vaccine</span>
+              <span>Price / Dose</span>
+              <span>Stock</span>
+              <span>Status</span>
+              <span>Created</span>
+              <span className="text-right">Actions</span>
+            </div>
+            {items.map(vaccine => (
+              <VaccineCard
+                key={vaccine.id}
+                vaccine={vaccine}
+                onEdit={onEdit!}
+                onDelete={handleDelete}
+                onViewStock={onViewStock}
+                onAddStock={onAddStock}
+                onTogglePublish={handleTogglePublish}
+              />
+            ))}
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between px-5 py-3.5 border-t border-slate-100 bg-slate-50">
+          <div className="flex flex-col gap-3 px-5 py-3.5 border-t border-slate-100 bg-slate-50 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
               Page <span className="font-semibold text-slate-900">{page}</span> of{' '}
               <span className="font-semibold text-slate-900">{totalPages}</span>

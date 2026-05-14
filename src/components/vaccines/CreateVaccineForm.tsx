@@ -2,8 +2,6 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateVaccine } from '../../hooks/useVaccines';
-// import { useAuth } from '../../context/AuthContext';
-import { useAuth } from '../../context/useAuth'
 import { createVaccineSchema, type CreateVaccineFormData } from '../../utils/validationSchemas';
 import { Pill, DollarSign, Package, Eye, Info, Loader2, Plus } from 'lucide-react';
 
@@ -13,7 +11,6 @@ interface CreateVaccineFormProps {
 }
 
 export const CreateVaccineForm: React.FC<CreateVaccineFormProps> = ({ onSuccess, onCancel }) => {
-  const { user } = useAuth();
   const createMutation = useCreateVaccine();
 
   const {
@@ -35,10 +32,7 @@ export const CreateVaccineForm: React.FC<CreateVaccineFormProps> = ({ onSuccess,
 
   const onSubmit = async (data: CreateVaccineFormData) => {
     try {
-      await createMutation.mutateAsync({
-        ...data,
-        added_by_id: user?.id || '',
-      });
+      await createMutation.mutateAsync(data);
       reset();
       if (onSuccess) onSuccess();
     } catch (error) {
@@ -110,7 +104,7 @@ export const CreateVaccineForm: React.FC<CreateVaccineFormProps> = ({ onSuccess,
             {/* Price Per Dose */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Price Per Dose ($) <span className="text-red-500">*</span>
+                Price Per Dose (GHS) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

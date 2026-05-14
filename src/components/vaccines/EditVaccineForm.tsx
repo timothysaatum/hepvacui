@@ -141,7 +141,7 @@ export const EditVaccineForm: React.FC<EditVaccineFormProps> = ({
             {/* Price Per Dose */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Price Per Dose ($)
+                Price Per Dose (GHS)
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
