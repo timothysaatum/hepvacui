@@ -29,7 +29,7 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
 }) => {
   const {
     data: facility,
-    isPending: fetchLoading,
+    isLoading: fetchLoading,
     error: fetchError,
   } = useFacility(facilityId);
   const updateMutation = useUpdateFacility();
@@ -41,6 +41,12 @@ export const EditFacilityForm: React.FC<EditFacilityFormProps> = ({
     reset,
   } = useForm<UpdateFacilityFormData>({
     resolver: zodResolver(updateFacilitySchema),
+    defaultValues: {
+      facility_name: '',
+      phone: '',
+      email: '',
+      address: '',
+    },
   });
 
   useEffect(() => {

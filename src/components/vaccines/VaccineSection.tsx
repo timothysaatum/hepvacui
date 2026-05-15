@@ -154,7 +154,10 @@ function PurchaseCard({ purchase, onPay, onAdminister }: {
                         <DetailRow label="Package total" value={formatCurrency(purchase.total_package_price)} />
                         <DetailRow label="Balance" value={formatCurrency(purchase.balance)} />
                         <DetailRow label="Price per dose" value={formatCurrency(purchase.price_per_dose)} />
-                        <DetailRow label="Status" value={purchase.is_active ? 'Active' : 'Completed'} />
+                        <DetailRow
+                      label="Status"
+                      value={purchase.doses_administered >= (purchase.total_doses ?? 0) ? 'Completed' : purchase.is_active ? 'Active' : 'Inactive'}
+                    />
                     </div>
 
                     {payments.length > 0 && (

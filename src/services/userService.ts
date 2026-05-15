@@ -1,9 +1,14 @@
 import api from './api';
-import type { Permission, User, CreateUserPayload, UpdateUserPayload, PaginatedUsers } from '../types/user';
+import type { Permission, Role, User, CreateUserPayload, UpdateUserPayload, PaginatedUsers } from '../types/user';
 
 export const userService = {
   createUser: async (data: CreateUserPayload): Promise<User> => {
     const response = await api.post('/api/v1/users', data);
+    return response.data;
+  },
+
+  getRoles: async (): Promise<Role[]> => {
+    const response = await api.get('/api/v1/users/roles');
     return response.data;
   },
 

@@ -12,6 +12,7 @@ export const userKeys = {
   details: () => [...userKeys.all, 'detail'] as const,
   detail: (id: string) => [...userKeys.details(), id] as const,
   permissions: () => [...userKeys.all, 'permissions'] as const,
+  roles: () => [...userKeys.all, 'roles'] as const,
 };
 
 // Fetch Users List with Pagination
@@ -38,6 +39,14 @@ export const usePermissions = () => {
   return useQuery({
     queryKey: userKeys.permissions(),
     queryFn: () => userService.getPermissions(),
+    staleTime: 10 * 60 * 1000,
+  });
+};
+
+export const useRoles = () => {
+  return useQuery({
+    queryKey: userKeys.roles(),
+    queryFn: () => userService.getRoles(),
     staleTime: 10 * 60 * 1000,
   });
 };

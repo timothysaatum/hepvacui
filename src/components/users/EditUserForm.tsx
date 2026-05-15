@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useUser, useUpdateUser } from '../../hooks/useUsers';
+import { useUser, useUpdateUser, useRoles } from '../../hooks/useUsers';
 import { updateUserSchema, type UpdateUserFormData } from '../../utils/validationSchemas';
 import { User, Mail, Phone, Loader2, Save, AlertTriangle, CheckCircle2, Ban } from 'lucide-react';
 
@@ -16,16 +16,28 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
   onSuccess,
   onCancel
 }) => {
-  const { data: user, isPending: fetchLoading, error: fetchError } = useUser(userId);
+  const { data: user, isLoading: fetchLoading, error: fetchError } = useUser(userId);
+  const { data: roles = [], isLoading: rolesLoading } = useRoles();
   const updateMutation = useUpdateUser();
 
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
     reset,
   } = useForm<UpdateUserFormData>({
     resolver: zodResolver(updateUserSchema),
+    defaultValues: {
+      username: '',
+      full_name: '',
+      phone: '',
+      email: '',
+      is_active: false,
+      is_suspended: false,
+      role_ids: [],
+    },
   });
 
   useEffect(() => {
@@ -37,6 +49,7 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
         email: user.email,
         is_active: user.is_active,
         is_suspended: user.is_suspended,
+        role_ids: user.roles?.map((role) => role.id) ?? [],
       });
     }
   }, [user, reset]);
@@ -50,7 +63,7 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
     }
   };
 
-  if (fetchLoading) {
+  if (fetchLoading || rolesLoading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-12">
         <div className="flex flex-col items-center justify-center">
@@ -227,7 +240,35 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
                 </div>
               </label>
             </div>
-          </div>
+
+            <div className="border-t border-gray-200 pt-6">
+              <p className="text-sm font-semibold text-gray-700 mb-4">Roles</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {roles.map((role) => {
+                  const selectedRoles = watch('role_ids') ?? [];
+                  const selected = selectedRoles.includes(role.id);
+
+                  return (
+                    <label key={role.id} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={role.id}
+                        checked={selected}
+                        onChange={(event) => {
+                          const value = Number(event.target.value);
+                          const updated = event.target.checked
+                            ? Array.from(new Set([...selectedRoles, value]))
+                            : selectedRoles.filter((id: number) => id !== value);
+                          setValue('role_ids', updated);
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
+                      />
+                      <span className="text-sm font-medium text-slate-700">{role.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">

@@ -81,6 +81,7 @@ export interface UpdateUserPayload {
   email?: string;
   is_active?: boolean;
   is_suspended?: boolean;
+  role_ids?: number[];
 }
 
 export interface PageInfo {

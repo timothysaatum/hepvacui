@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { ElementType } from 'react';
 import { Baby, CalendarCheck2, Edit2, FilePlus2, FlaskConical, Plus, ShieldCheck } from 'lucide-react';
 import { Button } from '../common/Button';
-import { AddChildPanel } from './AddChildPanel';
+import { AddChildModal } from '../pregnancy';
 import { EditChildPanel } from './EditChildPanel';
 import { useMotherChildren, usePregnancies } from '../../hooks/useChildren';
 import type { Child } from '../../types/child';
@@ -185,9 +185,10 @@ export function ChildManagementSection({ patient, readOnly = false }: { patient:
         )}
       </section>
 
-      {addOpen && (
-        <AddChildPanel
-          pregnancyId={addPregnancyId}
+      {addOpen && addPregnancyId && (
+        <AddChildModal
+          open={true}
+          pregnancy={childEntry.pregnancy!}
           patientId={patient.id}
           onClose={() => setAddOpen(false)}
         />
