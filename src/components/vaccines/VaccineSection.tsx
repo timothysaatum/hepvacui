@@ -79,7 +79,7 @@ function PurchaseCard({ purchase, onPay, onAdminister }: {
     onPay: () => void;
     onAdminister: () => void;
 }) {
-    const [expanded, setExpanded] = useState(purchase.is_active);
+    const [expanded, setExpanded] = useState(false);
     const { data: payments = [] } = usePurchasePayments(purchase.id);
     const { data: vaccinations = [] } = usePurchaseVaccinations(purchase.id);
     const { data: eligibility } = useEligibility(purchase.id);

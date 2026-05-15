@@ -58,6 +58,7 @@ export const updateUserSchema = z.object({
   
   is_active: z.boolean().optional(),
   is_suspended: z.boolean().optional(),
+  role_ids: z.array(z.number()).optional(),
 });
 
 
