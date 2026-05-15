@@ -269,6 +269,7 @@ export const EditUserForm: React.FC<EditUserFormProps> = ({
                 })}
               </div>
             </div>
+          </div>
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
