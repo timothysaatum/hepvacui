@@ -8,6 +8,7 @@ import { useMotherChildren, usePregnancies } from '../../hooks/useChildren';
 import type { Child } from '../../types/child';
 import { getChildDisplayName, isCheckupOverdue } from '../../types/child';
 import type { Patient } from '../../types/patient';
+import type { PregnancySummary } from '../../types/pregnancy';
 
 function formatDate(iso?: string | null) {
   if (!iso) return '-';
@@ -36,7 +37,7 @@ function calculateAge(dob: string) {
   return `${years} year${years === 1 ? '' : 's'}`;
 }
 
-function getChildEntryState(pregnancies: Array<{ id: string; outcome: string | null; actual_delivery_date: string | null; is_active: boolean; pregnancy_number: number }>) {
+function getChildEntryState(pregnancies: PregnancySummary[]) {
   const liveBirths = pregnancies
     .filter(pregnancy => !pregnancy.is_active && pregnancy.outcome === 'live_birth')
     .sort((a, b) => (b.actual_delivery_date ?? '').localeCompare(a.actual_delivery_date ?? ''));

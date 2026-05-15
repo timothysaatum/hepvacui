@@ -5,7 +5,7 @@ import { FormField, Input, Select, Textarea } from '../common/index';
 import { useOpenPregnancy, useUpdatePregnancy, useClosePregnancy } from '../../hooks/usePregnancy';
 import { useCreateChild, useUpdateChild } from '../../hooks/useChildren';
 import { useToast } from '../../context/ToastContext';
-import type { Pregnancy, PregnancyOutcome } from '../../types/pregnancy';
+import type { Pregnancy, PregnancyOutcome, PregnancySummary } from '../../types/pregnancy';
 import type { Child } from '../../types/child';
 import { PREGNANCY_OUTCOME_LABELS } from '../../utils/formatters';
 
@@ -150,7 +150,7 @@ export function ClosePregnancyModal({ open, onClose, pregnancy, patientId }: { o
 
 // ── Add Child ─────────────────────────────────────────────────────────────────
 
-export function AddChildModal({ open, onClose, pregnancy, patientId }: { open: boolean; onClose: () => void; pregnancy: Pregnancy; patientId: string }) {
+export function AddChildModal({ open, onClose, pregnancy, patientId }: { open: boolean; onClose: () => void; pregnancy: PregnancySummary; patientId: string }) {
     const { showSuccess, showError } = useToast();
     const mutation = useCreateChild(); // no args
     const [form, setForm] = useState({ name: '', date_of_birth: '', sex: '' as 'male' | 'female' | '', notes: '' });
