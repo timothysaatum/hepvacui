@@ -14,7 +14,6 @@ import { formatDate, formatCurrency, getPaymentProgressPercent, getDoseLabel } f
 import { AdministerDoseModal, PurchaseVaccineModal, RecordPaymentModal } from '.';
 import { AlertTriangle, CheckCircle2, CircleDollarSign, Plus, Syringe } from 'lucide-react';
 
-
 interface Props { patient: Patient; }
 
 export function VaccineSection({ patient }: Props) {
@@ -24,41 +23,44 @@ export function VaccineSection({ patient }: Props) {
     const [adminTarget, setAdminTarget] = useState<string | null>(null);
 
     if (isLoading) return <LoadingSpinner />;
+
     const active = purchases.filter(p => p.is_active);
     const unpaid = purchases.filter(p => p.payment_status !== 'completed');
-    const remainingDoses = purchases.reduce((sum, p) => sum + Math.max((p.total_doses ?? 0) - (p.doses_administered ?? 0), 0), 0);
-    const completed = purchases.filter(p => p.total_doses && p.doses_administered >= p.total_doses);
+    const remainingDoses = purchases.reduce(
+        (sum, p) => sum + Math.max((p.total_doses ?? 0) - (p.doses_administered ?? 0), 0),
+        0,
+    );
+    const outstandingBalance = purchases.reduce((sum, p) => sum + Number(p.balance ?? 0), 0);
 
     return (
-        <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-4">
+        <div className="space-y-6">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
                 <VaccineMetric label="Active Packages" value={String(active.length)} icon={Syringe} tone={active.length ? 'teal' : 'slate'} />
-                <VaccineMetric label="Payment Due" value={String(unpaid.length)} icon={CircleDollarSign} tone={unpaid.length ? 'amber' : 'slate'} />
+                <VaccineMetric label="Packages Due" value={String(unpaid.length)} icon={CircleDollarSign} tone={unpaid.length ? 'amber' : 'slate'} />
                 <VaccineMetric label="Doses Remaining" value={String(remainingDoses)} icon={AlertTriangle} tone={remainingDoses ? 'blue' : 'slate'} />
-                <VaccineMetric label="Completed" value={String(completed.length)} icon={CheckCircle2} tone="slate" />
+                <VaccineMetric label="Outstanding Balance" value={formatCurrency(outstandingBalance)} icon={CheckCircle2} tone={outstandingBalance ? 'amber' : 'slate'} />
             </div>
 
             <SectionCard
                 title="Vaccine Programme"
-                subtitle="Hep B vaccination programme"
+                subtitle="Manage purchases, payments, and vaccine dosing for this patient"
                 action={<Button size="sm" onClick={() => setBuyModal(true)}><Plus className="mr-1 h-4 w-4" /> Purchase Vaccine</Button>}
             >
                 {!purchases.length ? (
                     <EmptyState
                         icon={<Syringe className="h-6 w-6" />}
-                        title="No vaccine purchases"
-                        description="Purchase a vaccine to begin the immunisation programme."
+                        title="No vaccine purchases yet"
+                        description="This patient has no active vaccine packages. Start by purchasing a new vaccine."
                         action={<Button size="sm" onClick={() => setBuyModal(true)}>Purchase Vaccine</Button>}
                     />
                 ) : (
-                    <div className="space-y-4">
-                        {purchases.map(p => (
+                    <div className="space-y-5">
+                        {purchases.map(purchase => (
                             <PurchaseCard
-                                key={p.id}
-                                purchase={p}
-                                patientId={patient.id}
-                                onPay={() => setPayTarget(p.id)}
-                                onAdminister={() => setAdminTarget(p.id)}
+                                key={purchase.id}
+                                purchase={purchase}
+                                onPay={() => setPayTarget(purchase.id)}
+                                onAdminister={() => setAdminTarget(purchase.id)}
                             />
                         ))}
                     </div>
@@ -72,122 +74,178 @@ export function VaccineSection({ patient }: Props) {
     );
 }
 
-// ── Purchase card ─────────────────────────────────────────────────────────────
-
 function PurchaseCard({ purchase, onPay, onAdminister }: {
     purchase: VaccinePurchase;
-    patientId: string;
     onPay: () => void;
     onAdminister: () => void;
 }) {
     const [expanded, setExpanded] = useState(purchase.is_active);
     const { data: payments = [] } = usePurchasePayments(purchase.id);
     const { data: vaccinations = [] } = usePurchaseVaccinations(purchase.id);
-    // useEligibility is the short alias for useCheckEligibility
     const { data: eligibility } = useEligibility(purchase.id);
 
-    const percent = getPaymentProgressPercent(purchase.amount_paid, purchase.total_package_price);
+    const paymentPercent = getPaymentProgressPercent(purchase.amount_paid, purchase.total_package_price);
     const dosePercent = purchase.total_doses ? Math.round((purchase.doses_administered / purchase.total_doses) * 100) : 0;
+    const hasBalance = purchase.balance > 0;
+    const canAdminister = purchase.is_active && eligibility?.eligible;
 
     return (
-        <div className={`border overflow-hidden ${purchase.is_active ? 'border-teal-200' : 'border-slate-200 opacity-75'}`}>
-            {/* Header row */}
-            <button onClick={() => setExpanded(e => !e)} className="w-full flex items-center justify-between px-5 py-4 text-left">
-                <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-teal-100 flex items-center justify-center">
-                        <Syringe className="h-5 w-5 text-teal-700" />
+        <div className={`rounded-2xl border overflow-hidden shadow-sm transition-shadow ${purchase.is_active ? 'border-slate-200 bg-white hover:shadow-lg' : 'border-slate-200 bg-slate-50 opacity-90'}`}>
+            <button
+                type="button"
+                onClick={() => setExpanded(current => !current)}
+                className="w-full flex items-center justify-between gap-4 px-6 py-5 text-left"
+                aria-expanded={expanded}
+            >
+                <div className="flex items-center gap-4 min-w-0">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-teal-700">
+                        <Syringe className="h-5 w-5" />
                     </div>
-                    <div>
-                        <p className="font-semibold text-slate-900">{purchase.vaccine_name}</p>
-                        <p className="text-xs text-slate-500">{formatDate(purchase.purchase_date)} · {purchase.total_doses} doses</p>
+                    <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-slate-900">{purchase.vaccine_name}</p>
+                        <p className="truncate text-sm text-slate-500">{formatDate(purchase.purchase_date)} · {purchase.total_doses} doses · Batch {purchase.batch_number}</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+
+                <div className="flex flex-row items-center gap-3">
                     <PaymentStatusBadge status={purchase.payment_status} />
-                    <svg className={`w-4 h-4 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <svg className={`h-4 w-4 text-slate-400 transition-transform ${expanded ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M19 9l-7 7-7-7" />
                     </svg>
                 </div>
             </button>
 
             {expanded && (
-                <div className="px-5 pb-5 space-y-5 border-t border-slate-100">
-                    {/* Payment progress */}
-                    <div className="mt-4">
-                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                            <span>Payment: {formatCurrency(purchase.amount_paid)} of {formatCurrency(purchase.total_package_price)}</span>
-                            <span>{percent}%</span>
-                        </div>
-                            <div className="h-2 bg-slate-100 overflow-hidden">
-                            <div className="h-full bg-teal-500 transition-all" style={{ width: `${percent}%` }} />
-                        </div>
+                <div className="space-y-5 border-t border-slate-100 px-6 pb-6">
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <ProgressCard title="Payment progress" value={`${percentageToLabel(paymentPercent)}`}>
+                            <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+                                <span>{formatCurrency(purchase.amount_paid)} paid</span>
+                                <span>{formatCurrency(purchase.total_package_price)} total</span>
+                            </div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 transition-all" style={{ width: `${paymentPercent}%` }} />
+                            </div>
+                        </ProgressCard>
+
+                        <ProgressCard title="Dose status" value={`${purchase.doses_administered} / ${purchase.total_doses}`}>
+                            <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
+                                <span>{dosePercent}% completed</span>
+                                <span>{purchase.total_doses - purchase.doses_administered} left</span>
+                            </div>
+                            <div className="flex gap-1">
+                                {Array.from({ length: purchase.total_doses }).map((_, index) => (
+                                    <div key={index} className={`h-2.5 flex-1 rounded-full ${index < purchase.doses_administered ? 'bg-blue-600' : 'bg-slate-200'}`} />
+                                ))}
+                            </div>
+                        </ProgressCard>
                     </div>
 
-                    {/* Dose progress */}
-                    <div>
-                        <div className="flex justify-between text-xs text-slate-500 mb-1">
-                            <span>Doses: {purchase.doses_administered} of {purchase.total_doses} administered</span>
-                            <span>{dosePercent}%</span>
-                        </div>
-                        <div className="flex gap-1.5">
-                            {Array.from({ length: purchase.total_doses }).map((_, i) => (
-                                <div key={i} className={`h-2.5 flex-1 ${i < purchase.doses_administered ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Eligibility message */}
                     {eligibility && !eligibility.eligible && (
-                        <div className="flex items-start gap-2 bg-red-50 border border-red-100 px-3 py-2 text-xs text-red-700">
-                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                            <span>{eligibility.message}</span>
+                        <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                            <div className="flex items-start gap-2">
+                                <AlertTriangle className="mt-0.5 h-4 w-4" />
+                                <p>{eligibility.message}</p>
+                            </div>
                         </div>
                     )}
 
-                    {/* Payment history */}
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        <DetailRow label="Package total" value={formatCurrency(purchase.total_package_price)} />
+                        <DetailRow label="Balance" value={formatCurrency(purchase.balance)} />
+                        <DetailRow label="Price per dose" value={formatCurrency(purchase.price_per_dose)} />
+                        <DetailRow label="Status" value={purchase.is_active ? 'Active' : 'Completed'} />
+                    </div>
+
                     {payments.length > 0 && (
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Payment History</p>
-                            <div className="space-y-1.5">
-                                {payments.map(pmt => (
-                                    <div key={pmt.id} className="flex items-center justify-between text-sm">
-                                        <span className="text-slate-600">{formatDate(pmt.payment_date)} · {pmt.payment_method ?? 'Cash'}</span>
-                                        <span className="font-medium text-emerald-700">{formatCurrency(pmt.amount)}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <HistorySection heading="Payment history">
+                            {payments.map(payment => (
+                                <HistoryItem
+                                    key={payment.id}
+                                    label={`${formatDate(payment.payment_date)} · ${payment.payment_method ?? 'Cash'}`}
+                                    value={formatCurrency(payment.amount)}
+                                />
+                            ))}
+                        </HistorySection>
                     )}
 
-                    {/* Vaccination history */}
                     {vaccinations.length > 0 && (
-                        <div>
-                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Doses Administered</p>
-                            <div className="space-y-1.5">
-                                {vaccinations.map(v => (
-                                    <div key={v.id} className="flex items-center gap-3 text-sm">
-                                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium">{getDoseLabel(v.dose_number)}</span>
-                                        <span className="text-slate-600">{formatDate(v.dose_date)}</span>
-                                        <span className="text-slate-400 text-xs">Batch: {v.batch_number}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <HistorySection heading="Vaccination history">
+                            {vaccinations.map(vaccination => (
+                                <HistoryItem
+                                    key={vaccination.id}
+                                    label={`${getDoseLabel(vaccination.dose_number)} · ${formatDate(vaccination.dose_date)}`}
+                                    value={`Batch ${vaccination.batch_number}`}
+                                />
+                            ))}
+                        </HistorySection>
                     )}
 
-                    {/* Actions */}
-                    {purchase.is_active && (
-                        <div className="flex gap-2 pt-1">
-                            {purchase.payment_status !== 'completed' && (
-                                <Button size="sm" variant="outline" onClick={onPay}>Record Payment</Button>
-                            )}
-                            {eligibility?.eligible && (
-                                <Button size="sm" onClick={onAdminister}>Administer Dose {purchase.doses_administered + 1}</Button>
-                            )}
-                        </div>
-                    )}
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={onPay}
+                            disabled={!hasBalance}
+                        >
+                            Record Payment
+                        </Button>
+                        <Button
+                            size="sm"
+                            onClick={onAdminister}
+                            disabled={!canAdminister}
+                        >
+                            Administer Dose {purchase.doses_administered + 1}
+                        </Button>
+                    </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function percentageToLabel(percent: number) {
+    if (percent === 0) return 'Not started';
+    if (percent < 50) return 'In progress';
+    if (percent < 100) return 'Almost done';
+    return 'Completed';
+}
+
+function ProgressCard({ title, value, children }: { title: string; value: string; children: React.ReactNode }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between mb-3 gap-4">
+                <p className="text-sm font-semibold text-slate-800">{title}</p>
+                <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{value}</span>
+            </div>
+            {children}
+        </div>
+    );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm">
+            <p className="text-xs text-slate-500">{label}</p>
+            <p className="mt-1 font-medium text-slate-900">{value}</p>
+        </div>
+    );
+}
+
+function HistorySection({ heading, children }: { heading: string; children: React.ReactNode }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-sm font-semibold text-slate-800 mb-3">{heading}</p>
+            <div className="space-y-2">{children}</div>
+        </div>
+    );
+}
+
+function HistoryItem({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-center justify-between text-sm text-slate-700">
+            <span>{label}</span>
+            <span className="font-medium text-slate-900">{value}</span>
         </div>
     );
 }
@@ -205,12 +263,14 @@ function VaccineMetric({ label, value, icon: Icon, tone = 'slate' }: {
         blue: 'border-blue-200 bg-blue-50 text-blue-700',
     };
     return (
-        <div className={`flex items-center justify-between border px-4 py-3 ${colors[tone]}`}>
+        <div className={`flex items-center justify-between gap-4 rounded-2xl border px-4 py-4 ${colors[tone]}`}>
             <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide opacity-70">{label}</p>
-                <p className="mt-1 text-2xl font-semibold">{value}</p>
+                <p className="mt-2 text-3xl font-semibold leading-none">{value}</p>
             </div>
-            <Icon className="h-5 w-5 opacity-70" />
+            <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-current shadow-sm">
+                <Icon className="h-5 w-5 opacity-80" />
+            </div>
         </div>
     );
 }
