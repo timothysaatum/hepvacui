@@ -67,7 +67,12 @@ export function VaccineSection({ patient }: Props) {
                 )}
             </SectionCard>
 
-            <PurchaseVaccineModal open={buyModal} onClose={() => setBuyModal(false)} patientId={patient.id} />
+            <PurchaseVaccineModal
+                open={buyModal}
+                onClose={() => setBuyModal(false)}
+                patientId={patient.id}
+                existingPurchases={purchases}
+            />
             {payTarget && <RecordPaymentModal open onClose={() => setPayTarget(null)} purchaseId={payTarget} patientId={patient.id} />}
             {adminTarget && <AdministerDoseModal open onClose={() => setAdminTarget(null)} purchaseId={adminTarget} patientId={patient.id} />}
         </div>

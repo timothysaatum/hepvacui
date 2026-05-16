@@ -34,6 +34,9 @@ export const pregnancyService = {
   /**
    * List all pregnancy episodes for a patient, ordered by pregnancy_number.
    * GET /api/v1/patients/pregnant/{patient_id}/pregnancies
+   *
+   * The backend accepts converted regular patients here because pregnancy
+   * episodes remain patient-linked history.
    */
   listPatientPregnancies: async (patientId: string): Promise<Pregnancy[]> => {
     const response = await api.get(
@@ -120,13 +123,13 @@ export const childrenService = {
 
   /**
    * List all children for a mother across ALL her pregnancy episodes.
-   * GET /api/v1/patients/pregnant/{patient_id}/children
+   * GET /api/v1/patients/{patient_id}/children
    *
    * Use this for: "show all children this patient has ever had".
    */
   getMotherChildren: async (patientId: string): Promise<Child[]> => {
     const response = await api.get(
-      `/api/v1/patients/pregnant/${patientId}/children`
+      `/api/v1/patients/${patientId}/children`
     );
     return response.data;
   },

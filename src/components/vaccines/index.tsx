@@ -14,6 +14,7 @@ import { vaccineService } from '../../services/vaccineService';
 import { useQuery } from '@tanstack/react-query';
 import { formatCurrency } from '../../utils/formatters';
 import type { Vaccine } from '../../types/vaccine';
+import type { VaccinePurchase } from '../../types/vaccinePurchase';
 
 // ── Vaccine Picker ────────────────────────────────────────────────────────────
 // Replaces <select> with a searchable scrollable list.
@@ -22,10 +23,12 @@ function VaccinePicker({
     vaccines,
     selected,
     onSelect,
+    existingPurchases = [],
 }: {
     vaccines: Vaccine[];
     selected: Vaccine | null;
-    onSelect: (v: Vaccine) => void;
+    onSelect: (v: Vaccine | null) => void;
+    existingPurchases?: VaccinePurchase[];
 }) {
     const [query, setQuery] = useState('');
 
@@ -49,16 +52,24 @@ function VaccinePicker({
                     filtered.map(v => {
                         const inStock = (v.quantity ?? 0) > 0;
                         const isSelected = selected?.id === v.id;
+                        const purchaseForVaccine = existingPurchases.find(p => p.vaccine_id === v.id);
+                        const hasUnfinishedPackage = Boolean(
+                            purchaseForVaccine && purchaseForVaccine.doses_administered < purchaseForVaccine.total_doses
+                        );
+                        const hasCompletedCourse = Boolean(
+                            purchaseForVaccine && purchaseForVaccine.doses_administered >= purchaseForVaccine.total_doses
+                        );
+                        const isUnavailable = !inStock || hasUnfinishedPackage || hasCompletedCourse;
                         return (
                             <button
                                 key={v.id}
                                 type="button"
-                                disabled={!inStock}
+                                disabled={isUnavailable}
                                 onClick={() => onSelect(v)}
                                 className={`w-full flex items-center justify-between px-4 py-3 text-left text-sm transition-colors border-b border-slate-100 last:border-0
                   ${isSelected
                                         ? 'bg-teal-50 border-teal-200'
-                                        : inStock
+                                        : !isUnavailable
                                             ? 'hover:bg-slate-50'
                                             : 'opacity-40 cursor-not-allowed bg-slate-50'
                                     }`}
@@ -75,7 +86,13 @@ function VaccinePicker({
                                     </p>
                                     <p className={`text-xs font-medium ${(v.quantity ?? 0) < 50 ? 'text-amber-600' : 'text-emerald-600'
                                         }`}>
-                                        {inStock ? `${v.quantity} in stock` : 'Out of stock'}
+                                        {hasCompletedCourse
+                                            ? 'Course completed'
+                                            : hasUnfinishedPackage
+                                                ? 'Package open'
+                                                : inStock
+                                                    ? `${v.quantity} in stock`
+                                                    : 'Out of stock'}
                                     </p>
                                 </div>
                             </button>
@@ -103,9 +120,9 @@ function VaccinePicker({
 // ── Purchase Vaccine Modal ────────────────────────────────────────────────────
 
 export function PurchaseVaccineModal({
-    open, onClose, patientId,
+    open, onClose, patientId, existingPurchases = [],
 }: {
-    open: boolean; onClose: () => void; patientId: string;
+    open: boolean; onClose: () => void; patientId: string; existingPurchases?: VaccinePurchase[];
 }) {
     const { showError } = useToast();
     const mutation = useCreateVaccinePurchase();
@@ -163,6 +180,7 @@ export function PurchaseVaccineModal({
                         vaccines={vaccines}
                         selected={selectedVaccine}
                         onSelect={setSelectedVaccine}
+                        existingPurchases={existingPurchases}
                     />
                 </FormField>
 
